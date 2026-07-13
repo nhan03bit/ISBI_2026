@@ -32,6 +32,31 @@ from convnext import ConvNeXt2, model_urls
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
+
+def setup_run_log_file(log_dir: str, ts: str) -> str:
+    """
+    Attach a FileHandler so training progress can be tailed live
+    (Slurm's own stdout redirect is block-buffered and lags behind).
+    Also refreshes a `latest.log` symlink so the path doesn't need
+    the run timestamp to tail it.
+    """
+    os.makedirs(log_dir, exist_ok=True)
+    log_path = os.path.join(log_dir, f"train_{ts}.log")
+
+    file_handler = logging.FileHandler(log_path)
+    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logging.getLogger().addHandler(file_handler)
+
+    latest_path = os.path.join(log_dir, "latest.log")
+    try:
+        if os.path.islink(latest_path) or os.path.exists(latest_path):
+            os.remove(latest_path)
+        os.symlink(os.path.basename(log_path), latest_path)
+    except OSError:
+        pass
+
+    return log_path
+
 import cv2 # type: ignore
 from PIL import Image
 import hashlib
@@ -696,6 +721,11 @@ def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: 
     train_shards = sorted(Path(train_dir).glob("shard_*.tar"))
     val_shards = sorted(Path(val_dir).glob("shard_*.tar"))
 
+    if not train_shards:
+        raise FileNotFoundError(f"No shard_*.tar files found in train_shards_dir={train_dir!r}")
+    if not val_shards:
+        raise FileNotFoundError(f"No shard_*.tar files found in val_shards_dir={val_dir!r}")
+
     # Optional deterministic shard-level shuffle.
     # This gives a fixed pseudo-random shard order across runs.
     if strict_repro:
@@ -753,11 +783,15 @@ def main():
         "val_num_workers": 2,
         "log_every": 500,
         "out_dir": f"./checkpoint/stage1",
-        "train_shards_dir": "./wds_shards_train_raw",
-        "val_shards_dir": "./wds_shards_val_raw",
+        "log_dir": "./logs",
+        "train_shards_dir": "/data/psytp7/wds_shards_train_raw",
+        "val_shards_dir": "/data/psytp7/wds_shards_val_raw",
         "seed": 42,
         "strict_repro": True,
     }
+
+    log_path = setup_run_log_file(cfg["log_dir"], ts)
+    logger.info(f"Run log file: {log_path}")
 
     SEED = cfg["seed"]
 
