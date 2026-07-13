@@ -585,8 +585,8 @@ class Trainer:
                 y = y.float()
 
             self.optim.zero_grad(set_to_none=True)
-            logits = self.model(x)
-            loss = self.crit(logits, y)
+            logits, aux_loss = self.model(x)
+            loss = self.crit(logits, y) + aux_loss
 
             loss.backward()
             self.optim.step()
@@ -612,8 +612,8 @@ class Trainer:
             if not torch.is_floating_point(y):
                 y = y.float()
 
-            logits = self.model(x)
-            loss = self.crit(logits, y)
+            logits, aux_loss = self.model(x)
+            loss = self.crit(logits, y) + aux_loss
             running += float(loss.item())
 
             probs = torch.sigmoid(logits)

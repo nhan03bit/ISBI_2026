@@ -383,10 +383,19 @@ class ConvNeXt2(nn.Module):
         drop_path_rate=0.,
         layer_scale_init_value=1e-6,
         head_init_scale=1.,
+        moe_stages=(),
+        block_moe_cls=None,
+        moe_block_kwargs=None,
+        head_cls=Decoder,
+        head_kwargs=None,
     ):
         super().__init__()
 
         assert len(depths) == len(dims) == 5, "For /64 variant, provide 5-stage depths and dims."
+        if moe_stages and block_moe_cls is None:
+            raise ValueError("moe_stages given but no block_moe_cls provided")
+        moe_block_kwargs = moe_block_kwargs or {}
+        head_kwargs = head_kwargs or {}
 
         # ---- Downsample layers ----
         # stem: /4
@@ -418,12 +427,15 @@ class ConvNeXt2(nn.Module):
         dp_rates = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
         cur = 0
         for i in range(5):
+            block_cls = block_moe_cls if i in moe_stages else Block
+            extra_kwargs = moe_block_kwargs if i in moe_stages else {}
             stage = nn.Sequential(
                 *[
-                    Block(
+                    block_cls(
                         dim=dims[i],
                         drop_path=dp_rates[cur + j],
                         layer_scale_init_value=layer_scale_init_value,
+                        **extra_kwargs,
                     )
                     for j in range(depths[i])
                 ]
@@ -431,7 +443,7 @@ class ConvNeXt2(nn.Module):
             self.stages.append(stage)
             cur += depths[i]
 
-        self.head = Decoder(
+        default_head_kwargs = dict(
             num_classes=num_classes,
             initial_num_features=dims[-1],
             decoder_embedding=768,
@@ -439,6 +451,8 @@ class ConvNeXt2(nn.Module):
             num_layers=2,
             activation="gelu",
         )
+        default_head_kwargs.update(head_kwargs)
+        self.head = head_cls(**default_head_kwargs)
         # self.cls = nn.Linear(dims[-1], num_classes)
 
         self.pos_encoding = Summer(PositionalEncoding2D(dims[-1]))
@@ -472,11 +486,24 @@ class ConvNeXt2(nn.Module):
             x = self.stages[i](x)
         return x  # (B, dims[-1], H/64, W/64)
 
+    def aux_loss(self, device):
+        aux = 0.0
+        cnt = 0
+        for stage in self.stages:
+            for blk in stage:
+                if getattr(blk, "last_aux_loss", None) is not None:
+                    aux = aux + blk.last_aux_loss
+                    cnt += 1
+        if getattr(self.head, "last_aux_loss", None) is not None:
+            aux = aux + self.head.last_aux_loss
+            cnt += 1
+        return aux / cnt if cnt > 0 else torch.tensor(0.0, device=device)
+
     def forward(self, x):
         x = self.forward_features(x)
         x = self.pos_encoding(x)   # (B, C, H, W)
-        x = self.head(x)
-        return x
+        logits = self.head(x)
+        return logits, self.aux_loss(logits.device)
 
 
 
