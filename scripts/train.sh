@@ -4,7 +4,7 @@
 #SBATCH -G 1
 #SBATCH -c 8
 #SBATCH --mem=64G
-#SBATCH --time=24:00:00
+#SBATCH --time=90:00:00
 #SBATCH -o /home/psytp7/logs/isbi2026_stage1_%j.out
 
 set -euo pipefail
