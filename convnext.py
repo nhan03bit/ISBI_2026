@@ -333,7 +333,7 @@ class LabelQueryHead(nn.Module):
         return logits
 
 
-from positional_encodings.torch_encodings import PositionalEncoding2D, Summer
+from positional_encodings.torch_encodings import PositionalEncodingPermute2D, Summer
 from einops import rearrange
 NORM_EPS = 1e-5
 
@@ -455,7 +455,7 @@ class ConvNeXt2(nn.Module):
         self.head = head_cls(**default_head_kwargs)
         # self.cls = nn.Linear(dims[-1], num_classes)
 
-        self.pos_encoding = Summer(PositionalEncoding2D(dims[-1]))
+        self.pos_encoding = Summer(PositionalEncodingPermute2D(dims[-1]))
         # print("Pos encoding shape: ", self.pos_encoding.shape)
 
         self.apply(self._init_weights)
