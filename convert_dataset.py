@@ -12,8 +12,8 @@ import torch
 # Paths
 # ---------------------------------------------------------------------------
 base_dir = "."
-train_csv_path = os.path.join(base_dir, "train_fold_1.csv")
-val_csv_path = os.path.join(base_dir, "val_fold_1.csv")
+train_csv_path = os.path.join(base_dir, "data", "train_fold_1.csv")
+val_csv_path = os.path.join(base_dir, "data", "val_fold_1.csv")
 train_output_dir = os.path.join(base_dir, "wds_shards_train_raw")
 val_output_dir = os.path.join(base_dir, "wds_shards_val_raw")
 
