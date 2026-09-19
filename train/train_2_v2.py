@@ -5,22 +5,29 @@ import argparse
 import io
 import json
 import logging
+import math
 from datetime import datetime
 from pathlib import Path
 
 import torch
 import torch.nn as nn
 from torch.optim import AdamW
-from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import CosineAnnealingLR, LambdaLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import webdataset as wds
+import torch.nn.functional as F
+import utils_update
 
 from torchvision.transforms.functional import normalize, rgb_to_grayscale
 import torchvision.transforms.functional as TF
 from timm.data.constants import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 import random
 import numpy as np
+import pandas as pd
+from torch.cuda.amp import autocast, GradScaler
+from utils_update import CrossBatchMemoryV2
+
 from torchmetrics.classification import (
     MultilabelAveragePrecision,
     MultilabelAUROC,
@@ -33,46 +40,34 @@ from convnext import ConvNeXt2, model_urls
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
-
-def setup_run_log_file(log_dir: str, ts: str) -> str:
-    """
-    Attach a FileHandler so training progress can be tailed live
-    (Slurm's own stdout redirect is block-buffered and lags behind).
-    Also refreshes a `latest.log` symlink so the path doesn't need
-    the run timestamp to tail it.
-    """
-    os.makedirs(log_dir, exist_ok=True)
-    log_path = os.path.join(log_dir, f"train_{ts}.log")
-
-    file_handler = logging.FileHandler(log_path)
-    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
-    logging.getLogger().addHandler(file_handler)
-
-    latest_path = os.path.join(log_dir, "latest.log")
-    try:
-        if os.path.islink(latest_path) or os.path.exists(latest_path):
-            os.remove(latest_path)
-        os.symlink(os.path.basename(log_path), latest_path)
-    except OSError:
-        pass
-
-    return log_path
-
+import albumentations as A  # type: ignore
 import cv2 # type: ignore
 from PIL import Image
 import hashlib
 
-SIZE = 384
+SIZE = 512
 AUG_BASE_SEED = 42
 AUG_LOG = {}
 ENABLE_AUG_LOG = False
 
+# Per-worker WebDataset .shuffle() buffer size (raw, pre-decode samples).
+# See make_webdataset() for why this was cut down from 4000: this dataset's
+# raw samples average ~6.65MB, so 4000 * num_workers held in RAM at once
+# OOM-kills the job before an epoch can finish.
+SAMPLE_SHUFFLE_BUFSIZE = 1000
 
-def stable_seed_from_key(key: str, epoch: int, base_seed: int = AUG_BASE_SEED) -> int:
+
+def stable_seed_from_key(key: str, epoch: int, base_seed: int | None = None) -> int:
     """
     Stable seed that does not depend on DataLoader worker order,
     global numpy state, or sample loading order.
+
+    base_seed defaults to the module-level AUG_BASE_SEED, read at call time (not
+    bind time) so that main() can override it from --aug-base-seed before any
+    augmentation call happens.
     """
+    if base_seed is None:
+        base_seed = AUG_BASE_SEED
     s = f"{base_seed}_{key}_{epoch}"
     return int(hashlib.sha1(s.encode("utf-8")).hexdigest(), 16) % (2**32)
 
@@ -430,34 +425,24 @@ class DecodeAndTransform:
             size=self.size,
         )
 
-def create_model(
-    num_classes: int = 30,
-    backbone_init: str = "1k",
-    drop_path_rate: float = 0.0,
-):
+# Original ISBI submission Stage-1 (internal val mAP 0.385) - the "Converged"
+# checkpoint behind Table 1 of the entropy paper. checkpoint3/stage1_full30 is
+# the independently retrained "Under-trained" lineage (0.377, Table 2).
+DEFAULT_STAGE1_CKPT = "checkpoint3/Model_20260119_062652/model_best.pth"
 
+
+def create_model(num_classes: int = 30, stage1_ckpt: str = DEFAULT_STAGE1_CKPT):
     model = ConvNeXt2(depths=[3, 3, 27, 3, 2],
                       dims=[128, 256, 512, 1024, 1024],
-                      num_classes=num_classes,
-                      drop_path_rate=drop_path_rate)
+                      num_classes=num_classes)
 
-    # checkpoint = torch.load("/root/disk_3tb/Padchest_dataset/checkpoint3/Model_20260119_062652/model_best.pth", map_location="cpu")
-
-    # '22k': ImageNet-22k pretrained ConvNeXt-B backbone (usually +1-2 mAP vs 1k
-    # for transfer). The head/norm are stripped below and re-init from scratch
-    # either way, so the 22k head's 21841 classes are irrelevant.
-    url = model_urls['convnext_base_22k' if backbone_init == "22k" else 'convnext_base_1k']
-    logger.info(f"backbone init: {url}")
-    checkpoint = torch.hub.load_state_dict_from_url(url=url, map_location="cpu")["model"]
-    remove = ['norm.weight', 'norm.bias', 'head.weight', 'head.bias']
-
-    # print("Checkpoint: \n", checkpoint.keys())
-
-    for k in list(checkpoint.keys()):
-        if k in remove:
-            del checkpoint[k]
-
-    model.load_state_dict(checkpoint, strict=False)
+    ckpt_path = stage1_ckpt
+    if not os.path.isabs(ckpt_path):
+        ckpt_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ckpt_path)
+    checkpoint = torch.load(ckpt_path, map_location="cpu")
+    result = model.load_state_dict(checkpoint, strict=False)
+    logger.info(f"Stage-1 init: {ckpt_path} "
+                f"(missing={len(result.missing_keys)} unexpected={len(result.unexpected_keys)})")
 
     print(f"Model created with {sum(p.numel() for p in model.parameters()):,} parameters.")
 
@@ -465,7 +450,7 @@ def create_model(
 
 class AsymmetricLoss(nn.Module):
     def __init__(self, gamma_neg=4.0, gamma_pos=1.0, clip=0.05, eps=1e-8,
-                 disable_torch_grad_focal_loss=True, reduction="mean"):
+                 disable_torch_grad_focal_loss=True, reduction="mean", class_weights=None):
         super().__init__()
         assert reduction in ("mean", "sum", "none")
         self.gamma_neg = gamma_neg
@@ -474,6 +459,10 @@ class AsymmetricLoss(nn.Module):
         self.eps = eps
         self.disable_torch_grad_focal_loss = disable_torch_grad_focal_loss
         self.reduction = reduction
+        if class_weights is not None:
+            self.class_weights = torch.tensor(class_weights, dtype=torch.float32)
+        else:
+            self.class_weights = None
 
     def forward(self, x, y):
         y = y.float()
@@ -487,6 +476,11 @@ class AsymmetricLoss(nn.Module):
 
         los_pos = y * torch.log(xs_pos.clamp(min=self.eps))
         los_neg = (1.0 - y) * torch.log(xs_neg.clamp(min=self.eps))
+        if self.class_weights is not None:
+            class_weights = self.class_weights.to(x.device)
+            #print("class_weights: ", class_weights)
+            los_pos = los_pos * class_weights[None, :]
+
         loss = los_pos + los_neg  # log-likelihood
 
         if self.gamma_neg > 0 or self.gamma_pos > 0:
@@ -539,13 +533,6 @@ class EarlyStopping:
     def should_stop(self) -> bool:
         return self.bad_epochs >= self.patience
 
-    def state_dict(self) -> dict:
-        return {"best": self.best, "bad_epochs": self.bad_epochs}
-
-    def load_state_dict(self, sd: dict) -> None:
-        self.best = sd["best"]
-        self.bad_epochs = sd["bad_epochs"]
-
 
 def preprocess_batch(x: torch.Tensor) -> torch.Tensor:
     """
@@ -556,44 +543,56 @@ def preprocess_batch(x: torch.Tensor) -> torch.Tensor:
     # x = rgb_to_grayscale(x, num_output_channels=1)  # [B,1,H,W]
 
     # Normalize
-    x = normalize(x, mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
+    #x = normalize(x, mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
+    x = x.float()  # force float32 before normalize
+
+    mean = torch.tensor(IMAGENET_DEFAULT_MEAN, device=x.device, dtype=x.dtype).view(1, 3, 1, 1)
+    std = torch.tensor(IMAGENET_DEFAULT_STD, device=x.device, dtype=x.dtype).view(1, 3, 1, 1)
+
+    x = (x - mean) / std
     return x
 
 
 class Trainer:
-    def __init__(self, cfg: dict):
+    def __init__(self, cfg: dict, class_weights):
         self.cfg = cfg
+        print(self.cfg)
+        print("Size of Image: ", SIZE)
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         logger.info(f"Device: {self.device}")
 
-        # Mixed precision: bf16 where supported (Ampere+), else fp16 with a loss scaler.
-        # Halves activation memory so the 384px batch fits cards smaller than the 48GB A6000.
-        self.amp_enabled = self.device.type == "cuda"
-        self.amp_dtype = (
-            torch.bfloat16
-            if self.amp_enabled and torch.cuda.is_bf16_supported()
-            else torch.float16
-        )
-        # bf16 spans fp32's exponent range, so it needs no scaling; fp16 does.
-        self.scaler = torch.amp.GradScaler(
-            "cuda", enabled=self.amp_enabled and self.amp_dtype is torch.float16
-        )
-        if self.amp_enabled:
-            logger.info(f"AMP: {self.amp_dtype} | GradScaler: {self.scaler.is_enabled()}")
+        self.scaler = GradScaler(enabled=self.cfg.get("use_amp", True))
+        self.class_weights = class_weights
 
-        self.model = create_model(
-            cfg["num_classes"],
-            backbone_init=cfg.get("backbone_init", "1k"),
-            drop_path_rate=cfg.get("drop_path_rate", 0.0),
-        ).to(self.device)
+        self.model = create_model(cfg["num_classes"], cfg.get("stage1_ckpt", DEFAULT_STAGE1_CKPT)).to(self.device)
         # set_params(self.model)
         print(f"Trainable parameters: {sum(p.numel() for p in self.model.parameters() if p.requires_grad):,}")
 
-
         self.optim = AdamW(self.model.parameters(), lr=cfg["lr"], weight_decay=cfg["weight_decay"])
-        self.sched = CosineAnnealingLR(self.optim, T_max=cfg["epochs"])
-        self.crit = AsymmetricLoss(gamma_neg=2.0, gamma_pos=0.0, clip=0.05, reduction="mean")
 
+        # Per-optimizer-step warmup + cosine schedule.
+        # The old CosineAnnealingLR(T_max=epochs) stepped once per epoch, so with
+        # epochs=3 the LR hit 0 by epoch 3 (3e-5 -> 2.25e-5 -> 7.5e-6 -> 0) and
+        # every run peaked at epoch 1. Here the horizon is the true number of
+        # optimizer updates over the whole run, with a short linear warmup.
+        steps_per_epoch = math.ceil(cfg["train_size"] / cfg["batch_size"])
+        total_opt_steps = max(1, (cfg["epochs"] * steps_per_epoch) // cfg["accum_steps"])
+        warmup_steps = max(1, int(cfg.get("warmup_frac", 0.03) * total_opt_steps))
+        self._total_opt_steps = total_opt_steps
+
+        def _lr_lambda(cur_step: int) -> float:
+            if cur_step < warmup_steps:
+                return cur_step / warmup_steps
+            prog = (cur_step - warmup_steps) / max(1, total_opt_steps - warmup_steps)
+            return 0.5 * (1.0 + math.cos(math.pi * min(1.0, prog)))
+
+        self.sched = LambdaLR(self.optim, _lr_lambda)
+        logger.info(f"LR schedule: warmup {warmup_steps} / total {total_opt_steps} optimizer steps "
+                    f"(steps_per_epoch={steps_per_epoch}, accum={cfg['accum_steps']})")
+        self.crit = AsymmetricLoss(gamma_neg=self.cfg["gamma_neg"], gamma_pos=self.cfg["gamma_pos"],
+                                   clip=0.05, reduction="mean", class_weights=self.class_weights)
+        self.crit_triplet = nn.TripletMarginLoss(margin=self.cfg["margin"], p=2)
+        self.memory = CrossBatchMemoryV2(embedding_dim=self.cfg["embedding_dim"],memory_size=self.cfg["memory_size"], num_classes=30, device=self.device)
 
         C = cfg["num_classes"]
         self.map = MultilabelAveragePrecision(num_labels=C, average="macro").to(self.device)
@@ -602,10 +601,22 @@ class Trainer:
         self.ece = BinaryCalibrationError(n_bins=15, norm="l1").to(self.device)
 
         self.history = {
+            "stage1_ckpt": cfg.get("stage1_ckpt", DEFAULT_STAGE1_CKPT),
+            "triplet_cfg": {
+                "lambda_tri": cfg.get("lambda_tri", 0.1),
+                "entropy_mode": cfg.get("entropy_mode", "softmax"),
+                "anchor_rule": cfg.get("anchor_rule", "mean"),
+                "pos_min_shared": cfg.get("pos_min_shared", 1),
+                "mining": cfg.get("mining", "easy"),
+                "memory_size": cfg.get("memory_size"),
+                "margin": cfg.get("margin"),
+                "class_weight_order": cfg.get("class_weight_order", "shard"),
+            },
             "train_loss": [], "val_loss": [], "lr": [],
             "mAP": [], "mAUC": [], "mF1": [], "mECE": [],
             "best_epoch": None, "best_metric": None,
         }
+        logger.info(f"triplet cfg: {self.history['triplet_cfg']}")
 
         # Early stopping config
         self.monitor = cfg.get("monitor", "mAP")     # one of: "mAP", "mAUC", "mF1", "mECE", "val_loss"
@@ -629,144 +640,89 @@ class Trainer:
         self._save_json(self.history, os.path.join(out_dir, "history.json"))
         logger.info(f"Saved BEST checkpoint to: {out_dir}")
 
-    def _save_ckpt(self, out_dir: str, epoch: int):
-        """
-        Full training state for crash/preemption recovery: weights alone are not
-        enough to resume, since AdamW's moments and the cosine LR position both
-        have to carry over or the restarted run diverges from the original curve.
-
-        Written to a temp file then os.replace()'d, so a kill mid-write leaves
-        the previous checkpoint intact rather than a truncated one.
-        """
-        os.makedirs(out_dir, exist_ok=True)
-        ckpt = {
-            "epoch": epoch,
-            "model": self.model.state_dict(),
-            "optim": self.optim.state_dict(),
-            "sched": self.sched.state_dict(),
-            "scaler": self.scaler.state_dict(),
-            "early_stopping": self.es.state_dict(),
-            "history": self.history,
-            "cfg": self.cfg,
-            "amp_dtype": str(self.amp_dtype),
-            "rng": {
-                "python": random.getstate(),
-                "numpy": np.random.get_state(),
-                "torch": torch.get_rng_state(),
-                "cuda": torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None,
-            },
-        }
-        path = os.path.join(out_dir, "last.pth")
-        tmp = path + ".tmp"
-        torch.save(ckpt, tmp)
-        os.replace(tmp, path)
-
-    def _load_init_weights(self) -> None:
-        """
-        Warm start: seed the weights from a previous run's model_best.pth when
-        there is no last.pth to resume from. Optimizer moments and the cosine LR
-        position are NOT carried over - this is a fresh schedule over already
-        trained weights, not a continuation of the original curve, so the LR
-        should be lowered accordingly in cfg.
-
-        Skipped entirely when resuming, since last.pth already holds the weights.
-        """
-        path = self.cfg.get("init_weights")
-        if not path:
-            return
-        if not os.path.exists(path):
-            raise FileNotFoundError(f"init_weights not found: {path}")
-
-        sd = torch.load(path, map_location="cpu", weights_only=True)
-        missing, unexpected = self.model.load_state_dict(sd, strict=False)
-        self.model.to(self.device)
-        logger.info(
-            f"Warm-started weights from {path} "
-            f"(missing={len(missing)}, unexpected={len(unexpected)})"
-        )
-        if missing or unexpected:
-            logger.warning(f"missing={missing[:10]} unexpected={unexpected[:10]}")
-
-    def _try_resume(self, out_dir: str) -> int:
-        """
-        Returns the epoch to start from (1 if no checkpoint / resume disabled).
-        Loads to CPU first to avoid device-placement mismatches.
-        """
-        path = os.path.join(out_dir, "last.pth")
-        if not self.cfg.get("resume", True) or not os.path.exists(path):
-            return 1
-
-        try:
-            ckpt = torch.load(path, map_location="cpu", weights_only=False)
-        except Exception as e:
-            logger.warning(f"Could not read {path} ({e}) - starting from scratch.")
-            return 1
-
-        self.model.load_state_dict(ckpt["model"])
-        self.model.to(self.device)
-        self.optim.load_state_dict(ckpt["optim"])
-        self.sched.load_state_dict(ckpt["sched"])
-        self.scaler.load_state_dict(ckpt["scaler"])
-        self.es.load_state_dict(ckpt["early_stopping"])
-        self.history = ckpt["history"]
-
-        rng = ckpt.get("rng") or {}
-        try:
-            if rng.get("python"):
-                random.setstate(rng["python"])
-            if rng.get("numpy"):
-                np.random.set_state(rng["numpy"])
-            if rng.get("torch") is not None:
-                torch.set_rng_state(rng["torch"])
-            if rng.get("cuda") is not None and torch.cuda.is_available():
-                torch.cuda.set_rng_state_all(rng["cuda"])
-        except (TypeError, ValueError, RuntimeError) as e:
-            logger.warning(f"RNG state not restored ({e}); augmentation stream will differ.")
-
-        prev = str(ckpt.get("amp_dtype"))
-        if prev != str(self.amp_dtype):
-            logger.warning(f"Checkpoint used AMP {prev}, this run uses {self.amp_dtype}.")
-
-        start = int(ckpt["epoch"]) + 1
-        logger.info(
-            f"Resumed from {path}: completed epoch {ckpt['epoch']}, "
-            f"starting at {start} | best {self.monitor}={self.es.best} "
-            f"| bad_epochs={self.es.bad_epochs}"
-        )
-        return start
-
     # def _normalize(self, x: torch.Tensor) -> torch.Tensor:
     #     return normalize(x, mean=IMAGENET_DEFAULT_MEAN, std=IMAGENET_DEFAULT_STD)
 
     def train_one_epoch(self, loader, epoch: int) -> float:
         self.model.train()
         running = 0.0
+        accum_steps = self.cfg.get("accum_steps", 1)
+        self.optim.zero_grad(set_to_none=True)
 
-        limit = int(self.cfg.get("limit_train_batches", 0) or 0)
+        trip_hits = 0
+
         pbar = tqdm(loader, desc=f"Train {epoch}/{self.cfg['epochs']}", leave=False)
         for step, (x, y) in enumerate(pbar, start=1):
-            if limit and step > limit:
-                break
             x = preprocess_batch(x.to(self.device, non_blocking=True))
             y = y.to(self.device, non_blocking=True)
             if not torch.is_floating_point(y):
                 y = y.float()
 
-            self.optim.zero_grad(set_to_none=True)
-            with torch.autocast(device_type="cuda", dtype=self.amp_dtype, enabled=self.amp_enabled):
-                logits = self.model(x)
-            # AsymmetricLoss takes logs against eps=1e-8; keep it in fp32 for headroom.
-            loss = self.crit(logits.float(), y)
+            moe_aux = None
+
+            with autocast(enabled=self.cfg.get("use_amp", True)):
+                out = self.model(x)
+
+                if not isinstance(out, tuple):
+                    raise ValueError("Model must return (logits, embeddings) for triplet training.")
+
+                logits, embeddings = out
+
+                embeddings = embeddings.mean(dim=1)
+                embeddings = F.normalize(embeddings, dim=1)
+
+                trips = utils_update.sample_triplets_v12(
+                    embeddings, logits, y, self.memory,
+                    margin=self.cfg["margin"],
+                    anchor_rule=self.cfg.get("anchor_rule", "mean"),
+                    pos_min_shared=self.cfg.get("pos_min_shared", 1),
+                    mining=self.cfg.get("mining", "easy"),
+                    entropy_mode=self.cfg.get("entropy_mode", "softmax"),
+                )
+
+                if trips is None or len(trips) == 0:
+                    triplet_loss = embeddings.sum() * 0
+                else:
+                    trip_hits += 1
+                    anch, pos, neg = trips
+                    anch = F.normalize(anch, dim=-1)
+                    pos = F.normalize(pos, dim=-1)
+                    neg = F.normalize(neg, dim=-1)
+                    triplet_loss = self.crit_triplet(anch, pos, neg)
+
+                cls_loss = self.crit(logits, y)
+                loss = cls_loss + self.cfg.get("lambda_tri", 0.1) * triplet_loss
+
+                moe_aux = getattr(self.model, "last_aux_loss", None)
+                if moe_aux is not None:
+                    loss = loss + 0.005 * moe_aux
+
+            raw_loss = loss.detach()
+            loss = loss / accum_steps
 
             self.scaler.scale(loss).backward()
+
+            if step % accum_steps == 0:
+                self.scaler.step(self.optim)
+                self.scaler.update()
+                self.sched.step()
+                self.optim.zero_grad(set_to_none=True)
+
+            running += float(raw_loss.item())
+            self.memory.update(embeddings.detach(), y.detach())
+
+        if step % accum_steps != 0:
             self.scaler.step(self.optim)
             self.scaler.update()
+            self.sched.step()
+            self.optim.zero_grad(set_to_none=True)
 
-            running += float(loss.item())
-            pbar.set_postfix(loss=f"{loss.item():.4f}", lr=f"{self.sched.get_last_lr()[0]:.2e}")
+        pbar.set_postfix(loss=f"{loss.item():.4f}", lr=f"{self.sched.get_last_lr()[0]:.2e}")
 
-            if step % self.cfg["log_every"] == 0:
-                logger.info(f"[Epoch {epoch} Step {step}] train_loss(avg)={running/step:.4f} last_loss={loss.item():.4f}")
+        if step % self.cfg["log_every"] == 0:
+            logger.info(f"[Epoch {epoch} Step {step}] train_loss(avg)={running/step:.4f} last_loss={loss.item():.4f} moe_aux={moe_aux.item() if moe_aux is not None else 0.0:.4f}")
+
+        logger.info(f"[Epoch {epoch}] triplet hit rate = {trip_hits}/{step} ({100.0 * trip_hits / max(1, step):.1f}%)")
 
         return running / max(1, step)
 
@@ -776,20 +732,24 @@ class Trainer:
         self.map.reset(); self.auc.reset(); self.f1.reset(); self.ece.reset()
 
         running = 0.0
-        limit = int(self.cfg.get("limit_val_batches", 0) or 0)
         pbar = tqdm(loader, desc=f"Eval  {epoch}/{self.cfg['epochs']}", leave=False)
         for step, (x, y) in enumerate(pbar, start=1):
-            if limit and step > limit:
-                break
             x = preprocess_batch(x.to(self.device, non_blocking=True))
             y = y.to(self.device, non_blocking=True)
             if not torch.is_floating_point(y):
                 y = y.float()
 
-            with torch.autocast(device_type="cuda", dtype=self.amp_dtype, enabled=self.amp_enabled):
-                logits = self.model(x)
-            logits = logits.float()
-            loss = self.crit(logits, y)
+            # Evaluate in fp32: fp16 logits under autocast add noise to the
+            # sigmoid probabilities that feed mAP / ECE.
+            with autocast(enabled=False):
+                out = self.model(x.float())
+
+                if isinstance(out, tuple):
+                    logits = out[0]
+                else:
+                    logits = out
+
+                loss = self.crit(logits, y)
             running += float(loss.item())
 
             probs = torch.sigmoid(logits)
@@ -811,22 +771,15 @@ class Trainer:
     def fit(self, train_loader, val_loader, train_mapper=None):
         os.makedirs(self.cfg["out_dir"], exist_ok=True)
 
-        start_epoch = self._try_resume(self.cfg["out_dir"])
-        if start_epoch == 1:
-            self._load_init_weights()
-        best_epoch = self.history.get("best_epoch")
-
-        if start_epoch > self.cfg["epochs"]:
-            logger.info(f"Checkpoint already at epoch {start_epoch - 1}/{self.cfg['epochs']}; nothing to do.")
-            return
-
-        for epoch in range(start_epoch, self.cfg["epochs"] + 1):
+        best_epoch = None
+        for epoch in range(1, self.cfg["epochs"] + 1):
             if train_mapper is not None:
                 train_mapper.set_epoch(epoch)
 
             tr_loss = self.train_one_epoch(train_loader, epoch)
             va_loss, m = self.evaluate(val_loader, epoch)
-            self.sched.step()
+            # NOTE: self.sched is stepped per optimizer update inside
+            # train_one_epoch, not once per epoch.
 
             self.history["train_loss"].append(tr_loss)
             self.history["val_loss"].append(va_loss)
@@ -852,11 +805,6 @@ class Trainer:
                 self.history["best_metric"] = float(self.es.best)
                 self._save_best(self.cfg["out_dir"])
 
-            # Written every epoch, improved or not - an interrupted run has to
-            # resume from where it stopped, not from the last epoch that happened
-            # to improve the monitored metric.
-            self._save_ckpt(self.cfg["out_dir"], epoch)
-
             if self.es.should_stop:
                 logger.info(
                     f"Early stopping triggered at epoch {epoch}. "
@@ -879,10 +827,7 @@ def seed_everything(seed: int):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-
-
-def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: bool = True,
-                    img_size: int = SIZE):
+def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: bool = True):
     train_shards = sorted(Path(train_dir).glob("shard_*.tar"))
     val_shards = sorted(Path(val_dir).glob("shard_*.tar"))
 
@@ -898,24 +843,34 @@ def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: 
 
     logger.info(f"Train shards: {len(uri_train)} | Val shards: {len(uri_val)}")
 
-    train_mapper = DecodeAndTransform(is_train=True, size=img_size)
-    val_mapper = DecodeAndTransform(is_train=False, size=img_size)
-    logger.info(f"img_size={img_size}")
+    train_mapper = DecodeAndTransform(is_train=True, size=SIZE)
+    val_mapper = DecodeAndTransform(is_train=False, size=SIZE)
 
     if strict_repro:
-        # Strict mode:
-        # - no WebDataset shardshuffle
-        # - no WebDataset sample-buffer shuffle
-        # - deterministic shard order controlled above
+        # Strict mode: deterministic shard order (controlled above), no
+        # shardshuffle, but KEEP a seeded sample-buffer shuffle. Iterating
+        # samples in raw shard order gives highly correlated minibatches
+        # (same study / site / scanner) and biased gradients; a sample
+        # buffer decorrelates them while staying reproducible via seed_worker.
+        #
+        # SAMPLE_SHUFFLE_BUFSIZE (was 4000): this .shuffle() runs per
+        # DataLoader worker on raw, pre-decode sample bytes. Measured raw
+        # image size on this dataset averages ~6.65MB (up to 26.5MB), not
+        # the few-hundred-KB thumbnails WebDataset's usual buffer sizes
+        # assume. 4000 * 6.65MB * num_workers(8) ~= 213GB just to fill the
+        # buffers - this OOM-killed two prior jobs (44648 at 100G, 45700 at
+        # 150G) mid-way through the fill ramp, before any epoch completed.
+        # 1000 keeps the same decorrelation property at ~53GB total.
         train_ds = (
             wds.WebDataset(uri_train, shardshuffle=False)
+            .shuffle(SAMPLE_SHUFFLE_BUFSIZE)
             .map(train_mapper)
             .select(lambda x: x is not None)
         )
     else:
         train_ds = (
             wds.WebDataset(uri_train, shardshuffle=True)
-            .shuffle(32)
+            .shuffle(SAMPLE_SHUFFLE_BUFSIZE)
             .map(train_mapper)
             .select(lambda x: x is not None)
         )
@@ -930,70 +885,213 @@ def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: 
 
 
 def parse_args():
-    """CLI overrides for the cfg defaults below. No args -> the historical
-    full-30-epoch 384px/1k recipe, unchanged."""
+    """
+    accum_steps and seed are swept from the command line. out_dir is keyed on
+    both so concurrent runs (e.g. one accum_steps value x five seeds) never
+    overwrite each other's checkpoints.
+    """
     ap = argparse.ArgumentParser()
-    ap.add_argument("--epochs", type=int, default=30)
-    ap.add_argument("--patience", type=int, default=30)
-    ap.add_argument("--lr", type=float, default=4e-5)
+    ap.add_argument("--accum-steps", type=int, default=8,
+                    help="gradient accumulation steps; effective batch = batch_size * accum_steps. "
+                         "Default 8 per the accum_steps sweep (best balanced mAP/mF1/mAUC/mECE).")
+    ap.add_argument("--seed", type=int, default=42,
+                    help="seed for seed_everything(): torch/numpy/random init, weight init, "
+                         "dataloader shuffle order. Does NOT affect per-sample augmentation, "
+                         "which is keyed separately off --aug-base-seed so it stays identical "
+                         "across seeds and epochs for a given sample by default.")
+    ap.add_argument("--aug-base-seed", type=int, default=42,
+                    help="seeds per-sample augmentation (stable_seed_from_key). Independent of "
+                         "--seed by default so seed sweeps isolate model/dataloader stochasticity; "
+                         "pass equal to --seed for a full-stochasticity sweep.")
+    ap.add_argument("--out-dir", default=None,
+                    help="override the default ./checkpoint_Triplet_2/accum_<N>/seed_<S>/Model_<ts> path")
+    ap.add_argument("--stage1-ckpt", default=DEFAULT_STAGE1_CKPT,
+                    help="Stage-1 checkpoint to initialize from; relative to train/ or absolute. "
+                         "Default is the original ISBI submission Stage-1 (internal val mAP 0.385, "
+                         "paper Table 1). Pass checkpoint3/stage1_full30/model_best.pth for the "
+                         "under-trained lineage (0.377, paper Table 2).")
+
+    ap.add_argument("--num-classes", type=int, default=30)
+    ap.add_argument("--lr", type=float, default=1e-4,
+                    help="peak LR after warmup. Raised from 3e-5: with per-step "
+                         "warmup+cosine and an effective batch of 32 the old 3e-5 "
+                         "left stage-2 under-trained (best epoch was always 1).")
+    ap.add_argument("--embedding-dim", type=int, default=768)
     ap.add_argument("--weight-decay", type=float, default=1e-2)
-    ap.add_argument("--batch-size", type=int, default=32)
+    ap.add_argument("--memory-size", type=int, default=96)
+    ap.add_argument("--epochs", type=int, default=10,
+                    help="total epochs; the per-step cosine LR horizon is sized to "
+                         "epochs * steps_per_epoch / accum_steps.")
+    ap.add_argument("--patience", type=int, default=4)
+    ap.add_argument("--min-delta", type=float, default=0.0)
+    ap.add_argument("--warmup-frac", type=float, default=0.03,
+                    help="fraction of total optimizer steps spent in linear LR warmup")
+    ap.add_argument("--train-size", type=int, default=103300,
+                    help="approx number of training samples; only used to size the "
+                         "LR schedule horizon (WebDataset has no len). ~103.3k per "
+                         "the eb48/accum sweep logs.")
+    ap.add_argument("--gamma-neg", type=float, default=4.0)
+    ap.add_argument("--gamma-pos", type=float, default=0.0)
+    ap.add_argument("--monitor", default="mAP",
+                    choices=["mAP", "mAUC", "mF1", "mECE", "val_loss"])
+    ap.add_argument("--batch-size", type=int, default=8)
+    ap.add_argument("--no-amp", dest="use_amp", action="store_false", default=True,
+                    help="disable AMP (mixed precision); enabled by default")
     ap.add_argument("--num-workers", type=int, default=8)
-    ap.add_argument("--seed", type=int, default=42)
-    ap.add_argument("--img-size", type=int, default=SIZE,
-                    help="train/val square resize. Default 384 (historical). Stage-2 "
-                         "runs at 512; a 512 Stage-1 removes the train/infer mismatch.")
-    ap.add_argument("--backbone-init", default="1k", choices=["1k", "22k"],
-                    help="ImageNet-1k (default) or -22k ConvNeXt-B backbone init.")
-    ap.add_argument("--drop-path-rate", type=float, default=0.0,
-                    help="ConvNeXt2 stochastic depth. Stage-1 overfits ~epoch 7; "
-                         "0.1-0.2 is a cheap regulariser.")
-    ap.add_argument("--out-dir", default="./checkpoint/stage1_full30")
-    ap.add_argument("--no-resume", dest="resume", action="store_false", default=True)
-    ap.add_argument("--limit-train-batches", type=int, default=0, help="smoke: stop epoch after N")
-    ap.add_argument("--limit-val-batches", type=int, default=0, help="smoke: stop eval after N")
+    ap.add_argument("--val-num-workers", type=int, default=2)
+    ap.add_argument("--log-every", type=int, default=500)
+    ap.add_argument("--margin", type=float, default=0.5)
+    ap.add_argument("--disc", type=int, default=0, choices=[0, 1, 2])
+
+    # --- entropy-gated triplet knobs (paper method + ablations) ---
+    ap.add_argument("--lambda-tri", type=float, default=0.1,
+                    help="weight of the triplet term: loss = ASL + lambda_tri * triplet. "
+                         "Was a hard-coded 0.1.")
+    ap.add_argument("--entropy-mode", default="softmax", choices=["binary", "softmax"],
+                    help="predictive entropy used for anchor gating. 'softmax' = paper Eq.(1) / "
+                         "original code (single-label form) -- kept as the DEFAULT so in-flight "
+                         "sweeps are unaffected. 'binary' = per-label Bernoulli entropy of "
+                         "sigmoid(logits), the multi-label-correct form; the B0 re-run scripts "
+                         "pass it explicitly.")
+    ap.add_argument("--anchor-rule", default="mean", choices=["mean", "max", "all", "random"],
+                    help="which batch samples become triplet anchors. 'mean' = above batch-mean "
+                         "entropy (shipped). 'max' = the single most-uncertain sample (paper Eq.2). "
+                         "'all' / 'random' = ablation controls.")
+    ap.add_argument("--pos-min-shared", type=int, default=1,
+                    help="min shared labels for a memory-bank positive. 1 = shipped; 2 = paper "
+                         "Eq.(3) (y_m . y_i > 1).")
+    ap.add_argument("--mining", default="easy", choices=["easy", "hard", "semihard"],
+                    help="'easy' = closest positive + farthest negative (shipped; noise-robust). "
+                         "'hard' = batch-hard. 'semihard' = FaceNet-style.")
+    ap.add_argument("--class-weight-order", default="shard", choices=["shard", "csv"],
+                    help="'shard' (DEFAULT) = align ASL class_weights to the model's logit order "
+                         "via label_info.pt -- the correct mapping. 'csv' = reproduce the "
+                         "published index-scramble bug (weights computed in CSV column order, "
+                         "applied positionally to shard-order logits); used only by the "
+                         "class-weight impact probe.")
+    ap.add_argument("--train-shards-dir", default="/data/psytp7/wds_shards_train_raw")
+    ap.add_argument("--val-shards-dir", default="/data/psytp7/wds_shards_val_raw")
+    ap.add_argument("--no-strict-repro", dest="strict_repro", action="store_false", default=True,
+                    help="disable strict reproducibility (webdataset shardshuffle/sample-buffer "
+                         "shuffle instead of deterministic shard order); enabled by default")
+
     return ap.parse_args()
 
 
 def main():
     args = parse_args()
+    # device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    # print(f"Using device: {device}")
+
+    # AUG_BASE_SEED defaults to the same constant as before (42); overridable via
+    # --aug-base-seed. stable_seed_from_key() reads this module global as its default
+    # base_seed param, so setting it here before any augmentation call is sufficient.
+    global AUG_BASE_SEED
+    AUG_BASE_SEED = args.aug_base_seed
+
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
-    logger.info(f"Run log: {setup_run_log_file('./logs', ts)}")
     cfg = {
-        "num_classes": 30,
+        "num_classes": args.num_classes,
+        # "ckpt_path": "MedViT_base_im1k.pth",
         "lr": args.lr,
+        "embedding_dim": args.embedding_dim,
         "weight_decay": args.weight_decay,
+        "memory_size": args.memory_size,
         "epochs": args.epochs,
-        # Run 41730 stopped at epoch 10 because patience=3 fired on an mAP that
-        # peaked at epoch 7. Set to epochs so early stopping cannot cut the run
-        # short - this is a deliberate full-30-epoch curve, not a search.
         "patience": args.patience,
-        "min_delta": 0.0,
-        "monitor": "mAP",
+        "min_delta": args.min_delta,
+        "warmup_frac": args.warmup_frac,
+        "train_size": args.train_size,
+        "gamma_neg": args.gamma_neg,
+        "gamma_pos": args.gamma_pos,
+        "monitor": args.monitor,
         "batch_size": args.batch_size,
+        "accum_steps": args.accum_steps,
+        "use_amp": args.use_amp,
         "num_workers": args.num_workers,
-        "val_num_workers": 2,
-        "log_every": 500,
-        "out_dir": args.out_dir,
-        "img_size": args.img_size,
-        "backbone_init": args.backbone_init,
-        "drop_path_rate": args.drop_path_rate,
-        "limit_train_batches": args.limit_train_batches,
-        "limit_val_batches": args.limit_val_batches,
-        # Fresh run from the ImageNet init: no warm start. (_load_init_weights
-        # stays available - set a path here to warm-start a future run.)
-        "init_weights": None,
+        "val_num_workers": args.val_num_workers,
+        "log_every": args.log_every,
+        "margin": args.margin,
+        "disc": args.disc,
+        "lambda_tri": args.lambda_tri,
+        "entropy_mode": args.entropy_mode,
+        "anchor_rule": args.anchor_rule,
+        "pos_min_shared": args.pos_min_shared,
+        "mining": args.mining,
+        "class_weight_order": args.class_weight_order,
         "train_shards_dir": "/data/psytp7/wds_shards_train_raw",
         "val_shards_dir": "/data/psytp7/wds_shards_val_raw",
         "seed": args.seed,
-        "strict_repro": True,
-        # Auto-resume from out_dir/last.pth when present; set False to force a fresh run.
-        "resume": args.resume,
+        "strict_repro": args.strict_repro,
+        "stage1_ckpt": args.stage1_ckpt,
     }
+
+    # Set after the literal: an f-string reading cfg[...] inside the dict that
+    # defines cfg raises NameError, since the name is not bound until the
+    # assignment completes.
+    cfg["out_dir"] = args.out_dir or (
+        f"./checkpoint_Triplet_2/accum_{cfg['accum_steps']}/seed_{cfg['seed']}/Model_{ts}"
+    )
 
     SEED = cfg["seed"]
 
     seed_everything(SEED)
+    logger.info(f"accum_steps={cfg['accum_steps']} seed={cfg['seed']} aug_base_seed={AUG_BASE_SEED} "
+                f"epochs={cfg['epochs']} patience={cfg['patience']} "
+                f"(effective batch = {cfg['batch_size'] * cfg['accum_steps']}) "
+                f"| out_dir={cfg['out_dir']}")
+
+    # Compute label factors if using discounted weights (optional)
+    df = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "CXRLT_2026_training_filtered.csv"))
+    label_cols = df.columns[3:]  # adjust if your CSV format is different
+    # y_trn = df[label_cols].values
+    # lcounts = np.sum(y_trn, axis=0)
+
+    labels_np = df[label_cols].values.astype(np.float32)
+
+    # CAS
+    N = labels_np.shape[0]
+    lcounts = labels_np.sum(axis=0)
+    class_freq = lcounts / N
+
+    print("Label counts:", lcounts)
+    print("Class freq:", class_freq)
+
+    class_weights = np.log(1.0 / (class_freq + 1e-8))
+    class_weights = class_weights / class_weights.mean()
+    class_weights = np.clip(class_weights, 0.5, 2.0)
+    # NB: `class_weights` is currently aligned to `label_cols` == CSV column order.
+    print("class_weights (CSV order): ", class_weights)
+
+    # The model's 30 logits are in webdataset/label_info.pt order (= sorted(names)),
+    # NOT CSV column order. Applying `class_weights` positionally without this
+    # remap is the published bug (index 0 weight = Normal's 0.5, applied to
+    # Emphysema). --class-weight-order csv reproduces it for the impact probe.
+    csv_names = list(label_cols)
+    if cfg["class_weight_order"] == "shard":
+        _li = torch.load(os.path.join(cfg["train_shards_dir"], "label_info.pt"),
+                         weights_only=False)
+        shard_names = list(_li["class_names"])
+        if sorted(shard_names) != sorted(csv_names):
+            raise ValueError("label_info.pt vs CSV label sets differ")
+        remap = [csv_names.index(n) for n in shard_names]
+        class_weights = class_weights[remap]
+        print("class_weights reindexed CSV -> shard (logit) order:")
+        for n, w in zip(shard_names, class_weights):
+            print(f"    {n:<32} {float(w):.3f}")
+    else:
+        print("WARNING: --class-weight-order csv: weights stay in CSV order "
+              "(reproduces the published ordering bug)")
+
+    if cfg["disc"] == 1:
+        ranks = np.argsort(np.argsort(lcounts)) + 1
+        factors = 1 / (np.log(ranks + 1))
+    elif cfg["disc"] == 2:
+        factors = 1 / (np.log(lcounts + 2))
+    else:
+        factors = np.ones(len(label_cols))
+
+    print("Factors:", factors)
 
     g_torch = torch.Generator()
     g_torch.manual_seed(SEED)
@@ -1003,7 +1101,6 @@ def main():
         cfg["val_shards_dir"],
         seed=SEED,
         strict_repro=cfg["strict_repro"],
-        img_size=cfg["img_size"],
     )
 
     def seed_worker(worker_id):
@@ -1032,7 +1129,8 @@ def main():
         persistent_workers=False,
     )
 
-    trainer = Trainer(cfg)
+    #trainer = Trainer(cfg)
+    trainer = Trainer(cfg, class_weights)
     trainer.fit(train_loader, val_loader, train_mapper=train_mapper)
 
 

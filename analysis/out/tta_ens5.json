@@ -1,0 +1,20 @@
+{
+  "val_mAP": 0.45207691192626953,
+  "val_mAUC": 0.9059811234474182,
+  "val_mF1": 0.4589892625808716,
+  "val_mECE": 0.129280686378479,
+  "checkpoints": [
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/seedsweep/seed_1024/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/seedsweep/seed_123/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/seedsweep/seed_86/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/sweep2/dp01/seed_86/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/sweep2/fix_only/seed_86/Model_run/model_best.pth"
+  ],
+  "n_models": 5,
+  "tta_flip": true,
+  "scales": [
+    512
+  ],
+  "logit_avg": false,
+  "evaluated_at": "20260910_152152"
+}

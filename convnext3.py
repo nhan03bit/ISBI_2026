@@ -5,8 +5,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from moe import MoETop2MLP, MoETop2FFN #type: ignore
-from convnext import ConvNeXt2, LayerNorm, DropPath
+from convnext import Block, LayerNorm, DropPath, trunc_normal_
 from ml_decoder import Decoder, _get_activation_module
+from positional_encodings.torch_encodings import PositionalEncoding2D, Summer
 
 
 class BlockMoE(nn.Module):
@@ -222,31 +223,136 @@ class DecoderMoE(Decoder):
         return logits
 
 
-def build_convnext3(
-    in_chans=3,
-    num_classes=1000,
-    depths=[3, 3, 27, 3, 2],
-    dims=[128, 256, 512, 1024, 1024],
-    drop_path_rate=0.,
-    layer_scale_init_value=1e-6,
-    moe_n_experts: int = 6,
-    decoder_num_layers: int = 2,
-):
+class ConvNeXt3(nn.Module):
     """
     ConvNeXt2 flow + MoE:
       - MoE in MLP part of blocks in last 2 stages (stage indices 3 and 4)
       - MoE in Decoder FFN after CA only
     """
-    return ConvNeXt2(
-        in_chans=in_chans,
-        num_classes=num_classes,
-        depths=depths,
-        dims=dims,
-        drop_path_rate=drop_path_rate,
-        layer_scale_init_value=layer_scale_init_value,
-        moe_stages=(3, 4),
-        block_moe_cls=BlockMoE,
-        moe_block_kwargs={"n_experts": moe_n_experts},
-        head_cls=DecoderMoE,
-        head_kwargs={"n_experts": moe_n_experts, "num_layers": decoder_num_layers, "num_of_groups": 100},
-    )
+    def __init__(
+        self,
+        in_chans=3,
+        num_classes=1000,
+        depths=[3, 3, 27, 3, 2],
+        dims=[128, 256, 512, 1024, 1024],
+        drop_path_rate=0.,
+        layer_scale_init_value=1e-6,
+        head_init_scale=1.,
+        moe_n_experts: int = 6,
+    ):
+        super().__init__()
+        assert len(depths) == len(dims) == 5, "ConvNeXt3 expects 5-stage (/64) config."
+
+        # ---- Downsample layers (identical naming/structure as ConvNeXt2) ----
+        self.downsample_layers = nn.ModuleList()
+        stem = nn.Sequential(
+            nn.Conv2d(in_chans, dims[0], kernel_size=4, stride=4),
+            LayerNorm(dims[0], eps=1e-6, data_format="channels_first"),
+        )
+        self.downsample_layers.append(stem)
+
+        for i in range(3):
+            downsample_layer = nn.Sequential(
+                LayerNorm(dims[i], eps=1e-6, data_format="channels_first"),
+                nn.Conv2d(dims[i], dims[i + 1], kernel_size=2, stride=2),
+            )
+            self.downsample_layers.append(downsample_layer)
+
+        extra_downsample = nn.Sequential(
+            LayerNorm(dims[3], eps=1e-6, data_format="channels_first"),
+            nn.Conv2d(dims[3], dims[4], kernel_size=2, stride=2),
+        )
+        self.downsample_layers.append(extra_downsample)
+
+        # ---- Stages ----
+        self.stages = nn.ModuleList()
+        dp_rates = [x.item() for x in torch.linspace(0, drop_path_rate, sum(depths))]
+        cur = 0
+        for i in range(5):
+            BlockCls = BlockMoE if i in (3, 4) else Block  # MoE only in last 2 stages
+            stage = nn.Sequential(
+                *[
+                    BlockCls(
+                        dim=dims[i],
+                        drop_path=dp_rates[cur + j],
+                        layer_scale_init_value=layer_scale_init_value,
+                        **({"n_experts": moe_n_experts} if BlockCls is BlockMoE else {})
+                    )
+                    for j in range(depths[i])
+                ]
+            )
+            self.stages.append(stage)
+            cur += depths[i]
+
+        # ---- Head (MoE decoder) ----
+        self.head = DecoderMoE(
+            num_classes=num_classes,
+            initial_num_features=dims[-1],
+            decoder_embedding=768,
+            num_of_groups=100,
+            num_layers=2,
+            activation="gelu",
+            n_experts=moe_n_experts,
+        )
+
+        self.pos_encoding = Summer(PositionalEncoding2D(dims[-1]))
+
+        self.apply(self._init_weights)
+
+        self.last_aux_loss = None
+
+    def _init_weights(self, m):
+        if isinstance(m, (nn.Conv2d, nn.Linear)):
+            trunc_normal_(m.weight, std=0.02)
+            if getattr(m, "bias", None) is not None:
+                nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.LayerNorm):
+
+            
+            nn.init.constant_(m.weight, 1.0)
+            nn.init.constant_(m.bias, 0)
+        elif isinstance(m, nn.MultiheadAttention):
+            trunc_normal_(m.in_proj_weight, std=0.02)
+            if m.in_proj_bias is not None:
+                nn.init.constant_(m.in_proj_bias, 0)
+            trunc_normal_(m.out_proj.weight, std=0.02)
+            if m.out_proj.bias is not None:
+                nn.init.constant_(m.out_proj.bias, 0)
+
+    def forward_features(self, x):
+        for i in range(5):
+            x = self.downsample_layers[i](x)
+            x = self.stages[i](x)
+        return x
+
+    def forward(self, x):
+        x = self.forward_features(x)
+        x = self.pos_encoding(x)
+
+        logits = self.head(x)
+
+        # aggregate aux losses from ConvNeXt MoE blocks + decoder MoE
+        aux = 0.0
+        cnt = 0
+        for si in (3, 4):
+            for blk in self.stages[si]:
+                if getattr(blk, "last_aux_loss", None) is not None:
+                    aux = aux + blk.last_aux_loss
+                    cnt += 1
+
+        if getattr(self.head, "last_aux_loss", None) is not None:
+            aux = aux + self.head.last_aux_loss
+            cnt += 1
+
+        self.last_aux_loss = aux / max(cnt, 1) if cnt > 0 else torch.tensor(0.0, device=logits.device)
+
+        return logits
+
+# model = ConvNeXt3(
+#         depths=[3, 3, 27, 3, 2],
+#         dims=[128, 256, 512, 1024, 1024],
+#         num_classes=4,
+#         moe_n_experts=4,
+#     )
+
+# print(model)

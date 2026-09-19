@@ -384,6 +384,15 @@ class Decoder(nn.Module):
 
         h = tgt.transpose(0, 1)  # (B,Q,D)
 
+        # Expose the decoded per-class query embeddings for downstream metric
+        # learning (train_2_v3.py). This is the (B, Q, D) tensor the entropy
+        # paper describes as the triplet embedding source; other callers
+        # (train.py stage-1, evaluate.py) simply ignore this attribute.
+        # Note: the decoder here uses num_of_groups grouped queries (Q may be
+        # < num_classes when duplicate_factor > 1); with num_classes=30 and
+        # num_of_groups>=30 this is one query per class.
+        self.last_h = h
+
         out_extrap = torch.zeros(
             B, h.size(1), self.duplicate_factor,
             device=h.device, dtype=h.dtype
@@ -393,7 +402,7 @@ class Decoder(nn.Module):
 
         logits = out_extrap.flatten(1)[:, :self.num_classes]
         logits += self.duplicate_pooling_bias
-        return logits
+        return logits, embedding_spatial
 
 
 
