@@ -2,3 +2,28 @@
 __pycache__/
 .claude/*
 logs/
+
+# large experiment/sweep checkpoint dumps (not source, too large for LFS quota)
+checkpoint/_s1_smoke/
+checkpoint/stage1_full30/
+train/checkpoint3/
+train/checkpoint_Triplet_2/
+train/checkpoint_Triplet_3/
+
+# machine-local data symlinks
+wds_shards_train_raw
+wds_shards_val_raw
+
+# editor-local settings
+.vscode/
+
+# backup files
+*.bak
+*.bak2
+
+# LaTeX build artifacts
+docs/paper.aux
+docs/paper.fdb_latexmk
+docs/paper.fls
+docs/paper.log
+docs/paper.synctex.gz

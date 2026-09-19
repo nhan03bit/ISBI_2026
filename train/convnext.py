@@ -5,13 +5,14 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from timm.models.layers import trunc_normal_, DropPath
 from timm.models.registry import register_model
-from ml_decoder import Decoder, Query2Label
+from ml_decoder import Decoder
+#from ml_decoder import Decoder
+import torch.nn.functional as F
 
 class Block(nn.Module):
     r""" ConvNeXt Block. There are two equivalent implementations:
@@ -342,7 +343,7 @@ class Block(nn.Module):
     def __init__(self, dim, drop_path=0., layer_scale_init_value=1e-6):
         super().__init__()
         self.dwconv = nn.Conv2d(dim, dim, kernel_size=7, padding=3, groups=dim)
-        self.norm = LayerNorm(dim, eps=1e-6)  
+        self.norm = LayerNorm(dim, eps=1e-6)  # channels_last LN in your implementation
         self.pwconv1 = nn.Linear(dim, 4 * dim)
         self.act = nn.GELU()
         self.pwconv2 = nn.Linear(4 * dim, dim)
@@ -431,6 +432,7 @@ class ConvNeXt2(nn.Module):
             self.stages.append(stage)
             cur += depths[i]
 
+        # ---- Head: MLDecoder (unchanged) ----
         self.head = Decoder(
             num_classes=num_classes,
             initial_num_features=dims[-1],
@@ -439,10 +441,8 @@ class ConvNeXt2(nn.Module):
             num_layers=2,
             activation="gelu",
         )
-        # self.cls = nn.Linear(dims[-1], num_classes)
 
         self.pos_encoding = Summer(PositionalEncoding2D(dims[-1]))
-        # print("Pos encoding shape: ", self.pos_encoding.shape)
 
         self.apply(self._init_weights)
         # (Optional scaling, as in original ConvNeXt)
@@ -475,11 +475,47 @@ class ConvNeXt2(nn.Module):
     def forward(self, x):
         x = self.forward_features(x)
         x = self.pos_encoding(x)   # (B, C, H, W)
-        x = self.head(x)
-        return x
+        x, embedding_spatial = self.head(x)
+        return x, embedding_spatial
 
 
+class ConvNext2Triplet(nn.Module):
+    def __init__(self, base_model):
+        super().__init__()
+        self.base = base_model
+        self.fc1 = nn.Linear(30, 1024)
+    def forward(self, x):
+        x,embedding_spatial = self.base(x)
+        x_fc1 = F.leaky_relu(self.fc1(x), negative_slope=0.01)
+        return x_fc1
 
+
+class ConvNext2TripletClasify(nn.Module):
+    def __init__(self, base_model, num_classes=30):
+        super().__init__()
+        self.base = base_model
+        self.num_classes = num_classes
+        self.fc2 = None  # lazy initialization
+
+    def forward(self, x):
+        # base may return a tuple
+        out = self.base(x)
+
+        # unpack features
+        if isinstance(out, tuple):
+            x = out[0]  # use only the first element (features)
+        else:
+            x = out
+
+        # x should now be a tensor
+        # lazy init fc2 if needed
+        if self.fc2 is None:
+            self.fc2 = nn.Linear(x.shape[1], self.num_classes).to(x.device)
+
+        # map to num_classes
+        x_fc2 = self.fc2(x)
+        return x_fc2
+    
 if __name__ == "__main__":
     model = ConvNeXt2(depths=[3, 3, 27, 3, 2], 
                       dims=[128, 256, 512, 1024, 1024], 

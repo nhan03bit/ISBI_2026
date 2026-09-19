@@ -1,0 +1,17 @@
+# Runtime dependencies for train_2_v2.py.
+# Install a CUDA-compatible PyTorch build when GPU training is required:
+# https://pytorch.org/get-started/locally/
+torch>=2.1
+torchvision>=0.16
+
+albumentations>=1.4
+einops>=0.7
+numpy>=1.24
+opencv-python-headless>=4.8
+pandas>=2.0
+Pillow>=10.0
+positional-encodings>=6.0
+timm>=0.9
+torchmetrics>=1.2
+tqdm>=4.66o
+webdataset>=0.2

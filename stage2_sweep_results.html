@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stage-2 Accumulation Sweep Results</title>
+    <style>
+        :root {
+            --bg-light: #ffffff;
+            --bg-dark: #0d1117;
+            --text-light: #000;
+            --text-dark: #e6edf3;
+            --border-light: #d0d7de;
+            --border-dark: #30363d;
+            --best-light: #d3f9d8;
+            --best-dark: #0e4620;
+            --a6000-light: #e7f5ff;
+            --a6000-dark: #0c2340;
+            --ada-light: #fff3cd;
+            --ada-dark: #332701;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-light);
+            margin: 0;
+            padding: 20px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            body {
+                background-color: var(--bg-dark);
+                color: var(--text-dark);
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            font-size: 13px;
+            color: #666;
+            margin: 0 0 20px 0;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .subtitle { color: #8b949e; }
+        }
+
+        .legend {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .legend-swatch {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--border-light);
+            background-color: var(--bg-light);
+            font-size: 13px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            table { border-color: var(--border-dark); background-color: var(--bg-dark); }
+        }
+
+        th {
+            background-color: #f6f8fa;
+            border: 1px solid var(--border-light);
+            padding: 12px;
+            text-align: right;
+            font-weight: 600;
+            height: 60px;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            th { background-color: #161b22; border-color: var(--border-dark); }
+        }
+
+        th:first-child {
+            text-align: center;
+        }
+
+        td {
+            border: 1px solid var(--border-light);
+            padding: 10px 12px;
+            text-align: right;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            td { border-color: var(--border-dark); }
+        }
+
+        td:first-child {
+            text-align: center;
+            font-weight: 600;
+            background-color: #f6f8fa;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            td:first-child { background-color: #161b22; }
+        }
+
+        .best {
+            background-color: var(--best-light);
+            font-weight: 600;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .best {
+                background-color: var(--best-dark);
+            }
+        }
+
+        .a6000 {
+            background-color: var(--a6000-light);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .a6000 { background-color: var(--a6000-dark); }
+        }
+
+        .ada {
+            background-color: var(--ada-light);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            .ada { background-color: var(--ada-dark); }
+        }
+
+        .node-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        th div {
+            writing-mode: horizontal-tb;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Stage-2 Gradient Accumulation Sweep</h1>
+        <div class="subtitle">
+            12 single-epoch runs, accum_steps ∈ {3,4,5,7,8,9,10,11,12,13,14,15} | seed=42 | epochs=1, patience=1
+        </div>
+
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-swatch" style="background-color: var(--best-light);"></div>
+                <span>Best in metric (A6000 only)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-swatch" style="background-color: var(--a6000-light);"></div>
+                <span>A6000 hardware (comparable)</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-swatch" style="background-color: var(--ada-light);"></div>
+                <span>Ada hardware (~0.0012 mAP bias)</span>
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>accum</th>
+                    <th><div>eff<br/>batch</div></th>
+                    <th><div>train<br/>loss</div></th>
+                    <th><div>val<br/>loss</div></th>
+                    <th><div>mAP</div></th>
+                    <th><div>mAUC</div></th>
+                    <th><div>mF1</div></th>
+                    <th><div>mECE</div></th>
+                    <th><div>node</div></th>
+                </tr>
+            </thead>
+            <tbody id="table-body">
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const data = [
+            {accum:3,eff_batch:24,train_loss:0.04479,val_loss:0.05215,mAP:0.4170,mAUC:0.8892,mF1:0.4073,mECE:0.1551,node:"A6000"},
+            {accum:4,eff_batch:32,train_loss:0.04437,val_loss:0.05205,mAP:0.4173,mAUC:0.8874,mF1:0.4111,mECE:0.1521,node:"Ada"},
+            {accum:5,eff_batch:40,train_loss:0.04408,val_loss:0.05215,mAP:0.4171,mAUC:0.8878,mF1:0.4164,mECE:0.1536,node:"Ada"},
+            {accum:7,eff_batch:56,train_loss:0.04376,val_loss:0.05247,mAP:0.4171,mAUC:0.8898,mF1:0.4202,mECE:0.1548,node:"A6000"},
+            {accum:8,eff_batch:64,train_loss:0.04363,val_loss:0.05198,mAP:0.4163,mAUC:0.8899,mF1:0.4212,mECE:0.1513,node:"A6000"},
+            {accum:9,eff_batch:72,train_loss:0.04355,val_loss:0.05175,mAP:0.4142,mAUC:0.8903,mF1:0.4171,mECE:0.1476,node:"A6000"},
+            {accum:10,eff_batch:80,train_loss:0.04351,val_loss:0.05161,mAP:0.4136,mAUC:0.8905,mF1:0.4176,mECE:0.1442,node:"A6000"},
+            {accum:11,eff_batch:88,train_loss:0.04350,val_loss:0.05153,mAP:0.4135,mAUC:0.8905,mF1:0.4174,mECE:0.1440,node:"A6000"},
+            {accum:12,eff_batch:96,train_loss:0.04348,val_loss:0.05137,mAP:0.4136,mAUC:0.8907,mF1:0.4196,mECE:0.1433,node:"A6000"},
+            {accum:13,eff_batch:104,train_loss:0.04351,val_loss:0.05145,mAP:0.4148,mAUC:0.8910,mF1:0.4161,mECE:0.1437,node:"Ada"},
+            {accum:14,eff_batch:112,train_loss:0.04342,val_loss:0.05148,mAP:0.4137,mAUC:0.8910,mF1:0.4189,mECE:0.1447,node:"A6000"},
+            {accum:15,eff_batch:120,train_loss:0.04346,val_loss:0.05158,mAP:0.4149,mAUC:0.8915,mF1:0.4175,mECE:0.1487,node:"Ada"}
+        ];
+
+        // Find best values among A6000 runs only
+        const a6000 = data.filter(r => r.node === "A6000");
+        const best = {
+            train_loss: Math.min(...a6000.map(r => r.train_loss)),
+            val_loss: Math.min(...a6000.map(r => r.val_loss)),
+            mAP: Math.max(...a6000.map(r => r.mAP)),
+            mAUC: Math.max(...a6000.map(r => r.mAUC)),
+            mF1: Math.max(...a6000.map(r => r.mF1)),
+            mECE: Math.min(...a6000.map(r => r.mECE))
+        };
+
+        const tbody = document.getElementById('table-body');
+        data.forEach(row => {
+            const tr = document.createElement('tr');
+            const isA6000 = row.node === "A6000";
+            const rowClass = isA6000 ? "a6000" : "ada";
+
+            tr.innerHTML = `
+                <td class="${rowClass}">${row.accum}</td>
+                <td class="${rowClass}">${row.eff_batch}</td>
+                <td class="${rowClass} ${isA6000 && Math.abs(row.train_loss - best.train_loss) < 0.00001 ? 'best' : ''}">${row.train_loss.toFixed(5)}</td>
+                <td class="${rowClass} ${isA6000 && Math.abs(row.val_loss - best.val_loss) < 0.00001 ? 'best' : ''}">${row.val_loss.toFixed(5)}</td>
+                <td class="${rowClass} ${isA6000 && Math.abs(row.mAP - best.mAP) < 0.00001 ? 'best' : ''}">${row.mAP.toFixed(4)}</td>
+                <td class="${rowClass} ${isA6000 && Math.abs(row.mAUC - best.mAUC) < 0.00001 ? 'best' : ''}">${row.mAUC.toFixed(4)}</td>
+                <td class="${rowClass} ${isA6000 && Math.abs(row.mF1 - best.mF1) < 0.00001 ? 'best' : ''}">${row.mF1.toFixed(4)}</td>
+                <td class="${rowClass} ${isA6000 && Math.abs(row.mECE - best.mECE) < 0.00001 ? 'best' : ''}">${row.mECE.toFixed(4)}</td>
+                <td class="${rowClass}"><span class="node-label">${row.node}</span></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    </script>
+</body>
+</html>

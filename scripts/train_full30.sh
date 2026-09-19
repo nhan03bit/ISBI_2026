@@ -1,11 +1,11 @@
 #!/bin/bash
-#SBATCH -J "isbi2026_stage1"
+#SBATCH -J "isbi2026_stage1_full30"
 #SBATCH -p amp20
 #SBATCH -G 1
 #SBATCH -c 8
 #SBATCH --mem=64G
-#SBATCH --time=30-00:00:00
-#SBATCH -o /home/psytp7/logs/isbi2026_stage1_%j.out
+#SBATCH --time=72:00:00
+#SBATCH -o /home/psytp7/logs/%x_%j.out
 
 set -euo pipefail
 
