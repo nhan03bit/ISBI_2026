@@ -1,0 +1,17 @@
+{
+  "single": {
+    "dp01__seed_86__model_best@512_flip.npy": 0.4428672790527344,
+    "res_sweep__img640_seed1024__model_best@640_flip.npy": 0.45259517431259155,
+    "res_sweep__img640_seed86__model_best@640_flip.npy": 0.448545902967453,
+    "res_sweep__img768_seed86__model_best@768_flip.npy": 0.45703426003456116,
+    "seedsweep__seed_1024__model_best@512_flip.npy": 0.44801566004753113,
+    "seedsweep__seed_42__model_best@512_flip.npy": 0.44326791167259216
+  },
+  "chosen": [
+    "res_sweep__img768_seed86__model_best@768_flip.npy",
+    "res_sweep__img640_seed86__model_best@640_flip.npy",
+    "seedsweep__seed_1024__model_best@512_flip.npy"
+  ],
+  "ensemble_mAP": 0.46408194303512573,
+  "n_val": 17270
+}

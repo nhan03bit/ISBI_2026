@@ -1,0 +1,43 @@
+{
+  "val_mAP": 0.45948323607444763,
+  "val_mAUC": 0.9098033308982849,
+  "val_mF1": 0.46714505553245544,
+  "val_mECE": 0.1335783749818802,
+  "checkpoints": [
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/res_sweep/img768_seed86/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/res_sweep/img640_seed1024/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/res_sweep/img640_seed86/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/seedsweep/seed_1024/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/seedsweep/seed_42/Model_run/model_best.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/sweep2/dp01/seed_86/Model_run/model_best.pth"
+  ],
+  "scales_per_checkpoint": [
+    [
+      768
+    ],
+    [
+      640
+    ],
+    [
+      640
+    ],
+    [
+      512
+    ],
+    [
+      512
+    ],
+    [
+      512
+    ]
+  ],
+  "n_models": 6,
+  "tta_flip": false,
+  "scales": [
+    512,
+    640,
+    768
+  ],
+  "logit_avg": false,
+  "evaluated_at": "20260925_123305"
+}
