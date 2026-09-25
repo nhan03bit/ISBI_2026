@@ -25,7 +25,7 @@ args = sys.argv[1:]
 show_curve = "--epochs" in args
 all_runs = "--all-runs" in args  # keep every log, not just newest per arm
 args = [a for a in args if a not in ("--epochs", "--all-runs")]
-pat = "isbi2026_v3*" if "--all" in args else "isbi2026_ev*"  # v3s2_* + v3seed_*
+pat = "isbi2026_v3*" if "--all" in args else "isbi2026_*"  # v3s2_* + v3seed_*
 args = [a for a in args if a != "--all"]
 if args:
     pat = args[0]
