@@ -1,0 +1,50 @@
+[
+  {
+    "file": "res_sweep__img768_seed86__model_best@768.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/res_sweep/img768_seed86/Model_run/model_best.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": false
+  },
+  {
+    "file": "res_sweep__img640_seed1024__model_best@640.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/res_sweep/img640_seed1024/Model_run/model_best.pth",
+    "scales": [
+      640
+    ],
+    "tta_flip": false
+  },
+  {
+    "file": "res_sweep__img640_seed86__model_best@640.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/res_sweep/img640_seed86/Model_run/model_best.pth",
+    "scales": [
+      640
+    ],
+    "tta_flip": false
+  },
+  {
+    "file": "seedsweep__seed_1024__model_best@512.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/seedsweep/seed_1024/Model_run/model_best.pth",
+    "scales": [
+      512
+    ],
+    "tta_flip": false
+  },
+  {
+    "file": "seedsweep__seed_42__model_best@512.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/seedsweep/seed_42/Model_run/model_best.pth",
+    "scales": [
+      512
+    ],
+    "tta_flip": false
+  },
+  {
+    "file": "dp01__seed_86__model_best@512.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/sweep2/dp01/seed_86/Model_run/model_best.pth",
+    "scales": [
+      512
+    ],
+    "tta_flip": false
+  }
+]
