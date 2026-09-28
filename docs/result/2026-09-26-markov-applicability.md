@@ -7,6 +7,37 @@
 **Reproduce:** `python analysis/markov_check.py` (CPU, a few minutes; prints every local number
 below). Online sources are listed at the end.
 
+**Where the Markov step sits** (colour key: 🟦 existing v3 network, 🟧 new Markov layer,
+⬜ data, 🟪 loss, dashed = triplet branch):
+
+```mermaid
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
+flowchart TB
+    X(["<b>Chest X-ray</b>"]):::data
+    BB["<b>ConvNeXt backbone</b><br/>turns the image into visual tokens"]:::v3
+    DEC["<b>ML-Decoder</b><br/>30 label queries, one per disease<br/>① each query looks at the image<br/>② the queries look at each other"]:::v3
+    MK["<b>Markov label layer</b> · NEW in v4<br/>co-occurring labels vote for each other"]:::new
+    L["<b>Asymmetric loss</b> · mAP"]:::loss
+    T["triplet loss<br/>shapes the embeddings only"]:::aux
+    X --> BB
+    BB -->|"144 visual tokens"| DEC
+    DEC -->|"30 scores u"| MK
+    MK -->|"30 final scores z"| L
+    DEC -.-> T
+
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
+```
+
+Section (A) below tests a *fixed*, post-hoc version of the orange step on saved probabilities. The
+v4 layer is the *trainable* version; its internals are in the architecture doc (§3).
+
 A Markov model needs a sequence of states. This project has two candidate sequences:
 **(A)** the label graph (co-occurrence as transition probabilities), and **(B)** a patient's
 studies over time (disease state at study *t* depends on study *t−1*; an HMM treats the true

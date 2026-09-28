@@ -20,24 +20,79 @@
 
 ---
 
+## How to read the diagrams
+
+Every diagram below uses the same colour key.
+
+| Colour | Meaning |
+|---|---|
+| 🟦 blue | the existing v3 network: backbone and ML-Decoder |
+| 🟧 orange, thick border | **new in v4**: the Markov label layer and its scripts |
+| ⬜ white, rounded | data flowing through the model (tensor shapes are at 768 px) |
+| 🟪 purple | losses |
+| dashed grey | the triplet branch: shapes the embedding space, never touches the logits |
+| 🟥 red, dashed | do not use |
+| 🟩 green | rare (tail) disease class (§5 only) |
+| light grey | earlier work (§1 only) |
+
+Shapes: a **rectangle** is a computation, a **rounded box** is data, a **cylinder** holds stored or
+learned values (weights, checkpoints).
+
+## 0. The big picture
+
+```mermaid
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
+flowchart TB
+    X(["<b>Chest X-ray</b>"]):::data
+    BB["<b>ConvNeXt backbone</b><br/>turns the image into visual tokens"]:::v3
+    DEC["<b>ML-Decoder</b><br/>30 label queries, one per disease<br/>① each query looks at the image<br/>② the queries look at each other"]:::v3
+    MK["<b>Markov label layer</b> · NEW in v4<br/>co-occurring labels vote for each other"]:::new
+    L["<b>Asymmetric loss</b> · mAP"]:::loss
+    T["triplet loss<br/>shapes the embeddings only"]:::aux
+    X --> BB
+    BB -->|"144 visual tokens"| DEC
+    DEC -->|"30 scores u"| MK
+    MK -->|"30 final scores z"| L
+    DEC -.-> T
+
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
+```
+
+Everything before the orange box is the v3 model, unchanged. The Markov layer is a small add-on
+(960 parameters) that starts switched off (§3), so v4 begins training exactly where v3 is.
+
+---
+
 ## 1. Lineage — where v4 comes from
 
 ```mermaid
-flowchart LR
-    A["ISBI 2026 submission<br/>Stage-1: ConvNeXt-B + query decoder<br/>384 px, ImageNet init<br/>internal mAP 0.385"]
-    B["ISBI 2026 Stage-2<br/>MoE in stages 4-5 + decoder FFN<br/>test mAP 0.4599, 3rd place"]
-    C["Entropy.pdf framework<br/>Triplet cross-memory bank<br/>+ anchor-based entropy selection"]
-    D["train_2_v3.py<br/>triplet embedding fixed (query),<br/>shard class weights<br/>EMA + SWA, 768-1024 px<br/>best 0.4602, SWA 0.4619"]
-    E["train_2_v4.py<br/>v3 + Markov label layer<br/>experiment, jobs mk1 / mk2 / mk1fix"]
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
+flowchart TB
+    A["<b>ISBI 2026 Stage-1</b><br/>ConvNeXt-B + query decoder<br/>384 px, ImageNet init<br/>internal mAP 0.385"]:::old
+    B["<b>ISBI 2026 Stage-2</b><br/>MoE in stages 4-5 + decoder FFN<br/>test mAP 0.4599, 3rd place"]:::old
+    C["<b>Entropy.pdf framework</b><br/>triplet cross-memory bank<br/>+ anchor-based entropy selection"]:::old
+    D["<b>train_2_v3.py</b> · current baseline<br/>triplet embedding fixed<br/>shard class weights, EMA + SWA<br/>768-1024 px · best 0.4602, SWA 0.4619"]:::v3
+    E["<b>train_2_v4.py</b> · this experiment<br/>v3 + Markov label layer<br/>jobs mk1 / mk2 / mk1fix"]:::new
     A --> B
     A --> C
     C --> D
-    D --> E
-    style A fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    style B fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    style C fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    style D fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    style E fill:#1a1a2e,stroke:#e8a33d,stroke-width:3px,color:#fff
+    D -->|"+ Markov layer after the logits"| E
+
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
 ```
 
 Stage-2 initialises from the Stage-1 checkpoint `train/checkpoint3/Model_20260119_062652` and
@@ -47,57 +102,52 @@ happens **after** the classifier logits.
 ## 2. Full forward pass (shapes at 768 px, batch B)
 
 ```mermaid
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
 flowchart TB
-    IMG["Chest X-ray<br/>B x 3 x 768 x 768"] --> BB
+    IMG(["<b>Chest X-ray</b><br/>B × 3 × 768 × 768"]):::data
+    BB["<b>ConvNeXt2 backbone</b> · 5 stages, stride 64<br/>dims 128 → 256 → 512 → 1024 → 1024<br/>depths 3, 3, 27, 3, 2"]:::v3
+    TOK(["<b>S = 144 image tokens</b><br/>12 × 12 feature map + 2-D sin/cos position<br/>B × 144 × 1024"]):::data
+    IMG --> BB --> TOK
 
-    subgraph BB["ConvNeXt2 backbone, 5 stages, /64"]
-        direction TB
-        S0["stage 0-2<br/>dims 128, 256, 512<br/>depths 3, 3, 27"] --> S3["stage 3<br/>dim 1024, depth 3"] --> S4["stage 4 (extra)<br/>dim 1024, depth 2"]
-    end
-
-    BB --> F["feature map F<br/>B x 1024 x 12 x 12"]
-    F --> PE["+ 2D sinusoidal<br/>positional encoding"]
-    PE --> TOK["flatten to S = 144 tokens<br/>B x 144 x 1024"]
-
-    subgraph DEC["ML-Decoder head (ml_decoder.Decoder)"]
-        direction TB
-        MEM["memory M<br/>Linear 1024 to 768 + ReLU<br/>B x 144 x 768"]
-        Q0["30 label queries Q<br/>frozen nn.Embedding<br/>30 x 768, one per class"]
-        subgraph CASA["CASA block x 2 (pre-LN, 8 heads)"]
-            direction TB
-            CA["cross-attention<br/>queries look at image tokens<br/>Q attends to M"] --> FF1["FFN"]
-            FF1 --> SA["self-attention<br/>labels look at each other<br/>30 x 30 per image"] --> FF2["FFN"]
+    subgraph DEC["ML-Decoder head"]
+        MEM["<b>memory M</b><br/>Linear 1024 → 768 + ReLU"]:::v3
+        Q["<b>30 label queries</b><br/>one per disease, frozen<br/>30 × 768"]:::v3
+        subgraph CASA["decoder block × 2 · pre-LN · 8 heads"]
+            CA["<b>① cross-attention</b><br/>each query looks at the image tokens"]:::v3
+            SA["<b>② self-attention</b><br/>queries look at each other<br/>30 × 30 mixing, recomputed per image"]:::v3
+            CA -->|"FFN"| SA
         end
+        H(["<b>label embeddings h</b><br/>B × 30 × 768"]):::data
+        GFC["<b>GroupFC</b><br/>one small classifier per disease"]:::v3
         MEM --> CA
-        Q0 --> CA
-        FF2 --> H["decoded label embeddings h<br/>B x 30 x 768"]
-        H --> GFC["GroupFC<br/>per class: w_c . h_c + b_c"]
+        Q --> CA
+        SA -->|"FFN"| H
+        H --> GFC
     end
 
     TOK --> MEM
-    GFC --> U["logits u<br/>B x 30"]
-    U --> MK["Markov label layer (v4 only)<br/>z = u + g * (sigma(z) P) + b<br/>identity at init"]
-    MK --> Z["refined logits z<br/>B x 30"]
-    Z --> ASL["sigmoid, then Asymmetric Loss<br/>class weights in shard order"]
-    Z --> OUT["probabilities, mAP"]
+    GFC --> U(["<b>logits u</b> · B × 30"]):::data
+    U --> MK["<b>Markov label layer</b> · NEW in v4<br/>z = u + g ⊙ (σ(z) P) + b<br/>starts as the identity: g = b = 0"]:::new
+    MK --> Z(["<b>refined logits z</b> · B × 30"]):::data
+    Z --> ASL["<b>Asymmetric loss</b><br/>class weights in shard order"]:::loss
+    Z --> OUT(["probabilities → mAP"]):::data
+    ASL --> LOSS["<b>total loss</b><br/>ASL + 0.1 × triplet"]:::loss
 
-    H -.-> EMB["triplet embedding<br/>mean over 30 queries, L2 norm<br/>B x 768"]
-    EMB -.-> XBM["XBM memory bank, 2048<br/>sample_triplets_v13"]
-    XBM -.-> TRI["triplet loss, lambda 0.1"]
-    TRI -.-> LOSS["total loss<br/>ASL + 0.1 x triplet"]
-    ASL --> LOSS
+    H -.-> EMB["triplet embedding<br/>mean of the 30 queries, L2-norm"]:::aux
+    EMB -.-> TRI["triplet loss, λ = 0.1<br/>XBM memory bank of 2048"]:::aux
+    TRI -.-> LOSS
 
-    classDef dec fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    classDef mk fill:#1a1a2e,stroke:#e8a33d,stroke-width:3px,color:#fff
-    classDef aux fill:#1a1a2e,stroke:#9aa0a6,stroke-width:1px,stroke-dasharray:4 3,color:#fff
-    classDef base fill:#1a1a2e,stroke:#9aa0a6,stroke-width:2px,color:#fff
-    class IMG,S0,S3,S4,F,PE,TOK,U,Z,ASL,OUT,LOSS base
-    class MEM,Q0,CA,FF1,SA,FF2,H,GFC dec
-    class MK mk
-    class EMB,XBM,TRI aux
-    style BB fill:#f4f6fb,stroke:#9aa0a6
-    style DEC fill:#eef4ff,stroke:#4a9eff
-    style CASA fill:#f4f6fb,stroke:#4a9eff,stroke-dasharray:4 3
+    style DEC fill:#EFF6FF,stroke:#1D4ED8,stroke-width:1px,color:#1E3A8A
+    style CASA fill:#FFFFFF,stroke:#93C5FD,stroke-width:1px,stroke-dasharray:5 4,color:#1E3A8A
+
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
 ```
 
 - At 1024 px the feature map is 16×16, so there are S = 256 image tokens. Everything after the
@@ -111,26 +161,41 @@ flowchart TB
 ## 3. Inside the Markov layer
 
 ```mermaid
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
 flowchart TB
-    A["A: 30 x 30 free parameters<br/>init = log P_cooc<br/>(train-label co-occurrence)"] --> MASK["mask the diagonal<br/>no self-transitions"]
-    MASK --> SMX["row softmax"]
-    SMX --> P["P: transition matrix<br/>P[i, j] ~ P(j | i), rows sum to 1"]
+    U(["<b>u</b> · 30 logits from GroupFC"]):::data
+    subgraph PAR["learned once · same for every image"]
+        A[("<b>A</b><br/>30 × 30 weights<br/>init = log co-occurrence")]:::new
+        P[("<b>P = row-softmax(A)</b><br/>diagonal masked<br/>P[i, j] ≈ P(j | i)<br/>each row sums to 1")]:::new
+        A --> P
+    end
+    Q["<b>q = σ(u)</b><br/>30 label probabilities"]:::new
+    M["<b>m = q P</b><br/>each label collects votes<br/>from the labels that co-occur with it"]:::new
+    G["<b>z = u + g ⊙ m + b</b><br/>g: per-class gate, signed<br/>b: per-class bias<br/>both start at 0"]:::new
+    Z(["<b>z</b> · refined logits"]):::data
+    U --> Q --> M --> G --> Z
+    P ==> M
+    U -->|"original logits<br/>pass straight through"| G
+    style PAR fill:#FFF7ED,stroke:#C2410C,stroke-width:1px,color:#7C2D12
 
-    U["logits u from GroupFC"] --> Z0["z = u"]
-    Z0 --> SIG["q = sigmoid(z)<br/>current label probabilities"]
-    SIG --> MSG["message m = q P<br/>evidence each label receives<br/>from the labels that co-occur with it"]
-    P --> MSG
-    MSG --> UPD["z = u + g * m + b<br/>g: per-class signed gate, init 0<br/>b: per-class bias, init 0"]
-    U --> UPD
-    UPD --> LOOP{"fewer than K<br/>steps done?"}
-    LOOP -- "yes, one more hop" --> SIG
-    LOOP -- "no" --> OUT["refined logits z"]
-
-    classDef mk fill:#1a1a2e,stroke:#e8a33d,stroke-width:2px,color:#fff
-    classDef dec fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    class A,MASK,SMX,P,MSG,UPD,LOOP mk
-    class U,Z0,SIG,OUT dec
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
 ```
+
+**Worked example (one hop, K = 1; the numbers are illustrative).** Suppose the decoder is confident an
+image shows a central venous catheter: q_CVC = 0.9. §5 gives P[CVC, Support Devices] = 0.34, so
+Support Devices collects a vote of 0.9 × 0.34 ≈ 0.31 from CVC, plus smaller votes from the other
+labels. The gate decides what the vote does:
+
+- at initialisation g = 0, so the Support Devices logit is unchanged;
+- if training learns g_SD = +2, the logit rises by about 0.6;
+- if training learns a negative g_SD, the same vote *lowers* it.
 
 $$
 P=\operatorname{softmax}_{\text{row}}\!\big(A \odot (1-I) - \infty\cdot I\big),\qquad
@@ -155,28 +220,34 @@ Both are *row-stochastic 30×30 mixings over the labels*. They differ in where t
 decides the weights.
 
 ```mermaid
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
 flowchart LR
-    subgraph SAB["ML-Decoder self-attention (inside the decoder)"]
+    subgraph SAB["ML-Decoder self-attention"]
         direction TB
-        QQ["30 label queries after cross-attention<br/>30 x 768 each, image-specific"] --> ATT["attention = softmax(Q K^T / sqrt d)<br/>30 x 30 per image, per head<br/>8 heads x 2 blocks"]
-        ATT --> MIX["mix the query EMBEDDINGS<br/>weights recomputed for every image"]
+        I1(["<b>mixes</b><br/>30 query embeddings<br/>768-d each"]):::data
+        W1["<b>with weights</b><br/>softmax(Q Kᵀ / √d)<br/><b>new for every image</b><br/>8 heads × 2 blocks"]:::v3
+        O1["<b>where</b><br/>inside the decoder,<br/>before GroupFC"]:::v3
+        I1 --> W1 --> O1
     end
-
-    subgraph MKB["Markov layer (after the logits)"]
+    subgraph MKB["Markov label layer"]
         direction TB
-        PR["30 label probabilities<br/>sigma(u), image-specific"] --> PM["P = softmax_row(A)<br/>ONE 30 x 30 matrix for all images<br/>init from co-occurrence"]
-        PM --> MIX2["mix the PROBABILITIES<br/>then gate: u + g * (q P) + b"]
+        I2(["<b>mixes</b><br/>30 probabilities<br/>q = σ(u)"]):::data
+        W2["<b>with weights</b><br/>P = row-softmax(A)<br/><b>one matrix for all images</b><br/>init from co-occurrence"]:::new
+        O2["<b>where</b><br/>after the logits,<br/>z = u + g ⊙ (q P) + b"]:::new
+        I2 --> W2 --> O2
     end
+    SAB ~~~ MKB
+    style SAB fill:#EFF6FF,stroke:#1D4ED8,stroke-width:1px,color:#1E3A8A
+    style MKB fill:#FFF7ED,stroke:#C2410C,stroke-width:1px,color:#7C2D12
 
-    MIX --> GF["GroupFC, logits u"]
-    GF --> PR
-
-    classDef dec fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    classDef mk fill:#1a1a2e,stroke:#e8a33d,stroke-width:2px,color:#fff
-    class QQ,ATT,MIX,GF dec
-    class PR,PM,MIX2 mk
-    style SAB fill:#eef4ff,stroke:#4a9eff
-    style MKB fill:#fff6e8,stroke:#e8a33d
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
 ```
 
 | | ML-Decoder self-attention | Markov label layer |
@@ -201,27 +272,40 @@ gates are free to learn it.
 ## 5. The label Markov chain in our training data
 
 These are the strongest transitions in the initial `P`, built from label co-occurrence in
-`train/CXRLT_2026_training_filtered.csv` (the file `train_2_v4.py` reads), N = 103,303 images. Edge label = `P(target | source)`. Rare (tail) classes are shown in amber.
+`train/CXRLT_2026_training_filtered.csv` (the file `train_2_v4.py` reads), N = 103,303 images. Edge label = `P(target | source)`; thick arrows mark P ≥ 0.20. Rare (tail) classes are green.
 
 ```mermaid
-flowchart LR
-    CVC["central venous<br/>catheter"] -- "0.34" --> SD["Support Devices"]
-    SD -- "0.21" --> CVC
-    AE["aortic elongation"] -- "0.27" --> CM["cardiomegaly"]
-    CM -- "0.19" --> AE
-    ST["sternotomy"] -- "0.22" --> CM
-    HP["Hydropneumothorax<br/>38 images"] -- "0.20" --> PEF["pleural effusion"]
-    PTX["Pneumothorax<br/>420 images"] -- "0.19" --> SD
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
+flowchart TB
+    HP(["<b>Hydropneumothorax</b><br/>tail · 38 images"]):::tail
+    PTX(["<b>Pneumothorax</b><br/>tail · 420 images"]):::tail
+    CVC(["central venous<br/>catheter"]):::data
+    ST(["sternotomy"]):::data
+    HER(["Hernia"]):::data
+    NRM(["Normal<br/>40% of images"]):::aux
+    PEF(["pleural effusion"]):::data
+    SD(["Support Devices"]):::data
+    AE(["aortic elongation"]):::data
+    CM(["cardiomegaly"]):::data
+    HP == "0.20" ==> PEF
+    PTX -- "0.19" --> SD
     PEF -- "0.12" --> SD
-    HER["Hernia"] -- "0.15" --> AE
-    NRM["Normal<br/>40% of images"] -. "0.13<br/>(forced, see note)" .-> CM
+    CVC == "0.34" ==> SD
+    SD -- "0.21" --> CVC
+    ST == "0.22" ==> CM
+    HER -- "0.15" --> AE
+    AE == "0.27" ==> CM
+    CM -- "0.19" --> AE
+    NRM -. "0.13, forced by row sums" .-> CM
 
-    classDef head fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    classDef tail fill:#1a1a2e,stroke:#e8a33d,stroke-width:3px,color:#fff
-    classDef norm fill:#1a1a2e,stroke:#9aa0a6,stroke-width:1px,stroke-dasharray:4 3,color:#fff
-    class CVC,SD,AE,CM,ST,PEF,HER head
-    class HP,PTX tail
-    class NRM norm
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
 ```
 
 - **Tail diseases lean on head diseases.** This is challenge 1 in Entropy.pdf (slide 3): *"the tail
@@ -237,24 +321,41 @@ flowchart LR
 ## 6. Training and evaluation flow for v4
 
 ```mermaid
-flowchart LR
-    SUB["scripts/submit_stage2_v4_markov.sh<br/>768 px, seed 42, dp 0.1<br/>4 of 8 cosine epochs, SWA 3"] --> JOB["scripts/train_2_v4.sh<br/>Slurm job"]
-    JOB --> TR["train/train_2_v4.py<br/>ConvNeXt2Markov<br/>Stage-1 init, layer = identity"]
-    TR --> OPT["AdamW groups<br/>model: lr 1e-4, wd 1e-2<br/>markov: lr 1e-3, wd 0"]
-    OPT --> EMA["EMA weights<br/>evaluated each epoch"]
-    EMA --> CK["model_best.pth<br/>model_swa.pth<br/>include label_refine.*"]
-    TR -. "per epoch: gate magnitude" .-> MON["scripts/mon.py --mk<br/>MARKOV column, delta vs job 49000"]
-    CK --> EV["evaluate/evaluate_tta_v4.py<br/>detects the layer in the checkpoint"]
-    EV --> PR["dumped probabilities"]
-    PR --> SUBS["analysis/markov_check.py<br/>val_subsets(): all / frontal /<br/>frontal and unseen-patient"]
-    CK -. "do NOT use" .-> OLD["evaluate/evaluate_tta.py<br/>would drop label_refine.*"]
+%%{init: {"theme": "base", "flowchart": {"wrappingWidth": 400, "padding": 14}, "themeVariables": {"fontSize": "15px", "lineColor": "#64748B", "primaryTextColor": "#0F172A", "edgeLabelBackground": "#FFFFFF", "clusterBkg": "#F8FAFC", "clusterBorder": "#CBD5E1", "titleColor": "#0F172A"}}}%%
+flowchart TB
+    subgraph L1["1 · launch"]
+        SUB["<b>submit_stage2_v4_markov.sh</b><br/>768 px, seed 42, dp 0.1<br/>4 of 8 cosine epochs, SWA of 3"]:::new
+        JOB["<b>train_2_v4.sh</b><br/>Slurm job"]:::new
+    end
+    subgraph L2["2 · train"]
+        TR["<b>train_2_v4.py</b><br/>ConvNeXt2Markov<br/>Stage-1 init, layer = identity"]:::new
+        OPT["<b>AdamW, two groups</b><br/>model: lr 1e-4, wd 1e-2<br/>Markov: lr 1e-3, wd 0"]:::new
+        EMA["<b>EMA weights</b><br/>evaluated each epoch"]:::v3
+        MON["<b>mon.py --mk</b><br/>gate size per epoch<br/>Δ vs job 49000"]:::v3
+        CK[("<b>model_best.pth</b><br/><b>model_swa.pth</b><br/>include label_refine.*")]:::new
+    end
+    subgraph L3["3 · evaluate"]
+        EV["<b>evaluate_tta_v4.py</b><br/>detects the layer<br/>in the checkpoint"]:::new
+        OLD["<b>evaluate_tta.py</b><br/>do NOT use:<br/>silently drops label_refine.*"]:::warn
+        PR(["dumped probabilities"]):::data
+        SUBS["<b>markov_check.py</b> val_subsets()<br/>all / frontal /<br/>frontal and unseen-patient"]:::v3
+    end
+    SUB --> JOB --> TR --> OPT --> EMA --> CK
+    TR -.->|"log"| MON
+    CK --> EV --> PR --> SUBS
+    CK -.-x OLD
+    style L1 fill:#F8FAFC,stroke:#CBD5E1,color:#0F172A
+    style L2 fill:#F8FAFC,stroke:#CBD5E1,color:#0F172A
+    style L3 fill:#F8FAFC,stroke:#CBD5E1,color:#0F172A
 
-    classDef mk fill:#1a1a2e,stroke:#e8a33d,stroke-width:2px,color:#fff
-    classDef base fill:#1a1a2e,stroke:#4a9eff,stroke-width:2px,color:#fff
-    classDef warn fill:#1a1a2e,stroke:#ff5c5c,stroke-width:2px,stroke-dasharray:4 3,color:#fff
-    class SUB,JOB,TR,OPT,CK,EV mk
-    class EMA,MON,PR,SUBS base
-    class OLD warn
+    classDef v3 fill:#DBEAFE,stroke:#1D4ED8,stroke-width:1.5px,color:#1E3A8A
+    classDef new fill:#FFEDD5,stroke:#C2410C,stroke-width:3px,color:#7C2D12
+    classDef data fill:#FFFFFF,stroke:#64748B,stroke-width:1px,color:#0F172A
+    classDef loss fill:#EDE9FE,stroke:#6D28D9,stroke-width:1.5px,color:#4C1D95
+    classDef aux fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,stroke-dasharray:5 4,color:#475569
+    classDef warn fill:#FEE2E2,stroke:#B91C1C,stroke-width:2px,stroke-dasharray:5 4,color:#7F1D1D
+    classDef old fill:#F1F5F9,stroke:#94A3B8,stroke-width:1px,color:#334155
+    classDef tail fill:#DCFCE7,stroke:#15803D,stroke-width:2.5px,color:#14532D
 ```
 
 `train_2_v3.py`, `convnext.py` and `evaluate_tta.py` are untouched, so existing checkpoints and runs
