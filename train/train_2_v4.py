@@ -36,6 +36,7 @@ from torchmetrics.classification import (
 from torchmetrics.classification import BinaryCalibrationError
 
 from convnext import ConvNeXt2, model_urls
+from markov_layer import ConvNeXt2Markov, cooccurrence_transition
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -439,11 +440,17 @@ DEFAULT_STAGE1_CKPT = "checkpoint3/Model_20260119_062652/model_best.pth"
 
 
 def create_model(num_classes: int = 30, stage1_ckpt: str = DEFAULT_STAGE1_CKPT,
-                 drop_path_rate: float = 0.0):
-    model = ConvNeXt2(depths=[3, 3, 27, 3, 2],
-                      dims=[128, 256, 512, 1024, 1024],
-                      num_classes=num_classes,
-                      drop_path_rate=drop_path_rate)
+                 drop_path_rate: float = 0.0, markov_steps: int = 0, markov_init=None,
+                 markov_learn_transition: bool = True):
+    kw = dict(depths=[3, 3, 27, 3, 2], dims=[128, 256, 512, 1024, 1024],
+              num_classes=num_classes, drop_path_rate=drop_path_rate)
+    if markov_steps > 0:
+        # v4: Markov label-refine layer on the head logits (train/markov_layer.py). It starts
+        # as the identity, so its label_refine.* keys are the only "missing" Stage-1 keys.
+        model = ConvNeXt2Markov(**kw, markov_steps=markov_steps, transition_init=markov_init,
+                                learn_transition=markov_learn_transition)
+    else:
+        model = ConvNeXt2(**kw)
 
     ckpt_path = stage1_ckpt
     if not os.path.isabs(ckpt_path):
@@ -563,7 +570,7 @@ def preprocess_batch(x: torch.Tensor) -> torch.Tensor:
 
 
 class Trainer:
-    def __init__(self, cfg: dict, class_weights):
+    def __init__(self, cfg: dict, class_weights, markov_init=None, class_names=None):
         self.cfg = cfg
         print(self.cfg)
         print("Size of Image: ", self.cfg.get("img_size", SIZE))
@@ -573,8 +580,16 @@ class Trainer:
         self.scaler = GradScaler("cuda", enabled=self.cfg.get("use_amp", True))
         self.class_weights = class_weights
 
+        self.class_names = class_names
+        markov_steps = int(cfg.get("markov_steps", 0) or 0)
+        learn_transition = not cfg.get("markov_fixed_transition", False)
+        if markov_steps > 0:
+            logger.info(f"Markov label-refine layer: steps={markov_steps} "
+                        f"learn_transition={learn_transition} "
+                        f"lr_mult={cfg.get('markov_lr_mult', 10.0)} (identity at init)")
         self.model = create_model(cfg["num_classes"], cfg.get("stage1_ckpt", DEFAULT_STAGE1_CKPT),
-                                  cfg.get("drop_path_rate", 0.0)).to(self.device)
+                                  cfg.get("drop_path_rate", 0.0), markov_steps, markov_init,
+                                  learn_transition).to(self.device)
         # set_params(self.model)
 
         self.optim = self._build_optimizer()
@@ -676,8 +691,21 @@ class Trainer:
         freeze_n = int(self.cfg.get("freeze_backbone_stages", 0) or 0)
         llrd = float(self.cfg.get("llrd", 1.0) or 1.0)
 
+        # v4: the Markov layer gets its own group (lr x --markov-lr-mult, no weight decay).
+        refine = getattr(m, "label_refine", None)
+        refine_ids = {id(p) for p in refine.parameters()} if refine is not None else set()
+        refine_group = []
+        if refine is not None:
+            refine_group = [{"params": [p for p in refine.parameters() if p.requires_grad],
+                             "lr": base_lr * float(self.cfg.get("markov_lr_mult", 10.0)),
+                             "weight_decay": 0.0, "name": "markov"}]
+
         if freeze_n <= 0 and llrd >= 1.0:
-            return AdamW(m.parameters(), lr=base_lr, weight_decay=wd)
+            if refine is None:
+                return AdamW(m.parameters(), lr=base_lr, weight_decay=wd)
+            base = [p for p in m.parameters() if id(p) not in refine_ids]
+            return AdamW([{"params": base, "lr": base_lr, "weight_decay": wd, "name": "model"}]
+                         + refine_group, lr=base_lr, weight_decay=wd)
 
         levels = [
             ("head", [m.head]),
@@ -706,8 +734,9 @@ class Trainer:
                 groups.append({"params": trainable, "lr": base_lr * scale,
                                "weight_decay": wd, "name": name})
 
-        total = sum(p.numel() for p in m.parameters())
+        total = sum(p.numel() for p in m.parameters() if id(p) not in refine_ids)
         assert seen == total, f"param-group coverage gap: {seen} != {total}"
+        groups += refine_group
         logger.info("param groups: "
                     + ", ".join(f"{g['name']}@{g['lr']:.2e}" for g in groups)
                     + f" | freeze_backbone_stages={freeze_n} llrd={llrd}")
@@ -978,6 +1007,9 @@ class Trainer:
             self.history["mF1"].append(m["mF1"])
             self.history["mECE"].append(m["mECE"])
 
+            refine = getattr(self.model, "label_refine", None)
+            if refine is not None:
+                logger.info(refine.summary(self.class_names))
             logger.info(
                 f"Epoch {epoch:02d}/{self.cfg['epochs']} | "
                 f"train_loss={tr_loss:.4f} val_loss={va_loss:.4f} | "
@@ -1165,6 +1197,16 @@ def parse_args():
                          "384->512 tripled the Stage-2 mAP gain; 640/768 extend it. "
                          "Shards are native-resolution so no data rebuild is needed; "
                          "pair >=640 with --batch-size 4 --accum-steps 12.")
+    ap.add_argument("--markov-steps", type=int, default=0,
+                    help="v4: K > 0 adds the Markov label-refine layer (train/markov_layer.py) on "
+                         "the ML-Decoder logits - K message-passing steps over a learnable "
+                         "row-stochastic label transition matrix initialised from training "
+                         "co-occurrence; identity at init. 0 = off (== train_2_v3.py).")
+    ap.add_argument("--markov-fixed-transition", action="store_true",
+                    help="freeze the transition matrix at its co-occurrence init (only the "
+                         "per-class gate/bias learn).")
+    ap.add_argument("--markov-lr-mult", type=float, default=10.0,
+                    help="LR multiplier for the Markov layer's parameters (they start from 0).")
     ap.add_argument("--rrc-scale-min", type=float, default=0.9,
                     help="lower bound of the train RandomResizedCrop area scale. "
                          "Default 0.9 (all runs before 2026-09-26). Lower = stronger "
@@ -1233,6 +1275,9 @@ def main():
         "warmup_frac": args.warmup_frac,
         "img_size": args.img_size,
         "rrc_scale_min": args.rrc_scale_min,
+        "markov_steps": args.markov_steps,
+        "markov_fixed_transition": args.markov_fixed_transition,
+        "markov_lr_mult": args.markov_lr_mult,
         "shuffle_buf": args.shuffle_buf,
         "swa_last_k": args.swa_last_k,
         "sched_epochs": args.sched_epochs,
@@ -1384,8 +1429,14 @@ def main():
         persistent_workers=False,
     )
 
+    markov_init = None
+    if cfg["markov_steps"] > 0:
+        if cfg["class_weight_order"] != "shard":
+            raise ValueError("--markov-steps needs --class-weight-order shard (logit order)")
+        markov_init = cooccurrence_transition(labels_np)
+
     #trainer = Trainer(cfg)
-    trainer = Trainer(cfg, class_weights)
+    trainer = Trainer(cfg, class_weights, markov_init=markov_init, class_names=label_cols)
     trainer.fit(train_loader, val_loader, train_mapper=train_mapper)
 
 

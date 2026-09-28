@@ -6,7 +6,42 @@ Newest run first. Internal validation metrics only unless noted otherwise
 (no held-out leaderboard submission has been scored for these runs yet).
 
 Related context: [`docs/paper.tex`](paper.tex) (methods writeup),
-`scripts/submit_stage2_v3_res_sweep.sh` (launcher for the run below).
+`scripts/submit_stage2_v3_res_sweep.sh`, `scripts/submit_stage2_v3_push.sh`,
+`scripts/submit_stage2_v3_reg.sh` (launchers).
+
+---
+
+## Current best (updated 2026-09-26)
+
+| Kind | Result | Internal val mAP | Details |
+|---|---|---|---|
+| Ensemble | greedy-3, flip TTA: `push/img768_dp01_seed42` SWA @768 + `push/img1024_dp01_seed86` SWA @1024 + `res_sweep/img640_seed86` @640 | **0.4722** | `analysis/out/ens_select_w01_flip.json` |
+| Single model + TTA | `push/img768_dp01_seed42/Model_run/model_swa.pth` @768, flip | 0.4650 | same |
+| Single model, no TTA | `push/img1024_dp01_seed86/Model_run/model_swa.pth` @1024 (job 48997) | **0.4619** (best epoch 0.4602 @ ep3) | reproduced by eval job 49031 |
+
+Target: 0.49 internal val (gap 0.0178).
+
+## 2026-09-25 — Push wave (768/896/1024 px, drop-path 0.1), `train_2_v3.py`
+
+**Directory:** `train/checkpoint_Triplet_3/push/` · **Launcher:** `scripts/submit_stage2_v3_push.sh`
+· **Full report:** [`2026-09-26-push-wave.md`](2026-09-26-push-wave.md)
+
+Recipe = the res-sweep recipe below plus `--drop-path-rate 0.1`, 4 epochs of an 8-epoch cosine
+(`--epochs 4 --sched-epochs 8`), SWA of the last 3 EMA epochs.
+
+| Run | Job | Res | Seed | Best mAP @ep | SWA mAP | SWA + flip |
+|---|---|---|---|---|---|---|
+| img1024_dp01_seed86 | 48997 | 1024 | 86 | **0.4602 @3** | **0.4619** | 0.4645 |
+| img768_dp01_seed42 | 49000 | 768 | 42 | 0.4585 @3 | 0.4600 | **0.4650** |
+| img768_dp01_seed1024 | 48999 | 768 | 1024 | 0.4564 @3 | 0.4582 | 0.4626 |
+| img896_dp01_seed86 | 48998 | 896 | 86 | 0.4546 @3 | 0.4546 | 0.4578 |
+| cont1024_from768_s86 | 48996 | 1024 | 86 | 0.4422 @1 | 0.4393 | — |
+
+Takeaways: every run peaks at epoch 3 and then overfits; SWA adds +0.0015–0.002; the
+continuation-at-1024 strategy is a negative result; the only same-seed resolution pair
+(896→1024, seed 86) gains +0.0073, while 768-vs-1024 is seed-confounded. Ensemble results are
+in the Current best table above. Follow-up jobs (regularization sweep 49037–49040, img1024
+seeds 49041–49042, Stage-1 768 px retrain 49043) are listed in the report's *Next step*.
 
 ---
 

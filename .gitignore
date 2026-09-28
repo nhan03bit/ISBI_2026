@@ -5,7 +5,9 @@ logs/
 
 # large experiment/sweep checkpoint dumps (not source, too large for LFS quota)
 checkpoint/_s1_smoke/
+checkpoint/_s1_smoke768/
 checkpoint/stage1_full30/
+checkpoint/stage1_v4_22k768dp/
 train/checkpoint3/
 train/checkpoint_Triplet_2/
 train/checkpoint_Triplet_3/
