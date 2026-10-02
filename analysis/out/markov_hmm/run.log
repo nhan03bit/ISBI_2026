@@ -1,0 +1,108 @@
+[0] states: all 81902 | train 74782 | train pairs 24180 | train first states 50602 | excluded ambiguous studies 1 | phi = ['sex=M', 'sex=U', 'age', 'age_rcs1', 'age_rcs2', 'acuity=AP', 'acuity=AP_horizontal']
+    unpenalised logistic vs unsmoothed counts: max |diff| 1.19e-05 over 29 classes
+
+[1] transition prior, patient-grouped 5-fold CV on train pairs (held-out)
+    l2 0.0001 l2_cross 0.001: summed per-class log-loss 4.10917
+    l2 0.0001 l2_cross 0.01: summed per-class log-loss 4.12474
+    l2 0.0001 l2_cross 0.1: summed per-class log-loss 4.14416
+    l2 0.001 l2_cross 0.001: summed per-class log-loss 4.10947
+    l2 0.001 l2_cross 0.01: summed per-class log-loss 4.12511
+    l2 0.001 l2_cross 0.1: summed per-class log-loss 4.14463
+    l2 0.01 l2_cross 0.001: summed per-class log-loss 4.12487
+    l2 0.01 l2_cross 0.01: summed per-class log-loss 4.14061
+    l2 0.01 l2_cross 0.1: summed per-class log-loss 4.16044
+    chosen l2 0.0001, l2_cross 0.001
+    table (pooled a, b)    macro log-loss 0.15130 | macro AUROC 0.6625
+    own (alpha, beta)      macro log-loss 0.15133 | macro AUROC 0.6611
+    + gap                  macro log-loss 0.14523 | macro AUROC 0.7647
+    + meta                 macro log-loss 0.13831 | macro AUROC 0.8028
+    + cross (H4 prior)     macro log-loss 0.13697 | macro AUROC 0.8128
+    initial prior intercept  macro log-loss 0.14266
+    initial prior +meta      macro log-loss 0.12560
+    + cross + acq (H4-acq prior) macro log-loss 0.13462 | macro AUROC 0.8356
+    within-state MRF J (pseudo-likelihood, train states), strongest couplings: Normal~pleural effusion -1.51, Support Devices~central venous catheter +1.46, Normal~cardiomegaly -1.40, Nodule~Normal -1.37, Normal~Support Devices -1.31, Normal~aortic elongation -1.31
+    H4 cross-class temporal edges B[k -> c] (largest |B|): sternotomy->Normal -0.86, Normal->pleural effusion -0.85, Normal->alveolar pattern -0.70, central venous catheter->Support Devices -0.66, pleural effusion->Normal -0.65, pleural thickening->hypoexpansion +0.59, Normal->sternotomy -0.58, Normal->atelectasis -0.54
+
+[2] val targets 17270 | with an earlier state 5759 (0.333) | primary 4061 | history val-only 248 | evaluated rows 17270
+    filtered mode: train-dump rows 103281 | fold images with an emission and a state 120548/120579 (train 103279, val 17269)
+    check: filtered mode with one-hot (observed) beliefs == observed mode
+
+[3] emission s42 (push__img768_dp01_seed42__model_swa@768_flip.npy)
+/home/psytp7/ISBI_2026/.venv/lib64/python3.13/site-packages/torchmetrics/utilities/prints.py:43: UserWarning: No positive samples found in target, recall is undefined. Setting recall to one for all thresholds.
+  warnings.warn(*args, **kwargs)
+    E     full 0.4652 | has_prior 0.4882 | has_prior & frontal 0.5020 | no_prior 0.4543 | mECE 0.1352 | 3s
+    H0    full 0.4729 (d +0.0090 [-0.0033, +0.0242]) | has_prior 0.5290 (d +0.0463 [+0.0236, +0.0681]) | has_prior & frontal 0.5384 (d +0.0354 [+0.0150, +0.0583]) | no_prior 0.4543 (d +0.0000 [+0.0000, +0.0000]) | mECE 0.1293 | w(h,0,e,J[,a]) 1.00,0.00 | 190s
+    H1    full 0.4882 (d +0.0222 [+0.0135, +0.0353]) | has_prior 0.5432 (d +0.0541 [+0.0389, +0.0708]) | has_prior & frontal 0.5511 (d +0.0477 [+0.0298, +0.0664]) | no_prior 0.4543 (d +0.0000 [-0.0000, +0.0000]) | mECE 0.0074 | w(h,0,e,J[,a]) 0.75,0.00,1.00,0.00,1.50; 0.50,0.00,1.00,0.00,1.50 | 193s
+    H2    full 0.4849 | has_prior 0.5380 | has_prior & frontal 0.5480 | no_prior 0.4543 | mECE 0.0073 | w(h,0,e,J[,a]) 0.75,0.00,1.00,0.00,1.50; 0.50,0.00,1.00,0.00,1.50 | 7s
+    H3    full 0.4820 (d +0.0160 [+0.0093, +0.0239]) | has_prior 0.5317 (d +0.0429 [+0.0312, +0.0545]) | has_prior & frontal 0.5421 (d +0.0378 [+0.0226, +0.0516]) | no_prior 0.4540 (d -0.0009 [-0.0018, -0.0001]) | mECE 0.0069 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.50; 0.50,0.00,1.00,0.00,1.50 | 209s
+    H4    full 0.4812 (d +0.0152 [+0.0089, +0.0226]) | has_prior 0.5305 (d +0.0423 [+0.0324, +0.0530]) | has_prior & frontal 0.5411 (d +0.0375 [+0.0228, +0.0513]) | no_prior 0.4540 (d -0.0009 [-0.0018, -0.0001]) | mECE 0.0068 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.50; 0.50,0.00,1.00,0.00,1.50 | 262s
+          has_prior & study_not_in_train     n  2814 | base 0.5002 -> 0.5513 [0.5465, 0.5578] | d +0.0491 [+0.0321, +0.0683]
+          patient_unseen                     n  3966 | base 0.4847 -> 0.4817 [0.4755, 0.4849] | d -0.0053 [-0.0151, -0.0006]
+          has_prior & history val-only       n   248 | base 0.5663 -> 0.5873 [0.5826, 0.5959] | d +0.0319 [+0.0035, +0.0600]
+          dAP has_prior head/medium/tail: head +0.0130, medium +0.0438, tail +0.0465
+          stratum AP: persistent vs resolved 0.7505 -> 0.7462 (26 cls); new vs absent 0.3678 -> 0.3621 (28 cls)
+    H5    full 0.4812 | has_prior 0.5305 | has_prior & frontal 0.5411 | no_prior 0.4540 | mECE 0.0068 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.50; 0.50,0.00,1.00,0.00,1.50 | 27s
+    H4-acq full 0.4826 (d +0.0174 [+0.0111, +0.0247]) | has_prior 0.5339 (d +0.0434 [+0.0321, +0.0553]) | has_prior & frontal 0.5419 (d +0.0377 [+0.0230, +0.0515]) | no_prior 0.4539 (d -0.0001 [-0.0026, +0.0023]) | mECE 0.0064 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.50; 0.50,0.25,1.00,0.00,1.50 | 204s
+    H4-F  full 0.4698 (d +0.0032 [-0.0016, +0.0083]) | has_prior 0.5013 (d +0.0134 [+0.0071, +0.0195]) | has_prior & frontal 0.5118 (d +0.0092 [-0.0013, +0.0181]) | no_prior 0.4540 (d -0.0009 [-0.0018, -0.0001]) | mECE 0.0068 | w(h,0,e,J[,a]) 0.50,0.25,1.25,0.00,1.50; 0.25,0.00,0.75,0.00,1.50 | 365s
+          has_prior & study_not_in_train     n  2814 | base 0.5002 -> 0.5141 [0.5133, 0.5151] | d +0.0154 [+0.0084, +0.0241]
+          patient_unseen                     n  3966 | base 0.4847 -> 0.4815 [0.4758, 0.4846] | d -0.0053 [-0.0144, -0.0011]
+          has_prior & history val-only       n   248 | base 0.5663 -> 0.5737 [0.5552, 0.5871] | d +0.0043 [-0.0098, +0.0187]
+          dAP has_prior head/medium/tail: head +0.0056, medium +0.0148, tail +0.0135
+          stratum AP: persistent vs resolved 0.7505 -> 0.7527 (26 cls); new vs absent 0.3678 -> 0.3689 (28 cls)
+    B-early  full 0.4840 (d vs E +0.0191 [+0.0129, +0.0257]) | has_prior 0.5309 (d vs E +0.0452 [+0.0338, +0.0565]) | has_prior & frontal 0.5346 (d vs E +0.0339 [+0.0152, +0.0554]) | no_prior 0.4598 (d vs E +0.0014 [-0.0045, +0.0130])
+    H4 - B-early (seed 42) full                             -0.0037 [-0.0110, +0.0049]
+    H4 - B-early (seed 42) has_prior & frontal (PRIMARY)    +0.0021 [-0.0155, +0.0197]
+    H4 - B-early (seed 42) has_prior                        -0.0031 [-0.0142, +0.0069]
+    H4 - B-early (seed 42) no_prior                         -0.0022 [-0.0144, +0.0033]
+    H1 - B-early (exploratory) (seed 42) full                             +0.0036 [-0.0061, +0.0172]
+    H1 - B-early (exploratory) (seed 42) has_prior & frontal (PRIMARY)    +0.0124 [-0.0076, +0.0348]
+    H1 - B-early (exploratory) (seed 42) has_prior                        +0.0088 [-0.0066, +0.0246]
+    H1 - B-early (exploratory) (seed 42) no_prior                         -0.0013 [-0.0137, +0.0043]
+    H4-F - B-early (exploratory) (seed 42) full                             -0.0157 [-0.0233, -0.0084]
+    H4-F - B-early (exploratory) (seed 42) has_prior & frontal (PRIMARY)    -0.0265 [-0.0467, -0.0063]
+    H4-F - B-early (exploratory) (seed 42) has_prior                        -0.0326 [-0.0449, -0.0202]
+    H4-F - B-early (exploratory) (seed 42) no_prior                         -0.0022 [-0.0144, +0.0033]
+    B-early0 full 0.4635 (d vs E -0.0027 [-0.0092, +0.0047]) | has_prior 0.4845 (d vs E -0.0045 [-0.0182, +0.0033]) | has_prior & frontal 0.4937 (d vs E -0.0071 [-0.0197, +0.0013]) | no_prior 0.4598 (d vs E +0.0014 [-0.0045, +0.0130])
+
+[3] emission s1024 (push__img768_dp01_seed1024__model_swa@768_flip.npy)
+    E     full 0.4635 | has_prior 0.4833 | has_prior & frontal 0.4937 | no_prior 0.4551 | mECE 0.1352 | 3s
+    H0    full 0.4731 (d +0.0115 [-0.0003, +0.0274]) | has_prior 0.5324 (d +0.0563 [+0.0386, +0.0754]) | has_prior & frontal 0.5383 (d +0.0425 [+0.0222, +0.0669]) | no_prior 0.4551 (d +0.0000 [+0.0000, +0.0000]) | mECE 0.1294 | w(h,0,e,J[,a]) 1.00,0.00 | 184s
+    H1    full 0.4873 (d +0.0259 [+0.0165, +0.0396]) | has_prior 0.5432 (d +0.0629 [+0.0464, +0.0804]) | has_prior & frontal 0.5473 (d +0.0527 [+0.0346, +0.0752]) | no_prior 0.4551 (d +0.0000 [-0.0000, +0.0000]) | mECE 0.0077 | w(h,0,e,J[,a]) 0.75,0.00,1.00,0.00,1.49; 0.75,0.00,1.00,0.00,1.49 | 188s
+    H2    full 0.4837 | has_prior 0.5377 | has_prior & frontal 0.5458 | no_prior 0.4551 | mECE 0.0076 | w(h,0,e,J[,a]) 0.75,0.00,1.00,0.00,1.49; 0.50,0.00,1.00,0.00,1.49 | 7s
+    H3    full 0.4806 (d +0.0167 [+0.0101, +0.0250]) | has_prior 0.5325 (d +0.0480 [+0.0375, +0.0602]) | has_prior & frontal 0.5414 (d +0.0435 [+0.0290, +0.0612]) | no_prior 0.4545 (d -0.0005 [-0.0015, +0.0005]) | mECE 0.0070 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.49; 0.50,0.00,1.00,0.00,1.49 | 203s
+    H4    full 0.4802 (d +0.0158 [+0.0090, +0.0245]) | has_prior 0.5299 (d +0.0465 [+0.0359, +0.0587]) | has_prior & frontal 0.5396 (d +0.0424 [+0.0279, +0.0592]) | no_prior 0.4549 (d -0.0005 [-0.0015, +0.0005]) | mECE 0.0069 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.49; 0.50,0.00,1.00,0.00,1.49 | 257s
+          has_prior & study_not_in_train     n  2814 | base 0.4943 -> 0.5493 [0.5419, 0.5542] | d +0.0547 [+0.0337, +0.0765]
+          patient_unseen                     n  3966 | base 0.4876 -> 0.4796 [0.4740, 0.4840] | d -0.0057 [-0.0153, -0.0001]
+          has_prior & history val-only       n   248 | base 0.5705 -> 0.5873 [0.5763, 0.5937] | d +0.0238 [+0.0005, +0.0529]
+          dAP has_prior head/medium/tail: head +0.0132, medium +0.0443, tail +0.0659
+          stratum AP: persistent vs resolved 0.7526 -> 0.7515 (26 cls); new vs absent 0.3647 -> 0.3615 (28 cls)
+    H5    full 0.4802 | has_prior 0.5299 | has_prior & frontal 0.5396 | no_prior 0.4549 | mECE 0.0069 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.49; 0.50,0.00,1.00,0.00,1.49 | 26s
+    H4-acq full 0.4808 (d +0.0177 [+0.0117, +0.0249]) | has_prior 0.5321 (d +0.0477 [+0.0378, +0.0576]) | has_prior & frontal 0.5401 (d +0.0431 [+0.0287, +0.0599]) | no_prior 0.4554 (d +0.0011 [-0.0025, +0.0045]) | mECE 0.0064 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.49; 0.50,0.25,1.00,0.00,1.49 | 203s
+    B-early  full 0.4831 (d vs E +0.0185 [+0.0106, +0.0246]) | has_prior 0.5294 (d vs E +0.0495 [+0.0391, +0.0630]) | has_prior & frontal 0.5344 (d vs E +0.0436 [+0.0254, +0.0632]) | no_prior 0.4551 (d vs E +0.0002 [-0.0058, +0.0062])
+    H4 - B-early (seed 1024) full                             -0.0022 [-0.0101, +0.0064]
+    H4 - B-early (seed 1024) has_prior & frontal (PRIMARY)    -0.0022 [-0.0204, +0.0158]
+    H4 - B-early (seed 1024) has_prior                        -0.0032 [-0.0158, +0.0069]
+    H4 - B-early (seed 1024) no_prior                         -0.0007 [-0.0059, +0.0042]
+    H1 - B-early (exploratory) (seed 1024) full                             +0.0082 [-0.0025, +0.0202]
+    H1 - B-early (exploratory) (seed 1024) has_prior & frontal (PRIMARY)    +0.0081 [-0.0126, +0.0285]
+    H1 - B-early (exploratory) (seed 1024) has_prior                        +0.0131 [-0.0032, +0.0287]
+    H1 - B-early (exploratory) (seed 1024) no_prior                         -0.0003 [-0.0054, +0.0049]
+    B-early0 full 0.4645 (d vs E +0.0004 [-0.0045, +0.0049]) | has_prior 0.4821 (d vs E -0.0013 [-0.0070, +0.0044]) | has_prior & frontal 0.4946 (d vs E -0.0000 [-0.0074, +0.0091]) | no_prior 0.4551 (d vs E +0.0002 [-0.0058, +0.0062])
+
+[3] emission ens (push__img768_dp01_seed42__model_swa@768_flip.npy, push__img1024_dp01_seed86__model_swa@1024_flip.npy, res_sweep__img640_seed86__model_best@640_flip.npy)
+    E     full 0.4737 | has_prior 0.4977 | has_prior & frontal 0.5100 | no_prior 0.4635 | mECE 0.1337 | 3s
+    check: H0 reproduces B-late (has_prior 0.5299, full 0.4752)
+    H0    full 0.4769 (d +0.0030 [-0.0083, +0.0167]) | has_prior 0.5332 (d +0.0418 [+0.0218, +0.0619]) | has_prior & frontal 0.5425 (d +0.0305 [+0.0098, +0.0525]) | no_prior 0.4635 (d +0.0000 [+0.0000, +0.0000]) | mECE 0.1280 | w(h,0,e,J[,a]) 1.00,0.00 | 185s
+    H1    full 0.4948 (d +0.0202 [+0.0120, +0.0336]) | has_prior 0.5503 (d +0.0526 [+0.0370, +0.0690]) | has_prior & frontal 0.5550 (d +0.0451 [+0.0269, +0.0632]) | no_prior 0.4635 (d -0.0000 [-0.0000, +0.0000]) | mECE 0.0075 | w(h,0,e,J[,a]) 0.75,0.00,1.00,0.00,1.56; 0.50,0.00,1.00,0.00,1.57 | 188s
+    H2    full 0.4931 | has_prior 0.5475 | has_prior & frontal 0.5540 | no_prior 0.4635 | mECE 0.0074 | w(h,0,e,J[,a]) 0.75,0.00,1.00,0.00,1.56; 0.50,0.00,1.00,0.00,1.57 | 7s
+    H3    full 0.4902 (d +0.0148 [+0.0087, +0.0240]) | has_prior 0.5422 (d +0.0447 [+0.0327, +0.0598]) | has_prior & frontal 0.5502 (d +0.0393 [+0.0233, +0.0564]) | no_prior 0.4630 (d -0.0000 [-0.0000, +0.0000]) | mECE 0.0071 | w(h,0,e,J[,a]) 0.75,0.00,1.00,0.00,1.56; 0.50,0.00,1.00,0.00,1.57 | 203s
+    H4    full 0.4887 (d +0.0129 [+0.0068, +0.0222]) | has_prior 0.5400 (d +0.0417 [+0.0300, +0.0555]) | has_prior & frontal 0.5486 (d +0.0364 [+0.0209, +0.0517]) | no_prior 0.4627 (d -0.0009 [-0.0020, +0.0001]) | mECE 0.0068 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.56; 0.50,0.00,1.00,0.00,1.57 | 258s
+          has_prior & study_not_in_train     n  2814 | base 0.5102 -> 0.5605 [0.5535, 0.5644] | d +0.0485 [+0.0317, +0.0693]
+          patient_unseen                     n  3966 | base 0.4861 -> 0.4834 [0.4756, 0.4882] | d -0.0043 [-0.0124, +0.0004]
+          has_prior & history val-only       n   248 | base 0.5726 -> 0.5976 [0.5861, 0.6051] | d +0.0320 [+0.0077, +0.0579]
+          dAP has_prior head/medium/tail: head +0.0120, medium +0.0425, tail +0.0498
+          stratum AP: persistent vs resolved 0.7512 -> 0.7493 (26 cls); new vs absent 0.3765 -> 0.3746 (28 cls)
+    H5    full 0.4887 | has_prior 0.5400 | has_prior & frontal 0.5486 | no_prior 0.4627 | mECE 0.0068 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.56; 0.50,0.00,1.00,0.00,1.57 | 26s
+    H4-acq full 0.4901 (d +0.0140 [+0.0074, +0.0229]) | has_prior 0.5410 (d +0.0428 [+0.0310, +0.0560]) | has_prior & frontal 0.5472 (d +0.0361 [+0.0206, +0.0537]) | no_prior 0.4636 (d +0.0005 [-0.0041, +0.0044]) | mECE 0.0065 | w(h,0,e,J[,a]) 0.75,0.25,1.00,0.00,1.56; 0.50,0.25,1.00,0.00,1.57 | 203s
+
+wrote /home/psytp7/ISBI_2026/analysis/out/markov_hmm/results.json | 6063s

@@ -1042,7 +1042,7 @@ def main():
                 f"| out_dir={cfg['out_dir']}")
 
     # Compute label factors if using discounted weights (optional)
-    df = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "CXRLT_2026_training_filtered.csv"))
+    df = pd.read_csv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "CXRLT_2026_training_filtered.csv"))
     label_cols = df.columns[3:]  # adjust if your CSV format is different
     # y_trn = df[label_cols].values
     # lcounts = np.sum(y_trn, axis=0)

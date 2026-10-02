@@ -353,8 +353,10 @@ class Decoder(nn.Module):
 
         self.group_fc = GroupFC(embed_len_decoder)
 
-    def forward(self, x, mask=None):
+    def forward(self, x, mask=None, query_offset=None):
         # x: (B,C,H,W) or (B,S,C)
+        # query_offset: optional (B,Q,D) per-image offset added to the label queries before the
+        # decoder blocks (train/prior_conditioning.py, train_2_v5.py). None = unchanged behaviour.
         if x.dim() == 4:
             embedding_spatial = x.flatten(2).transpose(1, 2)  # (B,S,C)
         else:
@@ -369,6 +371,8 @@ class Decoder(nn.Module):
         # fixed queries
         query_embed = self.query_embed.weight                   # (Q,D)
         tgt = query_embed.unsqueeze(1).expand(-1, B, -1)         # (Q,B,D)
+        if query_offset is not None:
+            tgt = tgt + query_offset.transpose(0, 1).to(tgt.dtype)  # (Q,B,D)
 
         # memory to (S,B,D) for batch_first=False MHA
         memory = embedding_spatial.transpose(0, 1)               # (S,B,D)

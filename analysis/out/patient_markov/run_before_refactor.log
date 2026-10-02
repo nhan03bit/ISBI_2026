@@ -1,0 +1,71 @@
+srun: Setting default QoS for your account: core.
+[1] study-level leak | val images (CSV rows) 17274 | StudyID also in train 9189 (0.532) | identical label_list 1.0000 | train studies with >1 distinct label_list 0
+    greedy-3 ensemble (flip) macro mAP by subset:
+      all                                  n  17270 | classes 30 | mAP 0.4722
+      study_in_train                       n   9186 | classes 30 | mAP 0.4515
+      study_not_in_train                   n   8084 | classes 30 | mAP 0.4918
+      frontal & study_in_train             n   4667 | classes 29 | mAP 0.4990
+      frontal & study_not_in_train         n   7306 | classes 30 | mAP 0.4914
+      patient_seen & study_not_in_train    n   4118 | classes 30 | mAP 0.5105
+      patient_unseen                       n   3966 | classes 28 | mAP 0.4743
+    bootstrap mAP(study_in_train) - mAP(study_not_in_train): -0.0402 [-0.0776, -0.0019]
+    bootstrap mAP(frontal & study_in_train) - mAP(frontal & study_not_in_train): +0.0082 [-0.0289, +0.0455]
+
+[2] patient Markov chain | studies 83209 (inconsistent labels within a study: 0; excluded, StudyID spans >1 patient or date: 1) | images without a date dropped 0
+    consecutive train-fold (patient, date) pairs: 24180 | patients contributing 12845 | same-day multi-study dates 1024 | median gap 133 d
+    class                            group     prev n_prev+  a=P(1|1)  b=P(1|0)  a/prev
+    Normal                           head    0.4018    6430    0.6169    0.1042     1.5
+    pleural effusion                 head    0.1211    4581    0.6352    0.1090     5.2
+    cardiomegaly                     head    0.1065    2780    0.5266    0.0631     4.9
+    Support Devices                  medium  0.0833    4379    0.7759    0.0747     9.3
+    aortic elongation                medium  0.0815    1943    0.4406    0.0493     5.4
+    Nodule                           medium  0.0760    1958    0.4444    0.0418     5.8
+    interstitial pattern             medium  0.0667    2334    0.4259    0.0674     6.4
+    alveolar pattern                 medium  0.0659    3129    0.5292    0.0705     8.0
+    atelectasis                      medium  0.0654    2215    0.3861    0.0736     5.9
+    hyperinflated lung               medium  0.0499     871    0.2875    0.0276     5.8
+    central venous catheter          medium  0.0462    3010    0.7068    0.0548    15.3
+    vertebral degenerative changes   medium  0.0424     661    0.2760    0.0297     6.5
+    vascular hilar enlargement       medium  0.0417    1009    0.3027    0.0358     7.3
+    pleural thickening               medium  0.0365     860    0.5220    0.0228    14.3
+    fracture                         medium  0.0328     823    0.5200    0.0177    15.9
+    hypoexpansion                    medium  0.0297     871    0.3562    0.0263    12.0
+    Kyphosis                         medium  0.0297     510    0.3359    0.0195    11.3
+    hemidiaphragm elevation          medium  0.0252     572    0.4181    0.0156    16.6
+    sternotomy                       medium  0.0216     712    0.8207    0.0073    38.0
+    bronchiectasis                   medium  0.0192     474    0.3971    0.0142    20.7
+    Hernia                           medium  0.0159     384    0.6399    0.0066    40.3
+    aortic atheromatosis             medium  0.0138     215    0.2304    0.0134    16.6
+    Emphysema                        medium  0.0119     323    0.3231    0.0103    27.1
+    calcified densities              tail    0.0081     198    0.2950    0.0061    36.5
+    Pneumothorax                     tail    0.0041     132    0.4254    0.0038   104.6
+    azygos lobe                      tail    0.0033      62    0.6406    0.0006   191.3
+    Mass                             tail    0.0029      59    0.1967    0.0018    68.7
+    Subcutaneous Emphysema           tail    0.0017      83    0.4353    0.0024   251.2
+    pneumoperitoneo                  tail    0.0005      19    0.0952    0.0010   189.2
+    Hydropneumothorax                tail    0.0004      11    0.0769    0.0006   209.1
+    head   mean a 0.593 | mean b 0.0921 | mean prevalence 0.2098
+    medium mean a 0.457 | mean b 0.0340 | mean prevalence 0.0428
+    tail   mean a 0.309 | mean b 0.0023 | mean prevalence 0.0030
+    by gap (a shown where n_prev+ >= 50, else pooled):
+      <=30d    pairs   9123 | classes with own a 25 | mean a over those 0.456 (pooled 0.471)
+      31-365d  pairs   7136 | classes with own a 24 | mean a over those 0.438 (pooled 0.467)
+      >365d    pairs   7921 | classes with own a 24 | mean a over those 0.402 (pooled 0.467)
+
+[3] val images (aligned) with a strictly earlier study: 5759 (0.333) | prior in train 5292 | frontal 4061 | patient unseen in train 80 | median gap 168 d
+    has-prior subset: history-only predictor mAP 0.2623 (tie-heavy: 2 distinct scores per class) vs greedy-3 ensemble 0.4978 | classes 30
+
+[4] HMM late fusion, logit q = logit p + w (logit pi(prior) - logit pi) | bootstrap 300 patient-clustered resamples, 95% percentile CI
+    has_prior                                  n  5759 | cls 30 | base 0.4978 | w=1 0.5299 (d +0.0364 [+0.0095, +0.0621]) | w=1 gap-binned 0.5306 | CV-w 0.5545 (w chosen [0.5, 0.5])
+    has_prior & frontal                        n  4061 | cls 30 | base 0.4989 | w=1 0.5305 (d +0.0320 [+0.0116, +0.0605]) | w=1 gap-binned 0.5316 | CV-w 0.5394 (w chosen [0.5, 0.25])
+    has_prior & prior_in_train                 n  5292 | cls 30 | base 0.4954 | w=1 0.5284 (d +0.0359 [+0.0104, +0.0643]) | w=1 gap-binned 0.5292 | CV-w 0.5528 (w chosen [0.5, 0.5])
+    has_prior & patient_unseen                 n    80 | cls 21 | base 0.6157 | w=1 0.6376 (d +0.0224 [-0.0497, +0.0960]) | w=1 gap-binned 0.6398 | CV-w 0.6058 (w chosen [0.0, 0.5])
+    has_prior & study_not_in_train             n  2814 | cls 30 | base 0.4957 | w=1 0.5501 (d +0.0547 [+0.0312, +0.0799]) | w=1 gap-binned 0.5518 | CV-w 0.5611 (w chosen [0.5, 0.5])
+    has_prior & frontal & study_not_in_train   n  2558 | cls 30 | base 0.4879 | w=1 0.5353 (d +0.0484 [+0.0232, +0.0837]) | w=1 gap-binned 0.5387 | CV-w 0.5466 (w chosen [0.5, 0.5])
+    has_prior per-class dAP (w=1), head  : mean +0.0024 over 3 classes | improved 2
+    has_prior per-class dAP (w=1), medium: mean +0.0367 over 20 classes | improved 15
+    has_prior per-class dAP (w=1), tail  : mean +0.0317 over 7 classes | improved 6
+    full val (no-prior rows unchanged): base 0.4722 -> w=1 0.4752 (+0.0030)
+    leaderboard: 0 by construction (no patient history exists or may be used at test time)
+
+wrote /home/psytp7/ISBI_2026/analysis/out/patient_markov/results.json

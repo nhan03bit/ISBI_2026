@@ -1,6 +1,6 @@
 #!/bin/bash
 # Stage-2 v4: Markov label-refine layer on the ML-Decoder logits (train/train_2_v4.py,
-# train/markov_layer.py). Background: docs/result/2026-09-26-markov-applicability.md - a
+# train/markov_layer.py). Background: docs/plan/2026-09-26-markov-applicability.md - a
 # FIXED random-walk smoothing over label co-occurrence hurt the best ensemble offline
 # (-0.0006..-0.0053 mAP); this tests the TRAINABLE version, which starts as the identity
 # (gate = bias = 0) and can only contribute what training finds useful.
@@ -48,6 +48,11 @@ fi
 submit() {  # name out-subdir train-args...
     local name=$1 sub=$2; shift 2
     local tag=""; [ "$SMOKE" = 1 ] && tag="_smoke"
+    # a non-default LR_MULT gets its own name/dir, so it can never overwrite the lr x10 runs
+    if [ "$LR_MULT" != 10 ]; then
+        name="${name}_lr${LR_MULT}"
+        sub="${sub/_seed/_lr${LR_MULT}_seed}"
+    fi
     local jid
     jid=$(sbatch --parsable \
         -J "isbi2026_v4markov_${name}_s${SEED}${tag}" \

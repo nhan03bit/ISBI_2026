@@ -4,13 +4,13 @@
    over a row-stochastic label co-occurrence matrix (train fold), q = (1-a)p + a*(p_hat P)*sum(p),
    and report macro mAP vs the unsmoothed ensemble.
 2. Patient structure of the internal split, using the ORIGINAL PadChest metadata read
-   with dtype=str (train/CXRLT_2026_training_filtered.csv stores PatientID as a lossy float).
+   with dtype=str (data/CXRLT_2026_training_filtered.csv stores PatientID as a lossy float).
 3. Normal-gating (CXR-LT 2026 Task 1 winner, arXiv 2602.13430):
    p_c <- p_c * (1 - p_Normal)^alpha for every abnormal class c.
 4. Val subsets closer to the leaderboard test set (frontal only, patients unseen in train),
    using the reconstructed row order of the dumped probs (analysis/out/val_key_order.npy).
 
-Report: docs/result/2026-09-26-markov-applicability.md
+Report: docs/plan/2026-09-26-markov-applicability.md
 
 Usage
 -----

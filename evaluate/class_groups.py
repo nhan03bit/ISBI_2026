@@ -7,7 +7,7 @@ Two orderings exist in this repo and they are NOT the same:
     shards (``wds_shards_*/label_info.pt`` key ``class_names``) and therefore the
     order of every model's 30 output logits.
   * "csv order"    -- the column order of
-    ``train/CXRLT_2026_training_filtered.csv`` (roughly frequency-descending).
+    ``data/CXRLT_2026_training_filtered.csv`` (roughly frequency-descending).
     ``train/train_2_v2.py`` computes ``class_weights`` in this order.
 
 Everything downstream (per-class AP, head/medium/tail grouping, LaTeX tables)
@@ -30,7 +30,7 @@ _HERE = Path(__file__).resolve().parent
 _REPO = _HERE.parent
 
 DEFAULT_LABEL_INFO = _REPO / "wds_shards_val_raw" / "label_info.pt"
-DEFAULT_TRAIN_CSV = _REPO / "train" / "CXRLT_2026_training_filtered.csv"
+DEFAULT_TRAIN_CSV = _REPO / "data" / "CXRLT_2026_training_filtered.csv"
 
 # CXR-LT 2024 (Med. Image Anal. 2025) frequency-group thresholds, on *training*
 # prevalence. head > 10%, 1% <= medium <= 10%, tail < 1%.

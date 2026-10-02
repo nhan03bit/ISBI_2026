@@ -1292,7 +1292,7 @@ def main():
     # "head" exclusion masking 5 tail/mid classes while leaving Normal in).
     # --class-weight-order shard (default) restores the mapping; csv reproduces
     # the bug for jobs 45821-45825.
-    df = pd.read_csv(os.path.join(os.path.dirname(os.path.abspath(__file__)), "CXRLT_2026_training_filtered.csv"))
+    df = pd.read_csv(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "CXRLT_2026_training_filtered.csv"))
     csv_label_cols = list(df.columns[3:])
 
     if cfg["class_weight_order"] == "shard":

@@ -1,0 +1,465 @@
+{
+  "padchest_csv": "/home/psytp7/ISBI_2026/data/PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv",
+  "n_boot": 300,
+  "ci": "95% percentile",
+  "leak": {
+    "n_val_csv": 17274,
+    "n_study_in_train": 9189,
+    "frac_study_in_train": 0.5319555401180965,
+    "frac_identical_labels": 1.0,
+    "subsets": {
+      "all": {
+        "n": 17270,
+        "classes": 30,
+        "mAP": 0.472237765789032
+      },
+      "study_in_train": {
+        "n": 9186,
+        "classes": 30,
+        "mAP": 0.45148563385009766
+      },
+      "study_not_in_train": {
+        "n": 8084,
+        "classes": 30,
+        "mAP": 0.4917556047439575
+      },
+      "frontal & study_in_train": {
+        "n": 4667,
+        "classes": 29,
+        "mAP": 0.4990119934082031
+      },
+      "frontal & study_not_in_train": {
+        "n": 7306,
+        "classes": 30,
+        "mAP": 0.49141475558280945
+      },
+      "patient_seen & study_not_in_train": {
+        "n": 4118,
+        "classes": 30,
+        "mAP": 0.5104652047157288
+      },
+      "patient_unseen": {
+        "n": 3966,
+        "classes": 28,
+        "mAP": 0.4743204712867737
+      }
+    },
+    "diff study_in_train - study_not_in_train": {
+      "mean": -0.040193686683972676,
+      "ci95": [
+        -0.0775642715394497,
+        -0.0018863625824451773
+      ]
+    },
+    "diff frontal & study_in_train - frontal & study_not_in_train": {
+      "mean": 0.008207197288672129,
+      "ci95": [
+        -0.02892465740442276,
+        0.04551078006625174
+      ]
+    }
+  },
+  "chain_n_ambiguous_studies": 1,
+  "chain": {
+    "n_pairs": 24180,
+    "median_gap_days": 133.0,
+    "per_class": [
+      {
+        "class": "Normal",
+        "group": "head",
+        "prevalence": 0.4017985924900535,
+        "n_prev_pos": 6430,
+        "a": 0.6169154228855721,
+        "b": 0.10421360973411446
+      },
+      {
+        "class": "pleural effusion",
+        "group": "head",
+        "prevalence": 0.12105166355284938,
+        "n_prev_pos": 4581,
+        "a": 0.6351734671612481,
+        "b": 0.10902504974236009
+      },
+      {
+        "class": "cardiomegaly",
+        "group": "head",
+        "prevalence": 0.10652159182211553,
+        "n_prev_pos": 2780,
+        "a": 0.5265995686556434,
+        "b": 0.06312494159424353
+      },
+      {
+        "class": "Support Devices",
+        "group": "medium",
+        "prevalence": 0.0833180062534486,
+        "n_prev_pos": 4379,
+        "a": 0.7758502624971467,
+        "b": 0.07473615108821896
+      },
+      {
+        "class": "aortic elongation",
+        "group": "medium",
+        "prevalence": 0.08149811718923942,
+        "n_prev_pos": 1943,
+        "a": 0.4406169665809769,
+        "b": 0.04928279149242322
+      },
+      {
+        "class": "Nodule",
+        "group": "medium",
+        "prevalence": 0.07599004869171273,
+        "n_prev_pos": 1958,
+        "a": 0.4443877551020408,
+        "b": 0.04184665226781858
+      },
+      {
+        "class": "interstitial pattern",
+        "group": "medium",
+        "prevalence": 0.06674539945596933,
+        "n_prev_pos": 2334,
+        "a": 0.4259417808219178,
+        "b": 0.06737458806298059
+      },
+      {
+        "class": "alveolar pattern",
+        "group": "medium",
+        "prevalence": 0.06588385622876393,
+        "n_prev_pos": 3129,
+        "a": 0.5292238901309486,
+        "b": 0.07053626561535173
+      },
+      {
+        "class": "atelectasis",
+        "group": "medium",
+        "prevalence": 0.0654482444846713,
+        "n_prev_pos": 2215,
+        "a": 0.386107352277853,
+        "b": 0.07361041562343515
+      },
+      {
+        "class": "hyperinflated lung",
+        "group": "medium",
+        "prevalence": 0.049930786133994175,
+        "n_prev_pos": 871,
+        "a": 0.28751431844215347,
+        "b": 0.027583544249495946
+      },
+      {
+        "class": "central venous catheter",
+        "group": "medium",
+        "prevalence": 0.04616516461283796,
+        "n_prev_pos": 3010,
+        "a": 0.7068393094289509,
+        "b": 0.0548365766106178
+      },
+      {
+        "class": "vertebral degenerative changes",
+        "group": "medium",
+        "prevalence": 0.04239954309168175,
+        "n_prev_pos": 661,
+        "a": 0.27601809954751133,
+        "b": 0.029718124229412016
+      },
+      {
+        "class": "vascular hilar enlargement",
+        "group": "medium",
+        "prevalence": 0.04169288404015372,
+        "n_prev_pos": 1009,
+        "a": 0.3026706231454006,
+        "b": 0.03577439261209166
+      },
+      {
+        "class": "pleural thickening",
+        "group": "medium",
+        "prevalence": 0.03647522337202211,
+        "n_prev_pos": 860,
+        "a": 0.5220417633410673,
+        "b": 0.02281107966726696
+      },
+      {
+        "class": "fracture",
+        "group": "medium",
+        "prevalence": 0.03278704393870459,
+        "n_prev_pos": 823,
+        "a": 0.52,
+        "b": 0.017723361445267347
+      },
+      {
+        "class": "hypoexpansion",
+        "group": "medium",
+        "prevalence": 0.029699040686136897,
+        "n_prev_pos": 871,
+        "a": 0.35624284077892326,
+        "b": 0.026253699969971258
+      },
+      {
+        "class": "Kyphosis",
+        "group": "medium",
+        "prevalence": 0.02966999990319739,
+        "n_prev_pos": 510,
+        "a": 0.3359375,
+        "b": 0.019516728624535316
+      },
+      {
+        "class": "hemidiaphragm elevation",
+        "group": "medium",
+        "prevalence": 0.025168678547573643,
+        "n_prev_pos": 572,
+        "a": 0.4181184668989547,
+        "b": 0.0156289707750953
+      },
+      {
+        "class": "sternotomy",
+        "group": "medium",
+        "prevalence": 0.021616022767973826,
+        "n_prev_pos": 712,
+        "a": 0.8207282913165266,
+        "b": 0.007328504473796336
+      },
+      {
+        "class": "bronchiectasis",
+        "group": "medium",
+        "prevalence": 0.019157236479095476,
+        "n_prev_pos": 474,
+        "a": 0.39705882352941174,
+        "b": 0.01417243124683651
+      },
+      {
+        "class": "Hernia",
+        "group": "medium",
+        "prevalence": 0.015885308267910903,
+        "n_prev_pos": 384,
+        "a": 0.6398963730569949,
+        "b": 0.006555172703588537
+      },
+      {
+        "class": "aortic atheromatosis",
+        "group": "medium",
+        "prevalence": 0.013842773201165504,
+        "n_prev_pos": 215,
+        "a": 0.2304147465437788,
+        "b": 0.013435139984144865
+      },
+      {
+        "class": "Emphysema",
+        "group": "medium",
+        "prevalence": 0.011926081527157972,
+        "n_prev_pos": 323,
+        "a": 0.3230769230769231,
+        "b": 0.010310574625927323
+      },
+      {
+        "class": "calcified densities",
+        "group": "tail",
+        "prevalence": 0.008083017918163073,
+        "n_prev_pos": 198,
+        "a": 0.295,
+        "b": 0.006129086057371581
+      },
+      {
+        "class": "Pneumothorax",
+        "group": "tail",
+        "prevalence": 0.004065709611531127,
+        "n_prev_pos": 132,
+        "a": 0.4253731343283582,
+        "b": 0.0037837837837837837
+      },
+      {
+        "class": "azygos lobe",
+        "group": "tail",
+        "prevalence": 0.003349370299023262,
+        "n_prev_pos": 62,
+        "a": 0.640625,
+        "b": 0.0005804311774461028
+      },
+      {
+        "class": "Mass",
+        "group": "tail",
+        "prevalence": 0.002865357250031461,
+        "n_prev_pos": 59,
+        "a": 0.19672131147540983,
+        "b": 0.0017825311942959
+      },
+      {
+        "class": "Subcutaneous Emphysema",
+        "group": "tail",
+        "prevalence": 0.0017327667153906468,
+        "n_prev_pos": 83,
+        "a": 0.43529411764705883,
+        "b": 0.0023652433710942364
+      },
+      {
+        "class": "pneumoperitoneo",
+        "group": "tail",
+        "prevalence": 0.0005033735709514728,
+        "n_prev_pos": 19,
+        "a": 0.09523809523809523,
+        "b": 0.0010346397384430742
+      },
+      {
+        "class": "Hydropneumothorax",
+        "group": "tail",
+        "prevalence": 0.0003678499172337686,
+        "n_prev_pos": 11,
+        "a": 0.07692307692307693,
+        "b": 0.0005792064871126556
+      }
+    ],
+    "gap <=30d": {
+      "n_pairs": 9123,
+      "classes_with_own_a": 25,
+      "mean_a_own": 0.455943543695702
+    },
+    "gap 31-365d": {
+      "n_pairs": 7136,
+      "classes_with_own_a": 24,
+      "mean_a_own": 0.438269735114313
+    },
+    "gap >365d": {
+      "n_pairs": 7921,
+      "classes_with_own_a": 24,
+      "mean_a_own": 0.4023094913453549
+    }
+  },
+  "history_only": {
+    "n": 5759,
+    "mAP_history_only": 0.2623049020767212,
+    "mAP_ensemble": 0.4978247582912445,
+    "classes": 30
+  },
+  "fusion": {
+    "has_prior": {
+      "n": 5759,
+      "classes": 30,
+      "base": 0.4978247582912445,
+      "w1": 0.5299426913261414,
+      "w1_gap": 0.5305567383766174,
+      "w1_minus_base": {
+        "mean": 0.03638720879952113,
+        "ci95": [
+          0.00945047363638878,
+          0.06212563738226891
+        ]
+      },
+      "cv": 0.554510772228241,
+      "cv_w": [
+        0.5,
+        0.5
+      ]
+    },
+    "has_prior & frontal": {
+      "n": 4061,
+      "classes": 30,
+      "base": 0.4988502562046051,
+      "w1": 0.5305079221725464,
+      "w1_gap": 0.531566321849823,
+      "w1_minus_base": {
+        "mean": 0.03202549030383428,
+        "ci95": [
+          0.011568987369537353,
+          0.06047257557511329
+        ]
+      },
+      "cv": 0.5393832325935364,
+      "cv_w": [
+        0.5,
+        0.25
+      ]
+    },
+    "has_prior & prior_in_train": {
+      "n": 5292,
+      "classes": 30,
+      "base": 0.4953608810901642,
+      "w1": 0.5284456610679626,
+      "w1_gap": 0.529198408126831,
+      "w1_minus_base": {
+        "mean": 0.03592484305302302,
+        "ci95": [
+          0.010352502763271333,
+          0.06433435678482054
+        ]
+      },
+      "cv": 0.5528339147567749,
+      "cv_w": [
+        0.5,
+        0.5
+      ]
+    },
+    "has_prior & patient_unseen": {
+      "n": 80,
+      "classes": 21,
+      "base": 0.6156839728355408,
+      "w1": 0.6376437544822693,
+      "w1_gap": 0.6398208737373352,
+      "w1_minus_base": {
+        "mean": 0.022428879141807558,
+        "ci95": [
+          -0.04968857765197753,
+          0.0959630489349365
+        ]
+      },
+      "cv": 0.6058415174484253,
+      "cv_w": [
+        0.0,
+        0.5
+      ]
+    },
+    "has_prior & study_not_in_train": {
+      "n": 2814,
+      "classes": 30,
+      "base": 0.49572330713272095,
+      "w1": 0.5500675439834595,
+      "w1_gap": 0.5517504215240479,
+      "w1_minus_base": {
+        "mean": 0.05473533550898234,
+        "ci95": [
+          0.031241776049137117,
+          0.07988005280494688
+        ]
+      },
+      "cv": 0.5611432194709778,
+      "cv_w": [
+        0.5,
+        0.5
+      ]
+    },
+    "has_prior & frontal & study_not_in_train": {
+      "n": 2558,
+      "classes": 30,
+      "base": 0.487866073846817,
+      "w1": 0.5353158116340637,
+      "w1_gap": 0.5386598706245422,
+      "w1_minus_base": {
+        "mean": 0.048391116758187615,
+        "ci95": [
+          0.02323288843035698,
+          0.08370342254638669
+        ]
+      },
+      "cv": 0.5466129183769226,
+      "cv_w": [
+        0.5,
+        0.5
+      ]
+    },
+    "dAP head": {
+      "mean": 0.0023993253707885742,
+      "classes": 3,
+      "improved": 2
+    },
+    "dAP medium": {
+      "mean": 0.03672046214342117,
+      "classes": 20,
+      "improved": 15
+    },
+    "dAP tail": {
+      "mean": 0.031704775989055634,
+      "classes": 7,
+      "improved": 6
+    },
+    "full_val": {
+      "base": 0.472237765789032,
+      "w1": 0.4752271771430969
+    }
+  }
+}

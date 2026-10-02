@@ -1,0 +1,56 @@
+[
+  {
+    "file": "push__img768_dp01_seed42__model_swa@768_flip.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/push/img768_dp01_seed42/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": null
+  },
+  {
+    "file": "push__img768_dp01_seed1024__model_swa@768_flip.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/push/img768_dp01_seed1024/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": null
+  },
+  {
+    "file": "markov__img768_mk1_seed42__model_swa@768_flip.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/markov/img768_mk1_seed42/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": null
+  },
+  {
+    "file": "markov__img768_mk2_seed42__model_swa@768_flip.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/markov/img768_mk2_seed42/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": null
+  },
+  {
+    "file": "markov__img768_mk1fix_seed42__model_swa@768_flip.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/markov/img768_mk1fix_seed42/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": null
+  },
+  {
+    "file": "markov__img768_mk1_lr100_seed42__model_swa@768_flip.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/markov/img768_mk1_lr100_seed42/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": null
+  }
+]

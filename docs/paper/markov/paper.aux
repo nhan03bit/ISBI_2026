@@ -1,0 +1,135 @@
+\relax 
+\citation{b12,b14}
+\citation{b15}
+\@writefile{toc}{\contentsline {section}{\numberline {I}Introduction}{1}{}\protected@file@percent }
+\citation{b18}
+\citation{b19}
+\citation{b17}
+\citation{b2}
+\citation{b13}
+\citation{b20}
+\citation{b21}
+\citation{b16}
+\citation{b11,b14}
+\citation{b10}
+\citation{b9}
+\citation{b15}
+\citation{b23}
+\citation{b22}
+\citation{b12}
+\citation{b1}
+\citation{b2}
+\citation{b3}
+\citation{b6}
+\citation{b15}
+\@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {III}Method}{2}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Baseline Model}{2}{}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Where the Markov step sits. The baseline (v3) is the model without the orange layer. The post-hoc variants of Sections~\ref {sec:smoothing} and~\ref {sec:gating} act on the probabilities $\sigma (u)$ of a trained v3 model at inference; the trainable layer of Section~\ref {sec:layer} is inserted before the loss and fine-tuned end to end. The post-prediction patient HMM of Section~\ref {sec:hmm} also acts on $\sigma (u)$ of a frozen model, combined with the patient's history and metadata (Fig.~\ref {fig:hmm}).}}{2}{}\protected@file@percent }
+\newlabel{fig:pipeline}{{1}{2}{}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Label Transition Matrix}{2}{}\protected@file@percent }
+\newlabel{eq:transition}{{1}{2}{}{equation.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Post-Hoc Random-Walk Smoothing}{2}{}\protected@file@percent }
+\newlabel{sec:smoothing}{{\mbox  {III-C}}{2}{}{subsection.3.3}{}}
+\newlabel{eq:smoothing}{{2}{2}{}{equation.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Normal-Gating}{2}{}\protected@file@percent }
+\newlabel{sec:gating}{{\mbox  {III-D}}{2}{}{subsection.3.4}{}}
+\newlabel{eq:gating}{{3}{2}{}{equation.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-E}}Trainable Markov Label Layer}{3}{}\protected@file@percent }
+\newlabel{sec:layer}{{\mbox  {III-E}}{3}{}{subsection.3.5}{}}
+\newlabel{eq:layerP}{{4}{3}{}{equation.4}{}}
+\newlabel{eq:layer}{{5}{3}{}{equation.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces The trainable Markov label layer for $K{=}1$. $P$ is one global matrix shared by all images; only its input $q$ is image-specific. For $K{=}2$ the step is repeated with $\sigma (z^{(1)})$ in place of $q$.}}{3}{}\protected@file@percent }
+\newlabel{fig:layer}{{2}{3}{}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-F}}Post-Prediction Patient HMM}{3}{}\protected@file@percent }
+\newlabel{sec:hmm}{{\mbox  {III-F}}{3}{}{subsection.3.6}{}}
+\newlabel{eq:hmm}{{6}{3}{}{equation.6}{}}
+\newlabel{eq:emission}{{7}{3}{}{equation.7}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces The post-prediction patient HMM as a graphical model, with one state per patient and date. Orange circles are the hidden finding states $y_t \in \{0,1\}^{30}$, blue boxes the images and the frozen classifier, white boxes metadata. The transition prior $\pi $ (Eq.~\eqref  {eq:trans}) depends on the previous state, the metadata of the current date and the gap $\Delta _t$; a state without an earlier state uses $\pi ^{0}(m)$ (Eq.~\eqref  {eq:init}). The classifier supplies only the emission (Eq.~\eqref  {eq:emission}), and prior and emission are combined after the network. In the observed mode $y_{t-1}$ is read from the previous report (dashed); in the filtered mode it is inferred from $x_{1:t-1}$ by Eqs.~\eqref  {eq:predict}--\eqref  {eq:update}.}}{3}{}\protected@file@percent }
+\newlabel{fig:hmm}{{3}{3}{}{figure.3}{}}
+\newlabel{eq:init}{{8}{3}{}{equation.8}{}}
+\newlabel{eq:trans}{{9}{3}{}{equation.9}{}}
+\newlabel{eq:phi}{{10}{3}{}{equation.10}{}}
+\newlabel{eq:fuse}{{11}{3}{}{equation.11}{}}
+\newlabel{eq:qw}{{12}{3}{}{equation.12}{}}
+\citation{b24}
+\citation{b9}
+\newlabel{eq:predict}{{13}{4}{}{equation.13}{}}
+\newlabel{eq:update}{{14}{4}{}{equation.14}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {I}{\ignorespaces The two history modes of the patient HMM.}}{4}{}\protected@file@percent }
+\newlabel{tab:modes}{{I}{4}{}{table.1}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {II}{\ignorespaces Arms of the patient HMM. Each arm adds to the one above it; H4 is the pre-specified primary arm, and H5, H4-acq and H4-F are ablations of it.}}{4}{}\protected@file@percent }
+\newlabel{tab:arms}{{II}{4}{}{table.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {IV}Experimental Setup}{4}{}\protected@file@percent }
+\newlabel{sec:setup}{{IV}{4}{}{section.4}{}}
+\citation{b23}
+\citation{b15}
+\@writefile{toc}{\contentsline {section}{\numberline {V}Results}{5}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-A}}Random-Walk Smoothing}{5}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Post-hoc random-walk smoothing (Eq.~\eqref  {eq:smoothing}) on the greedy-3 ensemble, flip TTA, $n_{val} = 17{,}270$.}}{5}{}\protected@file@percent }
+\newlabel{tab:smoothing}{{III}{5}{}{table.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Normal-Gating}{5}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Normal-gating (Eq.~\eqref  {eq:gating}) on the greedy-3 ensemble, flip TTA.}}{5}{}\protected@file@percent }
+\newlabel{tab:gating}{{IV}{5}{}{table.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Trainable Markov Label Layer}{5}{}\protected@file@percent }
+\newlabel{sec:layerres}{{\mbox  {V-C}}{5}{}{subsection.5.3}{}}
+\citation{b14}
+\citation{b14}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Trainable Markov label layer versus the matched baseline (768~px, seed 42, no TTA). Best: EMA weights at the best epoch. SWA: average of the EMA weights of epochs 2--4; mAUC, mF1 and mECE are for the SWA weights. $|g|$: mean / max absolute gate after the final epoch.}}{6}{}\protected@file@percent }
+\newlabel{tab:layer}{{V}{6}{}{table.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-D}}Longitudinal Markov Model}{6}{}\protected@file@percent }
+\newlabel{sec:hmmres}{{\mbox  {V-D}}{6}{}{subsection.5.4}{}}
+\citation{b14}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-E}}Patient Metadata and Findings}{7}{}\protected@file@percent }
+\newlabel{sec:metaeda}{{\mbox  {V-E}}{7}{}{subsection.5.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-F}}Internal Validation versus the Test Set}{7}{}\protected@file@percent }
+\newlabel{sec:audit}{{\mbox  {V-F}}{7}{}{subsection.5.6}{}}
+\citation{b14}
+\citation{b10}
+\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Post-prediction patient HMM on the internal validation fold: change in macro mAP relative to the emission E (the frozen 768~px SWA model with flip TTA; the E row gives absolute mAP). Primary = frontal images with an earlier state ($n = 4{,}061$); full = 17,270 images; no\_prior = 11,511 images without an earlier state. mAP is computed within each of two patient halves (calibration and fusion weights are fitted on one half and applied to the other) and averaged, over three random splits. Each entry is the mean difference with a 95\% CI from a paired patient-clustered bootstrap (300 resamples) on the first split. Entries marked $^\dagger $ (H2, H5) have no bootstrap: they are differences of the three-split mean mAP and are not comparable to the other entries at the 0.001 level. H4-F (image-only history) was run for seed 42 only; B-early and B-early0 are the in-network comparator with and without its prior. This is an internal longitudinal simulation with report-derived history; its leaderboard effect is 0. Results for the three-model ensemble are given in the text.}}{8}{}\protected@file@percent }
+\newlabel{tab:hmm}{{VI}{8}{}{table.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {VII}{\ignorespaces Metadata-only logistic model, patient-grouped five-fold cross-validation on the training fold. Macro average over the 30 classes. Chance: AUROC 0.5, AP 0.050 (mean prevalence).}}{8}{}\protected@file@percent }
+\newlabel{tab:metaonly}{{VII}{8}{}{table.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Discussion}{8}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {VIII}{\ignorespaces Change in validation mAP when metadata are stacked on the image logit (cross-fitted on patient halves; 95\% patient-clustered bootstrap interval in brackets). Base: mAP of the image model alone, averaged over the two halves. s42: 768~px seed-42 SWA model; ens: greedy three-model ensemble; both with flip TTA.}}{9}{}\protected@file@percent }
+\newlabel{tab:incr}{{VIII}{9}{}{table.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Association between metadata fields (columns) and the 30 labels (rows, ordered by training prevalence, most frequent at the top) on the training fold. Colour is Cram\'er's $V$ from white (0) to dark blue (0.53); values of 0.15 and above are printed. The study-level fields are acuity, projection, time gap, age, number of earlier studies, sex and year; the remaining columns are acquisition fields (scanner resolution, relative exposure, exposure time, tube current, image rows, manufacturer, modality).}}{9}{}\protected@file@percent }
+\newlabel{fig:assoc}{{4}{9}{}{figure.4}{}}
+\citation{b14,b15,b16}
+\citation{b15}
+\citation{b12}
+\citation{b16}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Prevalence of six labels by age at study, for the six classes most associated with age. Each point is a 10-year age band of training studies; the vertical axis is the share of studies in the band with the finding. The scales differ between panels.}}{10}{}\protected@file@percent }
+\newlabel{fig:age}{{5}{10}{}{figure.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {IX}{\ignorespaces Macro mAP (flip TTA) on subsets of the internal validation fold. Seen and unseen refer to whether the image's patient appears in the training fold. The frontal, unseen-patient subset is the closest local proxy for the test set. Each subset is scored over the classes with at least one positive in it.}}{10}{}\protected@file@percent }
+\newlabel{tab:subsets}{{IX}{10}{}{table.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces Persistence of findings by the acuity of the later study: the probability that a finding is present at study $t$ given that it was present at study $t-1$ of the same patient (vertical axis), for 15 classes (horizontal axis). Colours give the acuity of study $t$: PA or lateral (blue), AP (orange), AP horizontal (green).}}{10}{}\protected@file@percent }
+\newlabel{fig:persist}{{6}{10}{}{figure.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {X}{\ignorespaces Key ingredients of the top published CXR-LT Task~1 solutions~\cite  {b14,b15,b16}.}}{11}{}\protected@file@percent }
+\newlabel{tab:winners}{{X}{11}{}{table.10}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Held-out AUROC of a logistic model that uses metadata only, for each of the 30 classes, sorted from highest to lowest (patient-grouped five-fold cross-validation, training fold). The vertical line marks chance (0.5).}}{11}{}\protected@file@percent }
+\newlabel{fig:auroc}{{7}{11}{}{figure.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{11}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{Appendix}{11}{}\protected@file@percent }
+\bibcite{b1}{1}
+\bibcite{b2}{2}
+\bibcite{b3}{3}
+\bibcite{b6}{4}
+\bibcite{b9}{5}
+\bibcite{b10}{6}
+\bibcite{b11}{7}
+\bibcite{b12}{8}
+\bibcite{b13}{9}
+\bibcite{b14}{10}
+\bibcite{b15}{11}
+\bibcite{b16}{12}
+\bibcite{b17}{13}
+\bibcite{b18}{14}
+\bibcite{b19}{15}
+\bibcite{b20}{16}
+\bibcite{b21}{17}
+\bibcite{b22}{18}
+\bibcite{b23}{19}
+\bibcite{b24}{20}
+\@writefile{toc}{\contentsline {section}{References}{12}{}\protected@file@percent }
+\gdef \@abspage@last{12}

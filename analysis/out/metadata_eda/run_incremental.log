@@ -1,0 +1,27 @@
+train images 103305 | patients 50604 | val images 17274
+studies 75819 | (patient, date) states 74782 | excluded ambiguous studies 1
+
+[5] incremental value over the image model on val: per-class stacking a_c logit p + b_c + gamma_c phi,
+    cross-fitted on patient halves, mAP within each half then averaged; paired patient-clustered bootstrap
+    s42 | all | recalibration only                       base 0.4687 -> 0.4687 | d vs emission +0.0000 [+0.0000, +0.0000]
+    s42 | all | patient                                  base 0.4687 -> 0.4662 | d vs emission -0.0026 [-0.0047, -0.0004] | d vs recal-only -0.0026 [-0.0041, -0.0007]
+    s42 | all | view                                     base 0.4687 -> 0.4655 | d vs emission -0.0036 [-0.0075, -0.0008] | d vs recal-only -0.0037 [-0.0073, -0.0006]
+    s42 | all | acquisition                              base 0.4687 -> 0.4643 | d vs emission -0.0048 [-0.0079, -0.0018] | d vs recal-only -0.0049 [-0.0086, -0.0020]
+    s42 | all | patient+view+acquisition                 base 0.4687 -> 0.4599 | d vs emission -0.0095 [-0.0138, -0.0056] | d vs recal-only -0.0093 [-0.0135, -0.0054]
+    s42 | frontal | recalibration only                   base 0.4940 -> 0.4940 | d vs emission +0.0000 [+0.0000, +0.0000]
+    s42 | frontal | patient                              base 0.4940 -> 0.4909 | d vs emission -0.0028 [-0.0050, -0.0010] | d vs recal-only -0.0027 [-0.0047, -0.0009]
+    s42 | frontal | view                                 base 0.4940 -> 0.4908 | d vs emission -0.0032 [-0.0081, +0.0022] | d vs recal-only -0.0034 [-0.0091, +0.0025]
+    s42 | frontal | acquisition                          base 0.4940 -> 0.4879 | d vs emission -0.0063 [-0.0120, -0.0018] | d vs recal-only -0.0066 [-0.0134, -0.0023]
+    s42 | frontal | patient+view+acquisition             base 0.4940 -> 0.4838 | d vs emission -0.0106 [-0.0174, -0.0049] | d vs recal-only -0.0109 [-0.0184, -0.0059]
+    ens | all | recalibration only                       base 0.4785 -> 0.4780 | d vs emission -0.0003 [-0.0014, +0.0000]
+    ens | all | patient                                  base 0.4785 -> 0.4730 | d vs emission -0.0049 [-0.0083, -0.0023] | d vs recal-only -0.0045 [-0.0074, -0.0021]
+    ens | all | view                                     base 0.4785 -> 0.4739 | d vs emission -0.0047 [-0.0089, -0.0019] | d vs recal-only -0.0044 [-0.0085, -0.0016]
+    ens | all | acquisition                              base 0.4785 -> 0.4712 | d vs emission -0.0069 [-0.0110, -0.0034] | d vs recal-only -0.0067 [-0.0110, -0.0030]
+    ens | all | patient+view+acquisition                 base 0.4785 -> 0.4656 | d vs emission -0.0123 [-0.0181, -0.0076] | d vs recal-only -0.0120 [-0.0172, -0.0075]
+    ens | frontal | recalibration only                   base 0.5062 -> 0.5054 | d vs emission -0.0005 [-0.0022, +0.0000]
+    ens | frontal | patient                              base 0.5062 -> 0.4979 | d vs emission -0.0060 [-0.0153, -0.0012] | d vs recal-only -0.0054 [-0.0148, -0.0012]
+    ens | frontal | view                                 base 0.5062 -> 0.5017 | d vs emission -0.0044 [-0.0087, -0.0010] | d vs recal-only -0.0041 [-0.0085, -0.0009]
+    ens | frontal | acquisition                          base 0.5062 -> 0.4953 | d vs emission -0.0091 [-0.0181, -0.0031] | d vs recal-only -0.0085 [-0.0170, -0.0034]
+    ens | frontal | patient+view+acquisition             base 0.5062 -> 0.4887 | d vs emission -0.0158 [-0.0264, -0.0067] | d vs recal-only -0.0150 [-0.0249, -0.0069]
+
+updated [5] in /home/psytp7/ISBI_2026/analysis/out/metadata_eda/eda.json

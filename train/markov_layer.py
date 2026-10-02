@@ -5,7 +5,7 @@ v4 builds `ConvNeXt2Markov` (a ConvNeXt2 subclass) instead of `ConvNeXt2`;
 evaluate/evaluate_tta_v4.py loads checkpoints with `load_convnext2_for_state_dict`.
 
 Offline, a *fixed* one-step random walk over the label co-occurrence graph lowered the best
-ensemble's internal mAP by 0.0006-0.0053 (docs/result/2026-09-26-markov-applicability.md).
+ensemble's internal mAP by 0.0006-0.0053 (docs/plan/2026-09-26-markov-applicability.md).
 This layer is the trainable version, applied to the ML-Decoder logits u (B, C):
 
     P      = row_softmax(A, diagonal masked)        # C x C, P[i, j] ~ P(j | i)
