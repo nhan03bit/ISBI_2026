@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.29)  2 OCT 2026 22:30
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.29)  5 OCT 2026 13:27
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -277,33 +277,51 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 
 
 ]
-Underfull \hbox (badness 2343) in paragraph at lines 88--89
+Underfull \vbox (badness 1024) has occurred while \output is active []
+
+
+Underfull \hbox (badness 2343) in paragraph at lines 89--90
 []\OT1/ptm/b/n/10 Deep met-ric learn-ing and hard ex-am-ple min-ing.
  []
 
-<Entropy.pdf, id=11, page=5, 963.6pt x 542.025pt>
+[2]
+<Entropy.pdf, id=18, page=5, 963.6pt x 542.025pt>
 File: Entropy.pdf Graphic file (type pdf)
 <use Entropy.pdf, page 5>
-Package pdftex.def Info: Entropy.pdf , page5 used on input line 97.
+Package pdftex.def Info: Entropy.pdf , page5 used on input line 98.
 (pdftex.def)             Requested size: 252.0pt x 141.75023pt.
-[2]
-<Entropy.pdf, id=18, page=6, 963.6pt x 542.025pt>
+<Entropy.pdf, id=19, page=6, 963.6pt x 542.025pt>
 File: Entropy.pdf Graphic file (type pdf)
 <use Entropy.pdf, page 6>
-Package pdftex.def Info: Entropy.pdf , page6 used on input line 109.
+Package pdftex.def Info: Entropy.pdf , page6 used on input line 110.
 (pdftex.def)             Requested size: 252.0pt x 141.75023pt.
-<Entropy.pdf, id=19, page=7, 963.6pt x 542.025pt>
+<Entropy.pdf, id=20, page=7, 963.6pt x 542.025pt>
 File: Entropy.pdf Graphic file (type pdf)
 <use Entropy.pdf, page 7>
-Package pdftex.def Info: Entropy.pdf , page7 used on input line 128.
+Package pdftex.def Info: Entropy.pdf , page7 used on input line 129.
 (pdftex.def)             Requested size: 252.0pt x 141.75023pt.
  [3 <../../pdf/Entropy.pdf> <../../pdf/Entropy.pdf
 
 pdfTeX warning: pdflatex (file ../../pdf/Entropy.pdf): PDF inclusion: multiple pdfs with page group included in a single page
-> <../../pdf/Entropy.pdf
+>] [4 <../../pdf/Entropy.pdf>] [5]
+Underfull \vbox (badness 3838) has occurred while \output is active []
 
-pdfTeX warning: pdflatex (file ../../pdf/Entropy.pdf): PDF inclusion: multiple pdfs with page group included in a single page
->] [4] [5] [6]
+ [6]
+Underfull \hbox (badness 10000) in paragraph at lines 303--305
+\OT1/ptm/m/n/10 estimated with Laplace smooth-ing from the 24,180
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 303--305
+\OT1/ptm/m/n/10 consecutive-state pairs of the train-ing fold. For an
+ []
+
+
+Underfull \hbox (badness 1867) in paragraph at lines 303--305
+\OT1/ptm/m/n/10 im-age whose pa-tient has an ear-lier state, the prior is
+ []
+
+[7] [8]
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -315,27 +333,25 @@ Before submitting the final camera ready copy, remember to:
  uses only Type 1 fonts and that every step in the generation
  process uses the appropriate paper size.
 
-[7
-
-] (./paper.aux)
+[9] (./paper.aux)
  ***********
 LaTeX2e <2026-06-01>
 L3 programming layer <2026-08-10>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 4029 strings out of 469089
- 63503 string characters out of 5459054
- 497502 words of memory out of 5000000
- 33061 multiletter control sequences out of 15000+600000
- 668918 words of font info for 123 fonts, out of 8000000 for 9000
+ 4047 strings out of 469089
+ 63706 string characters out of 5459054
+ 505739 words of memory out of 5000000
+ 33077 multiletter control sequences out of 15000+600000
+ 671132 words of font info for 125 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 57i,10n,65p,2254b,306s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on paper.pdf (7 pages, 786913 bytes).
+ 57i,15n,65p,2978b,348s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on paper.pdf (9 pages, 848425 bytes).
 PDF statistics:
- 147 PDF objects out of 1000 (max. 8388607)
- 86 compressed objects within 1 object stream
+ 175 PDF objects out of 1000 (max. 8388607)
+ 103 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
  16 words of extra memory for PDF output out of 10000 (max. 10000000)
 

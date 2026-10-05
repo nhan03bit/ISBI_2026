@@ -18,31 +18,31 @@
 \citation{b5}
 \citation{b6}
 \citation{b7}
+\@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{2}{}\protected@file@percent }
 \citation{b8}
 \citation{b12}
 \citation{b12}
 \citation{b2}
 \citation{b13}
 \citation{b3}
-\@writefile{toc}{\contentsline {section}{\numberline {II}Related Work}{2}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {III}Proposed Method}{2}{}\protected@file@percent }
-\newlabel{sec:method}{{III}{2}{}{section.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Overview}{2}{}\protected@file@percent }
 \citation{b6}
+\@writefile{toc}{\contentsline {section}{\numberline {III}Proposed Method}{3}{}\protected@file@percent }
+\newlabel{sec:method}{{III}{3}{}{section.3}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Overview of the proposed Stage-2 fine-tuning pipeline. The Stage-1 ConvNeXt backbone and decoder are initialized from the frozen-free Stage-1 checkpoint and continue training with a Triplet Cross-Memory-Bank objective gated by Anchor-Based Entropy Selection, in place of the Mixture-of-Experts decoder used in our prior submission~\cite  {b12}.}}{3}{}\protected@file@percent }
 \newlabel{fig}{{1}{3}{}{figure.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-A}}Overview}{3}{}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-B}}Cross-Batch Memory Bank}{3}{}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Anchor-Based Entropy Selection}{3}{}\protected@file@percent }
-\newlabel{eq:entropy}{{1}{3}{}{equation.1}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Triplet Cross-Memory-Bank pipeline: for each anchor embedding $e_i$ from the current mini-batch, pairwise distances to the memory bank $\mathcal  {M}$ are computed, and the closest positive (minimum distance among memory entries sharing a label) and farthest negative (maximum distance among entries sharing no label) are retrieved to form the triplet used in $\mathcal  {L}_{tri}$ (Eq.~\ref {eq:triplet}).}}{3}{}\protected@file@percent }
 \newlabel{fig:xbm}{{2}{3}{}{figure.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-C}}Anchor-Based Entropy Selection}{3}{}\protected@file@percent }
+\newlabel{eq:entropy}{{1}{3}{}{equation.1}{}}
 \newlabel{eq:anchor}{{2}{3}{}{equation.2}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Anchor-Based Entropy Selection: the classification logits of every sample in the mini-batch are converted to a Shannon entropy score (Eq.~\ref {eq:entropy}). The figure shows the original single-anchor (maximum-entropy) design; all reported runs select every sample at or above the batch-mean entropy (Eq.~\ref {eq:anchor}).}}{3}{}\protected@file@percent }
-\newlabel{fig:entropy}{{3}{3}{}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Positive/Negative Mining}{3}{}\protected@file@percent }
+\newlabel{sec:mining}{{\mbox  {III-D}}{3}{}{subsection.3.4}{}}
 \citation{b5}
 \citation{b12}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {III-D}}Positive/Negative Mining}{4}{}\protected@file@percent }
-\newlabel{sec:mining}{{\mbox  {III-D}}{4}{}{subsection.3.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Anchor-Based Entropy Selection: the classification logits of every sample in the mini-batch are converted to a Shannon entropy score (Eq.~\ref {eq:entropy}). The figure shows the original single-anchor (maximum-entropy) design; all reported runs select every sample at or above the batch-mean entropy (Eq.~\ref {eq:anchor}).}}{4}{}\protected@file@percent }
+\newlabel{fig:entropy}{{3}{4}{}{figure.3}{}}
 \newlabel{eq:posmask}{{3}{4}{}{equation.3}{}}
 \newlabel{eq:negmask}{{4}{4}{}{equation.4}{}}
 \newlabel{eq:hardmine}{{5}{4}{}{equation.5}{}}
@@ -66,13 +66,35 @@
 \newlabel{tab2}{{II}{5}{}{table.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Triplet Utilization Rate}{5}{}\protected@file@percent }
 \newlabel{sec:util}{{\mbox  {V-B}}{5}{}{subsection.5.2}{}}
-\citation{b25}
-\citation{b25}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Corrected Implementation and Scaled Recipe (v3)}{6}{}\protected@file@percent }
 \newlabel{sec:v3}{{\mbox  {V-C}}{6}{}{subsection.5.3}{}}
 \@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Corrected implementation (v3), internal validation. Single models report the best epoch of the EMA weights or their SWA, without test-time augmentation unless stated. ``Flip'' averages the prediction with that of the horizontally flipped image. The greedy ensemble is a uniform average of three models chosen by forward selection on this validation fold, so it is optimistic; the fixed four-model average has no selection. -- = not computed.}}{6}{}\protected@file@percent }
 \newlabel{tab3}{{III}{6}{}{table.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {VI}Conclusion}{6}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {VI}Markov Priors for Label Co-occurrence}{6}{}\protected@file@percent }
+\newlabel{sec:markov}{{VI}{6}{}{section.6}{}}
+\citation{b15}
+\citation{b14}
+\citation{b23}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Route A: Label-to-Label Transitions}{7}{}\protected@file@percent }
+\newlabel{sec:mk-labelgraph}{{\mbox  {VI-A}}{7}{}{subsection.6.1}{}}
+\newlabel{eq:transition}{{8}{7}{}{equation.8}{}}
+\newlabel{eq:smoothing}{{9}{7}{}{equation.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Route B: Transitions Across a Patient's Studies}{7}{}\protected@file@percent }
+\newlabel{sec:mk-patient}{{\mbox  {VI-B}}{7}{}{subsection.6.2}{}}
+\newlabel{eq:chain}{{10}{7}{}{equation.10}{}}
+\newlabel{eq:fuse}{{11}{7}{}{equation.11}{}}
+\newlabel{eq:trans}{{12}{7}{}{equation.12}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Results}{7}{}\protected@file@percent }
+\newlabel{sec:mk-results}{{\mbox  {VI-C}}{7}{}{subsection.6.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Label-graph priors (route A) applied post hoc to the greedy three-model v3 ensemble, flip TTA, $n = 17{,}270$. The first row is v3 without any Markov step.}}{7}{}\protected@file@percent }
+\newlabel{tab:mk-graph}{{IV}{7}{}{table.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Patient-history prior fed into the label queries, against the identical v3 model without it; internal validation, SWA, flip TTA. Withheld: every prior set to zero, the test-set condition. Earlier: images with an earlier state (5,759); frontal earlier (4,061); none (11,511).}}{8}{}\protected@file@percent }
+\newlabel{tab:mk-innet}{{V}{8}{}{table.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Post-prediction patient HMM: change in macro mAP relative to the frozen v3 768~px SWA model (E, flip TTA; the E row is absolute). Primary: frontal images with an earlier state ($n = 4{,}061$). Cross-fitted on patient halves, mean over three splits; 95\% CI from a patient-clustered bootstrap on the first split. $^\dagger $: no bootstrap (difference of three-split means). Internal simulation; leaderboard effect 0.}}{8}{}\protected@file@percent }
+\newlabel{tab:mk-hmm}{{VI}{8}{}{table.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Discussion}{8}{}\protected@file@percent }
+\newlabel{sec:mk-limits}{{\mbox  {VI-D}}{8}{}{subsection.6.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{8}{}\protected@file@percent }
 \bibcite{b1}{1}
 \bibcite{b2}{2}
 \bibcite{b3}{3}
@@ -86,6 +108,8 @@
 \bibcite{b11}{11}
 \bibcite{b12}{12}
 \bibcite{b13}{13}
-\bibcite{b25}{14}
-\@writefile{toc}{\contentsline {section}{References}{7}{}\protected@file@percent }
-\gdef \@abspage@last{7}
+\bibcite{b14}{14}
+\bibcite{b15}{15}
+\bibcite{b23}{16}
+\@writefile{toc}{\contentsline {section}{References}{9}{}\protected@file@percent }
+\gdef \@abspage@last{9}

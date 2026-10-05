@@ -1,0 +1,20 @@
+[
+  {
+    "file": "prior__img768_qprior_seed42__model_swa@768_flip_prior-with.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/prior/img768_qprior_seed42/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": "with"
+  },
+  {
+    "file": "prior__img768_qprior_seed1024__model_swa@768_flip_prior-with.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/prior/img768_qprior_seed1024/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": "with"
+  }
+]

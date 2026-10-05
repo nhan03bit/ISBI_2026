@@ -2,8 +2,8 @@ This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded forma
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**paper.tex
-(./paper.tex
+**supplement.tex
+(./supplement.tex
 LaTeX2e <2026-06-01>
 L3 programming layer <2026-08-10>
 (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/ieeetran/IEEEtran.cls
@@ -434,26 +434,30 @@ File: pgflibraryarrows.meta.code.tex 2026-08-01 v3.1.12 (3.1.12)
 \pgfarrowlinewidth=\dimen297
 ) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarycalc.code.tex
 File: tikzlibrarycalc.code.tex 2026-08-01 v3.1.12 (3.1.12)
-) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/l3kernel/l3backend-pdftex.def
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/tools/xr.sty
+Package: xr 2024-12-22 v6.00 eXternal References (DPC)
+)
+Package xr Info: IMPORTING LABELS FROM paper.aux on input line 19.
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/l3kernel/l3backend-pdftex.def
 File: l3backend-pdftex.def 2026-08-10 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count329
-) (./paper.aux)
-\openout1 = `paper.aux'.
+) (./supplement.aux)
+\openout1 = `supplement.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 19.
-LaTeX Font Info:    ... okay on input line 19.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 19.
-LaTeX Font Info:    ... okay on input line 19.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 19.
-LaTeX Font Info:    ... okay on input line 19.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 19.
-LaTeX Font Info:    ... okay on input line 19.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 19.
-LaTeX Font Info:    ... okay on input line 19.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 19.
-LaTeX Font Info:    ... okay on input line 19.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 19.
-LaTeX Font Info:    ... okay on input line 19.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 22.
+LaTeX Font Info:    ... okay on input line 22.
 
 -- Lines per column: 56 (exact).
 (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
@@ -462,161 +466,166 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
  (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-LaTeX Font Info:    Trying to load font information for U+msa on input line 58.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 84.
  (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 58.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 84.
  (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-Underfull \vbox (badness 10000) has occurred while \output is active []
+LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 84.
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+) [1{/home/psytp7/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/home/psytp7/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc}
 
- [1{/home/psytp7/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map}{/home/psytp7/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc}
 
-
-] [2] [3] [4]
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [5] [6]
-<figures/assoc_heatmap.pdf, id=51, 892.33376pt x 839.135pt>
+] [2] [3] [4] [5] [6] [7]
+<figures/assoc_heatmap.pdf, id=52, 892.33376pt x 839.135pt>
 File: figures/assoc_heatmap.pdf Graphic file (type pdf)
 <use figures/assoc_heatmap.pdf>
-Package pdftex.def Info: figures/assoc_heatmap.pdf  used on input line 502.
+Package pdftex.def Info: figures/assoc_heatmap.pdf  used on input line 590.
 (pdftex.def)             Requested size: 516.0pt x 485.23895pt.
-<figures/age_prevalence.pdf, id=52, 983.675pt x 457.71pt>
+<figures/age_prevalence.pdf, id=53, 983.675pt x 457.71pt>
 File: figures/age_prevalence.pdf Graphic file (type pdf)
 <use figures/age_prevalence.pdf>
-Package pdftex.def Info: figures/age_prevalence.pdf  used on input line 509.
+Package pdftex.def Info: figures/age_prevalence.pdf  used on input line 597.
 (pdftex.def)             Requested size: 516.0pt x 240.1058pt.
-<figures/persistence_by_acuity.pdf, id=53, 803.0pt x 487.8225pt>
+<figures/persistence_by_acuity.pdf, id=54, 803.0pt x 487.8225pt>
 File: figures/persistence_by_acuity.pdf Graphic file (type pdf)
 <use figures/persistence_by_acuity.pdf>
-Package pdftex.def Info: figures/persistence_by_acuity.pdf  used on input line 516.
+Package pdftex.def Info: figures/persistence_by_acuity.pdf  used on input line 604.
 (pdftex.def)             Requested size: 252.0pt x 153.09174pt.
-<figures/metadata_only_auroc.pdf, id=54, 657.45625pt x 648.4225pt>
+<figures/metadata_only_auroc.pdf, id=55, 657.45625pt x 648.4225pt>
 File: figures/metadata_only_auroc.pdf Graphic file (type pdf)
 <use figures/metadata_only_auroc.pdf>
-Package pdftex.def Info: figures/metadata_only_auroc.pdf  used on input line 523.
+Package pdftex.def Info: figures/metadata_only_auroc.pdf  used on input line 611.
 (pdftex.def)             Requested size: 252.0pt x 248.53033pt.
- [7] [8] [9 <./figures/assoc_heatmap.pdf>]
+ [8]
 Underfull \vbox (badness 10000) has occurred while \output is active []
 
-
-Underfull \vbox (badness 10000) has occurred while \output is active []
-
- [10 <./figures/age_prevalence.pdf>]
-Underfull \hbox (badness 3199) in paragraph at lines 590--590
+ [9] [10 <./figures/assoc_heatmap.pdf>]
+Underfull \hbox (badness 3199) in paragraph at lines 680--680
 []|\OT1/ptm/m/n/8 ConvNeXtV2-B pre-trained on MIMIC-CXR, 512 px, Distribution-Balanced loss
  []
 
-LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 617.
-(/home/psytp7/.TinyTeX/texmf-dist/tex/latex/psnfss/ot1pcr.fd
-File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
-)
-Underfull \hbox (badness 1888) in paragraph at lines 617--618
-[]\OT1/ptm/b/n/10 Post-hoc re-sults \OT1/ptm/m/n/10 (Ta-bles III[], IV[] and IX[], and the
+
+Underfull \hbox (badness 2035) in paragraph at lines 705--706
+\OT1/pcr/m/n/10 2 _ v2 . py$ \OT1/ptm/m/n/10 (Ta-ble I[] third row: Slurm jobs 43047--
  []
 
 
-Underfull \hbox (badness 2452) in paragraph at lines 617--618
+Underfull \hbox (badness 10000) in paragraph at lines 705--706
+\OT1/ptm/m/n/10 43051; Ta-ble S3[]: jobs 43998--44002); cor-rected
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 705--706
+\OT1/ptm/m/n/10 im-ple-men-ta-tion $\OT1/pcr/m/n/10 train / train _ 2 _ v3 . py$ \OT1/ptm/m/n/10 with
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 705--706
+\OT1/ptm/m/n/10 se-lec-tion $\OT1/pcr/m/n/10 analysis / ens _ select . py$\OT1/ptm/m/n/10 , out-put
+ []
+
+[11 <./figures/age_prevalence.pdf>]
+Underfull \hbox (badness 2452) in paragraph at lines 706--707
 \OT1/pcr/m/n/10 check . py$ \OT1/ptm/m/n/10 from the cached flip-TTA prob-a-bil-i-ties
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
+Underfull \hbox (badness 10000) in paragraph at lines 707--708
 []\OT1/ptm/b/n/10 Patient-history prior (in-network): $\OT1/pcr/m/n/10 analysis /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
+Underfull \hbox (badness 10000) in paragraph at lines 707--708
 \OT1/pcr/m/n/10 patient _ prior . py$ \OT1/ptm/m/n/10 (the chain of Eq. []
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
+Underfull \hbox (badness 10000) in paragraph at lines 707--708
 \OT1/ptm/m/n/10 and each im-age's prior vec-tor, writ-ten to
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
+Underfull \hbox (badness 10000) in paragraph at lines 707--708
 \OT1/pcr/m/n/10 analysis / out / patient _ markov / priors . pt$\OT1/ptm/m/n/10 ),
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
+Underfull \hbox (badness 10000) in paragraph at lines 707--708
 \OT1/pcr/m/n/10 train / prior _ conditioning . py$ \OT1/ptm/m/n/10 and
  []
 
 
-Underfull \hbox (badness 3872) in paragraph at lines 618--619
+Underfull \hbox (badness 3872) in paragraph at lines 707--708
 \OT1/pcr/m/n/10 train / train _ 2 _ v5 . py$\OT1/ptm/m/n/10 . The mod-els are Slurm
  []
 
 
-Underfull \hbox (badness 7685) in paragraph at lines 618--619
+Underfull \hbox (badness 7685) in paragraph at lines 707--708
 \OT1/ptm/m/n/10 jobs 49375 (seed 42) and 49376 (seed 1024);
  []
 
 
-Underfull \hbox (badness 2065) in paragraph at lines 618--619
+Underfull \hbox (badness 2065) in paragraph at lines 707--708
 \OT1/ptm/m/n/10 the matched base-lines are jobs 49000 and 48999.
  []
 
 
-Underfull \hbox (badness 1418) in paragraph at lines 618--619
+Underfull \hbox (badness 1418) in paragraph at lines 707--708
 \OT1/ptm/m/n/10 Eval-u-a-tion with and with-out the prior: jobs 49405
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 618--619
+Underfull \hbox (badness 10000) in paragraph at lines 707--708
 \OT1/ptm/m/n/10 and 49406; per-subset com-par-i-son: job 49442
  []
 
-[11 <./figures/persistence_by_acuity.pdf> <./figures/metadata_only_auroc.pdf
 
-pdfTeX warning: pdflatex (file ./figures/metadata_only_auroc.pdf): PDF inclusion: multiple pdfs with page group included in a single page
->]
-Underfull \hbox (badness 10000) in paragraph at lines 619--620
-[]\OT1/ptm/b/n/10 Post-prediction HMM \OT1/ptm/m/n/10 (Ta-ble VI[]): $\OT1/pcr/m/n/10 analysis /
+Underfull \hbox (badness 10000) in paragraph at lines 708--709
+[]\OT1/ptm/b/n/10 Post-prediction HMM \OT1/ptm/m/n/10 (Ta-ble S9[]): $\OT1/pcr/m/n/10 analysis /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 619--620
+Underfull \hbox (badness 10000) in paragraph at lines 708--709
 \OT1/pcr/m/n/10 markov _ hmm . py$ \OT1/ptm/m/n/10 (model), $\OT1/pcr/m/n/10 analysis /
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 619--620
+Underfull \hbox (badness 10000) in paragraph at lines 708--709
 \OT1/pcr/m/n/10 markov _ hmm _ check . py$ \OT1/ptm/m/n/10 (arms, cross-fitting,
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 619--620
+Underfull \hbox (badness 10000) in paragraph at lines 708--709
 \OT1/ptm/m/n/10 boot-strap) and $\OT1/pcr/m/n/10 analysis / patient _ meta . py$
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 619--620
+Underfull \hbox (badness 10000) in paragraph at lines 708--709
 \OT1/ptm/m/n/10 (meta-data whitelist), run as Slurm job 49445
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 619--620
+Underfull \hbox (badness 10000) in paragraph at lines 708--709
 \OT1/ptm/m/n/10 (out-put in $\OT1/pcr/m/n/10 analysis / out / markov _ hmm/$\OT1/ptm/m/n/10 ).
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 619--620
+Underfull \hbox (badness 10000) in paragraph at lines 708--709
 \OT1/ptm/m/n/10 The meta-data anal-y-sis of Sec-tion [][] is
  []
 
 
-Underfull \hbox (badness 1400) in paragraph at lines 643--644
-[]\OT1/ptm/m/n/8 Eva Prakash, Yunhe Gao, Chong Wang, \OT1/ptm/m/it/8 et al.\OT1/ptm/m/n/8 , ``CheX-Tem-po-ral:
- []
+Underfull \vbox (badness 10000) has occurred while \output is active []
 
-[12]
+ [12 <./figures/persistence_by_acuity.pdf> <./figures/metadata_only_auroc.pdf
+
+pdfTeX warning: pdflatex (file ./figures/metadata_only_auroc.pdf): PDF inclusion: multiple pdfs with page group included in a single page
+>]
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -630,25 +639,25 @@ Before submitting the final camera ready copy, remember to:
 
 [13
 
-] (./paper.aux)
+] (./supplement.aux)
  ***********
 LaTeX2e <2026-06-01>
 L3 programming layer <2026-08-10>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 15089 strings out of 469089
- 307767 string characters out of 5459054
- 732563 words of memory out of 5000000
- 43889 multiletter control sequences out of 15000+600000
- 673482 words of font info for 133 fonts, out of 8000000 for 9000
+ 15164 strings out of 469089
+ 308809 string characters out of 5459054
+ 732046 words of memory out of 5000000
+ 43964 multiletter control sequences out of 15000+600000
+ 670249 words of font info for 127 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 92i,18n,94p,2122b,860s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmmib8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on paper.pdf (13 pages, 447824 bytes).
+ 92i,18n,94p,1739b,860s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmmib8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/courier/ucrr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on supplement.pdf (13 pages, 416020 bytes).
 PDF statistics:
- 233 PDF objects out of 1000 (max. 8388607)
- 146 compressed objects within 2 object streams
+ 213 PDF objects out of 1000 (max. 8388607)
+ 134 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
  33 words of extra memory for PDF output out of 10000 (max. 10000000)
 

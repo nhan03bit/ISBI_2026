@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1790976629.01549 "paper.tex" "paper.pdf" "paper" 1790976629.43169 0
+["pdflatex"] 1791203248.90702 "paper.tex" "paper.pdf" "paper" 1791203249.35003 0
   "../../pdf/Entropy.pdf" 1783770070.13461 1060950 2b1123e0c01746abfec887fa1852889d ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm" 1136768653 2172 fd0c924230362ff848a33632ed45dc23 ""
@@ -44,10 +44,14 @@
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb" 1248133631 36094 798f80770b3b148ceedd006d487db67c ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb" 1248133631 35752 024fb6c41858982481f6968b5fc26508 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb" 1248133631 32762 224316ccc9ad3ca0423a14971cfa7fc1 ""
+  "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb" 1248133631 32726 0a1aea6fcd6468ee2cf64d891f5c43c8 ""
+  "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb" 1248133631 33993 9b89b85fd2d9df0482bd47194d1d3bf3 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb" 1248133631 32569 5e5ddc8df908dea60932f3c484a54c0d ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb" 1248133631 32915 7bf7720c61a5b3a7ff25b0964421c9b6 ""
+  "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb" 1248133631 32587 1788b0c1c5b39540c96f5e42ccd6dae8 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb" 1248133631 32716 08e384dc442464e7285e891af9f45947 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1248133631 32626 4f5c1b83753b1dd3a97d1b399a005b4b ""
+  "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb" 1248133631 32442 c975af247b6702f7ca0c299af3616b80 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb" 1248133631 34694 ad62b13721ee8eda1dcc8993c8bd7041 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb" 1136849748 44729 811d6c62865936705a31c797a1d5dada ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb" 1136849748 44656 0cbca70e0534538582128f6b54593cca ""
@@ -90,8 +94,8 @@
   "/home/psytp7/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1787982411 93249 e2a8f0f0f7daf8d7a430342c12dcaa2a ""
   "/home/psytp7/.TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1787973838 2253715 4d2a70d9b5d754e1d0268e456bbd5b53 ""
   "/home/psytp7/.TinyTeX/texmf.cnf" 1787973813 637 edd806fb06a89761a6034e1968af9017 ""
-  "paper.aux" 1790976629.36796 6348 0293861e67dd6a95ba8dc74eed3e5bfa "pdflatex"
-  "paper.tex" 1790976612.21833 41034 120268a523238f32ba650297e9e1d635 ""
+  "paper.aux" 1791203249.27783 8870 0311534b60e37d0a065348aa554ca77f "pdflatex"
+  "paper.tex" 1791203248.80984 58449 30199cee7a9471f71bcf8d3f294825d6 ""
   (generated)
   "paper.aux"
   "paper.log"
