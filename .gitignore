@@ -13,11 +13,11 @@ train/checkpoint_Triplet_2/
 train/checkpoint_Triplet_3/
 
 # machine-local data symlinks
+temp_auto_push.bat
 wds_shards_train_raw
 wds_shards_val_raw
 
 # editor-local settings
-.vscode/
 
 # backup files
 *.bak
@@ -28,4 +28,5 @@ docs/paper.aux
 docs/paper.fdb_latexmk
 docs/paper.fls
 docs/paper.log
-docs/paper.synctex.gz
+docs/paper.synctex.gz.gitignore
+branch_structure.json

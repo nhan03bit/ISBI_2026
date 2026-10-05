@@ -1,0 +1,438 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+%Template version as of 6/27/2024
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{multirow}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+    T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+\begin{document}
+
+\title{Entropy-Gated Triplet Cross-Memory-Bank Learning for Long-Tailed Multi-Label Chest X-Ray Classification}
+
+\author{
+\IEEEauthorblockN{Dr. Christian Wagner}
+\IEEEauthorblockA{\textit{Professor of Computer Science}\\
+The University of Nottingham\\
+Nottingham, United Kingdom\\
+Christian.Wagner@nottingham.ac.uk}
+\and
+\IEEEauthorblockN{Dr. Shreyank Narayana Gowda}
+\IEEEauthorblockA{\textit{Assistant Professor}\\
+The University of Nottingham\\
+Nottingham, United Kingdom\\
+Shreyank.NarayanaGowda@nottingham.ac.uk}
+\and
+\IEEEauthorblockN{Dr. Nguyen Trung Ky}
+\IEEEauthorblockA{\textit{Professor of Computer Science}\\
+International University - VNU\\
+Ho Chi Minh City, Viet Nam\\
+ntky@hcmiu.edu.vn}
+\and
+\IEEEauthorblockN{Ned Pham}
+\IEEEauthorblockA{\textit{Student}\\
+The University of Nottingham\\
+Nottingham, United Kingdom\\
+thien.pham@nottingham.ac.uk}
+\and
+\IEEEauthorblockN{Huy Pham}
+\IEEEauthorblockA{\textit{Student}\\
+International University - VNU\\
+Ho Chi Minh City, Viet Nam\\
+ititiu20216@student.hcmiu.edu.vn}
+}
+
+\maketitle
+
+\begin{abstract}
+In this paper, we propose a novel framework based on our submission to the ISBI 2026 CXR-LT Task~1 challenge \cite{b12} to enhance the performance of mAP for long-tailed, multi-label chest X-ray classification. In fact, with a two-stage ConvNeXt framework --- an ML-Decoder backbone trained with Asymmetric Loss
+%~\cite{b3}
+, then a sparse Mixture-of-Experts (MoE) decoder fine-tuning stage --- reaching an mAP of 0.4599 and third place 
+%~\cite{b12}
+, yet two problems central to that task stayed open: the aggregate mAP never showed whether rare (tail) findings, whose small positive gradient is dominated by the common findings they co-occur with, actually improve; and the MoE stage works against label co-occurrence itself, since per-token top-$k$ routing sends the tokens of a multi-finding study to different experts while the load-balancing loss that prevents expert collapse discourages any expert from specialising in findings that always appear together, so co-occurring labels receive fragmented, contradictory updates --- at a standing cost of expert and router parameters at inference. In this work, we keep the Stage-1 backbone and replace the MoE stage with a novel strategy including training-only regularizer of a \emph{single shared} embedding space, namely an entropy-gated triplet objective over a cross-batch memory bank, whose anchors are chosen by predictive entropy so the metric-learning signal falls on the least-resolved --- predominantly rare and co-occurring --- samples to improve the batch triplet loss cross-memory bank, and whose bank supplies the same- and different-finding neighbours a mini-batch of eight cannot hold for a tail class. Added to Asymmetric Loss for a single fine-tuning epoch and discarded at inference, the stage matches the MoE Stage~2 on mAP and mAUC over five random seeds at no inference-time cost (at 512~px input, against 384~px for the MoE and Stage-1 rows); we disclose a small calibration (mECE) regression, and find the effect replicates from a less converged Stage-1 checkpoint at a magnitude that tracks Stage-1 maturity. We also disclose that the implementation behind these results differed from the method as first described in five respects (the triplet embedding, the order of the class weights, the anchor rule, the positive threshold and the mining rule), and we report a corrected implementation (v3). With a longer schedule and higher input resolution, v3 reaches an internal-validation mAP of 0.460 as a single model and 0.472 as a three-model ensemble with flip test-time augmentation. No ablation isolates the entropy gate's share of this gain. We then ask whether label co-occurrence can be modelled explicitly with Markov chains on top of v3. Label-to-label transition priors built from co-occurrence do not help: random-walk smoothing lowers mAP at every strength ($-0.0006$ to $-0.0053$), and cross-label terms inside a patient-level model are never selected, because the ML-Decoder head already mixes labels per image. Same-label transitions across a patient's studies do help when the previous report is available: fed into the label queries, they raise a single model from 0.460 to 0.481 (0.473 to 0.476 in a rerun), with the gain reaching medium and tail classes; with the history withheld, as on the test set, whose patients have no history, the gain is zero.
+\end{abstract}
+
+\begin{IEEEkeywords}
+Medical Image Classification, Long-Tail Distribution, Label Co-occurrence, Deep Metric Learning, Triplet Loss, Cross-Batch Memory, Entropy Sampling, Markov Chains, Patient History, ConvNeXt.
+\end{IEEEkeywords}
+
+\section{Introduction}
+Automated multi-label classification of chest X-rays is complicated by two coupled statistical properties of clinical data: a long-tailed distribution of findings, in which a handful of common conditions account for the majority of positive labels while dozens of clinically important findings appear rarely, and pervasive label co-occurrence, in which rare findings are seldom observed in isolation. Together these effects make it difficult for a classifier to learn discriminative, class-specific representations for tail classes, since their gradient signal is small in absolute terms and is frequently entangled with that of co-occurring head classes.
+
+In our submission to the ISBI 2026 CXR-LT Task~1 challenge~\cite{b12}, we addressed this problem with a two-stage ConvNeXt~\cite{b1} framework: a Stage-1 backbone trained end-to-end with an ML-Decoder~\cite{b2} classification head and Asymmetric Loss~\cite{b3}, followed by a Stage-2 fine-tuning phase that converted the top two ConvNeXt stages and the decoder's feed-forward layers into a sparse Mixture-of-Experts (MoE), trained with an auxiliary load-balancing loss. That framework obtained an mAP of 0.4599 on the official test set and secured third place in the competition.
+
+While effective, the MoE stage leaves two questions open. First, a long-tailed benchmark is not won on the average, and the single aggregate mAP we reported does not reveal whether the MoE stage improved the rare findings it was partly designed for or merely sharpened the already-strong head classes. Second, the MoE stage sits awkwardly with the co-occurrence structure it is meant to model: sparse top-$k$ routing is applied per token, so the feature and per-class query tokens of a study containing several findings are dispatched to different experts, while the load-balancing loss that keeps every expert in use rewards spreading tokens uniformly and thus discourages the one behaviour --- a single expert consistently handling a recurring pair of findings --- that would let the model represent that co-occurrence jointly. The co-occurring findings are then refined through partly disjoint parameters whose gradients can pull the shared backbone in competing directions. These effects, together with the expert and router parameters that persist at inference and the extra fine-tuning epochs spent guarding against expert collapse, motivate a different question: can the same goal --- more discriminative representations for entangled tail findings --- be met by regularizing a \emph{single shared} embedding space during fine-tuning, rather than partitioning it? In this paper we pursue that route, leaving the Stage-1 architecture, and hence the deployed model, completely unchanged.
+
+We propose an \emph{entropy-gated triplet cross-memory-bank} fine-tuning stage. A first-in-first-out memory bank accumulates pooled decoder embeddings and their multi-hot labels across many mini-batches, giving access to a much larger and more diverse pool of same-class and different-class examples than a mini-batch of size 8 could offer on its own. Rather than mining a triplet for every sample in the batch, we use the model's own predictive uncertainty as a filter: only samples whose Shannon entropy over the predicted class distribution is at or above the batch mean are used as anchors at each step. The intuition is that low-entropy predictions are already confidently (and usually correctly) classified, so the metric-learning signal is spent most productively on the samples the current model is least sure about. For each selected anchor, the closest positive (a memory entry sharing a label) and the farthest negative (a memory entry sharing none) are retrieved from the memory bank, an easy-mining rule (Section~\ref{sec:mining}), and a standard margin-based triplet loss is added to the Asymmetric Loss classification objective.
+
+Our contributions are as follows.
+\begin{itemize}
+\item We introduce an entropy-gated anchor selection rule for triplet mining that requires no additional trainable parameters and adds negligible compute, since the entropy of the classification logits is available for free at every training step.
+\item We combine this with a cross-batch memory bank in the style of XBM~\cite{b6}, adapted to a multi-label setting through a label-overlap-based positive/negative definition.
+\item We show, across five random seeds, that a single epoch of this fine-tuning stage improves mAP, mF1 and mAUC over its Stage-1 initialization --- with a small calibration (mECE) regression that we report rather than obscure --- and reaches mAP and mAUC comparable to our previously published MoE-based Stage~2, while leaving the deployed model architecture unchanged.
+\item We report an empirical limitation of the original implementation: under its label-overlap criterion and 96-slot memory bank, only about 13\% of optimization steps yield a usable triplet.
+\item We disclose the differences between that implementation and the method as described, and report a corrected implementation (v3) at higher resolution, together with what its result does and does not establish (Section~\ref{sec:v3}).
+\item We test whether Markov-chain priors over co-occurring labels, or over a patient's studies, add to the corrected model (Section~\ref{sec:markov}).
+\end{itemize}
+
+\section{Related Work}
+\textbf{Long-tailed multi-label chest X-ray classification.} The CXR-LT 2026 challenge~\cite{b12} builds on PadChest~\cite{b9} and PadChest-GR~\cite{b10} to curate a 30-class long-tailed multi-label benchmark. Prior CXR-LT submissions, including our own~\cite{b12}, have generally combined a large pretrained backbone with reweighted or focal-style classification losses such as Asymmetric Loss~\cite{b3} to counteract the extreme negative/positive imbalance inherent to multi-label prediction.
+
+\textbf{Query-based decoding heads.} Rather than pooling backbone features with global average pooling, several architectures decode one query embedding per class through cross-attention over the visual feature map, following the general recipe of DETR~\cite{b13}. ML-Decoder~\cite{b2}, used in our Stage-1 backbone, is one such scalable classification head; it is closely related to Query2Label, which we used to motivate the decoder design in our original submission~\cite{b12}.
+
+\textbf{Deep metric learning and hard example mining.} Triplet losses were popularized for embedding learning by FaceNet~\cite{b4}, and subsequent work showed that mining the hardest positive and negative within a batch, rather than sampling triplets uniformly at random, is critical to convergence and final embedding quality~\cite{b5}. Because a mini-batch is a very small and noisy sample of the full hardness distribution, Cross-Batch Memory (XBM)~\cite{b6} proposed maintaining a memory bank of recent embeddings, which we adapt here to a multi-label setting.
+
+\textbf{Entropy-based sample selection.} Predictive Shannon entropy is a standard uncertainty measure in active learning, where it is used to select the unlabeled examples most worth annotating~\cite{b7}. We repurpose this idea for a fully supervised setting: rather than selecting which examples to label, we use entropy to select which already-labeled examples are most worth using as anchors for metric-learning at the current point in training.
+
+\textbf{Mixture-of-Experts fine-tuning.} Our prior Stage-2 approach followed the GShard~\cite{b8} sparse-routing design to introduce conditional computation into the top ConvNeXt stages and decoder feed-forward layers. The method proposed in this paper is intended as a lighter-weight alternative to that stage, not a replacement for the Stage-1 backbone itself.
+
+\section{Proposed Method}
+\label{sec:method}
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\linewidth,page=5]{Entropy.pdf}}
+\caption{Overview of the proposed Stage-2 fine-tuning pipeline. The Stage-1 ConvNeXt backbone and decoder are initialized from the frozen-free Stage-1 checkpoint and continue training with a Triplet Cross-Memory-Bank objective gated by Anchor-Based Entropy Selection, in place of the Mixture-of-Experts decoder used in our prior submission~\cite{b12}.}
+\label{fig}
+\end{figure}
+
+\subsection{Overview}
+As shown in Fig.~\ref{fig}, we retain the Stage-1 backbone from our prior work unchanged: a five-stage ConvNeXt encoder followed by an ML-Decoder~\cite{b2} head with $N{=}30$ learnable query embeddings, one per target label, and a two-dimensional positional encoding added to the backbone feature map before cross-attention, following DETR~\cite{b13}. Given an input image $x$, the backbone produces per-query decoder embeddings, which we mean-pool over queries and $\ell_2$-normalize into a single embedding $e \in \mathbb{R}^{768}$, and classification logits $y \in \mathbb{R}^{30}$. The runs behind Tables~\ref{tab1} and~\ref{tab2} used a different embedding (Section~\ref{sec:corrections}). The Stage-1 checkpoint is trained end-to-end with Asymmetric Loss~\cite{b3} only; the contribution of this paper is entirely in how Stage 2 is fine-tuned from that checkpoint.
+
+\subsection{Cross-Batch Memory Bank}
+Given a mini-batch size of 8, the number of usable positive and negative pairs available for metric learning within a single batch is small, and the hardest examples encountered in a batch are a poor approximation of the hardest examples in the dataset as a whole. Following the spirit of XBM~\cite{b6}, we maintain a fixed-size memory bank $\mathcal{M}$ of $|\mathcal{M}|{=}96$ slots, implemented as a first-in-first-out ring buffer over embeddings and their corresponding multi-hot label vectors. After every optimization step, the current batch's embeddings and labels overwrite the oldest entries in the bank. Because the bank persists across steps, it exposes each anchor to a pool of embeddings up to $12\times$ larger than the mini-batch, drawn from many recent, slowly-drifting versions of the encoder. The corrected implementation of Section~\ref{sec:v3} uses 2,048 slots.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\linewidth,page=6]{Entropy.pdf}}
+\caption{Triplet Cross-Memory-Bank pipeline: for each anchor embedding $e_i$ from the current mini-batch, pairwise distances to the memory bank $\mathcal{M}$ are computed, and the closest positive (minimum distance among memory entries sharing a label) and farthest negative (maximum distance among entries sharing no label) are retrieved to form the triplet used in $\mathcal{L}_{tri}$ (Eq.~\ref{eq:triplet}).}
+\label{fig:xbm}
+\end{figure}
+
+\subsection{Anchor-Based Entropy Selection}
+Rather than mining a triplet for every sample in the batch, we select anchors using the model's own predictive uncertainty, illustrated in Fig.~\ref{fig:entropy}. For each sample $x_i$ in a batch $\mathcal{B}$, we compute the Shannon entropy of the softmax distribution over its classification logits,
+\begin{equation}
+H(x_i) = -\sum_{c=1}^{C} p_\theta(y_c \mid x_i)\,\log p_\theta(y_c \mid x_i),
+\label{eq:entropy}
+\end{equation}
+and select as anchors the samples whose entropy is at or above the batch mean,
+\begin{equation}
+\mathcal{A} = \Bigl\{\, x_i \in \mathcal{B} \;:\; H(x_i) \ge \tfrac{1}{|\mathcal{B}|}\textstyle\sum_{x_j \in \mathcal{B}} H(x_j) \,\Bigr\}.
+\label{eq:anchor}
+\end{equation}
+With a batch size of 8, $\mathcal{A}$ typically contains about half the batch. Our original design used only the single maximum-entropy sample, and Fig.~\ref{fig:entropy} still depicts that variant, but every run reported here used the mean threshold of Eq.~\ref{eq:anchor}. The rationale is that a low-entropy prediction is one the current model is already confident about, and is therefore less informative to push around in embedding space; restricting the triplet computation to the more uncertain samples directs the metric-learning signal toward the region of input space where the classifier's decision boundary is currently least well resolved. Eq.~\ref{eq:entropy} applies a softmax over the 30 logits and so treats the labels as a single categorical distribution, although they are independent binary labels; we keep it because all reported runs used it.
+
+\begin{figure}[htbp]
+\centerline{\includegraphics[width=\linewidth,page=7]{Entropy.pdf}}
+\caption{Anchor-Based Entropy Selection: the classification logits of every sample in the mini-batch are converted to a Shannon entropy score (Eq.~\ref{eq:entropy}). The figure shows the original single-anchor (maximum-entropy) design; all reported runs select every sample at or above the batch-mean entropy (Eq.~\ref{eq:anchor}).}
+\label{fig:entropy}
+\end{figure}
+
+\subsection{Positive/Negative Mining}
+\label{sec:mining}
+For each anchor $x_i \in \mathcal{A}$ with embedding $e_i$ and multi-hot label vector $\mathbf{y}_i$, we search the memory bank for a positive and a negative example. Because labels are multi-hot rather than mutually exclusive, we define positives as memory entries sharing \emph{at least one} label with the anchor, and negatives as memory entries sharing \emph{no} label with the anchor:
+\begin{equation}
+\mathcal{P}(i) = \{\, m \in \mathcal{M} : \mathbf{y}_m \cdot \mathbf{y}_i \ge 1 \,\},
+\label{eq:posmask}
+\end{equation}
+\begin{equation}
+\mathcal{N}(i) = \{\, m \in \mathcal{M} : \mathbf{y}_m \cdot \mathbf{y}_i = 0 \,\}.
+\label{eq:negmask}
+\end{equation}
+With this threshold, two samples that share only the dominant ``Normal'' label count as positives of one another, so many positives are Normal--Normal pairs. Our original design required more than one shared label to avoid this, but the runs behind Tables~\ref{tab1} and~\ref{tab2} used the threshold of Eq.~\ref{eq:posmask}. The corrected implementation (Section~\ref{sec:v3}) instead requires at least one shared label outside the five most frequent classes, and keeps Eq.~\ref{eq:negmask} for negatives. Within these sets, we take the closest positive and the farthest negative by Euclidean distance in embedding space,
+\begin{equation}
+e_i^{+} = \operatornamewithlimits{arg\,min}_{m \in \mathcal{P}(i)} \lVert e_i - e_m \rVert_2, \qquad
+e_i^{-} = \operatornamewithlimits{arg\,max}_{m \in \mathcal{N}(i)} \lVert e_i - e_m \rVert_2.
+\label{eq:hardmine}
+\end{equation}
+This is \emph{easy} mining: it selects the least informative pair, the opposite of the hardest-pair mining of~\cite{b5}. An earlier version of this paper called it hard mining. Easy pairs are less exposed to the noise of report-derived labels, but we have not compared hard or semi-hard mining. If either $\mathcal{P}(i)$ or $\mathcal{N}(i)$ is empty, the anchor is skipped for that step; we quantify how often this occurs in Section~\ref{sec:results}.
+
+\subsection{Training Objective}
+The mined triplets contribute a standard margin-based triplet loss,
+\begin{equation}
+\mathcal{L}_{tri} = \frac{1}{|\mathcal{A}'|}\sum_{i \in \mathcal{A}'} \max\bigl(0,\ \lVert e_i - e_i^{+}\rVert_2 - \lVert e_i - e_i^{-}\rVert_2 + \alpha \bigr),
+\label{eq:triplet}
+\end{equation}
+where $\mathcal{A}'\subseteq\mathcal{A}$ is the subset of anchors for which a valid positive and negative were found, and $\alpha{=}0.5$ is the triplet margin. When $\mathcal{A}'$ is empty, $\mathcal{L}_{tri}$ is treated as zero for that step. The full training objective combines this with the Asymmetric Loss classification term,
+\begin{equation}
+\mathcal{L} = \mathcal{L}_{ASL} + \lambda_{tri}\,\mathcal{L}_{tri},
+\label{eq:total}
+\end{equation}
+with $\lambda_{tri}{=}0.1$. Following the class-frequency reweighting used in our prior submission, $\mathcal{L}_{ASL}$ uses focusing parameters $\gamma_{neg}{=}2.0$, $\gamma_{pos}{=}0.0$, probability shift (clip) $0.05$, and per-class weights on the positive term computed from inverse log class frequency and clipped to $[0.5, 2.0]$, so that rare classes contribute a somewhat larger positive gradient without destabilizing training on the most frequent classes. In the runs behind Tables~\ref{tab1} and~\ref{tab2}, these weights were computed in one class order and applied in another, which nearly inverted them on the tail (Section~\ref{sec:corrections}).
+
+\section{Experimental Setup}
+We initialize from a Stage-1 checkpoint trained with the same ConvNeXt/ML-Decoder architecture and Asymmetric Loss objective as our prior submission~\cite{b12}, using an internal train/validation split drawn from the CXR-LT 2026 Task~1 training data with 30 target labels. Stage-2 fine-tuning uses AdamW with a learning rate of $3\times10^{-5}$, weight decay $0.01$ and a constant learning rate (a cosine schedule was configured but is stepped once per epoch, so it has no effect within the single epoch), batch size 8 with gradient accumulation over 6 steps (effective batch size 48), and mixed-precision training. Images are resized to $512\times512$. Fine-tuning is run for a single epoch with early stopping (patience 1) monitored on validation mAP, matching the lightweight, single-pass nature of the proposed regularizer.
+
+To isolate model-level stochasticity (weight initialization of newly added heads and dataloader shuffle order) from data-level stochasticity, we fix per-sample augmentation deterministically as a function of the sample key and epoch, independent of the training seed, and repeat Stage-2 fine-tuning under five seeds: 86, 123, 456, 789, and 1024. All five runs share the same Stage-1 initialization, memory bank size, and hyperparameters described above, and were executed as independent Slurm jobs across a mix of NVIDIA A6000 (48GB) and Ada 4500 (24GB) GPUs.
+
+\subsection{Implementation Corrections}
+\label{sec:corrections}
+Tables~\ref{tab1} and~\ref{tab2} were produced by our original Stage-2 code (Slurm jobs 43047--43051 for Table~\ref{tab1}, 2026-08-27). An audit of that code against this paper found five differences, which we list rather than re-describe the method around them:
+\begin{enumerate}
+\item \textbf{Triplet embedding.} The triplet loss acted on a ReLU-activated, globally pooled projection of the backbone feature map, computed before the decoder layers, not on the mean of the decoded query embeddings described in Section~\ref{sec:method}.
+\item \textbf{Class-weight order.} The ASL class weights were computed in the column order of the label file but applied in the model's (alphabetical) logit order, so most classes received another class's weight. On the tail this nearly inverted the intended weighting (e.g.\ 0.58 instead of 2.00 for hydropneumothorax).
+\item \textbf{Anchor rule.} Anchors were all samples at or above the batch-mean entropy, not the single maximum-entropy sample (now Eq.~\ref{eq:anchor}).
+\item \textbf{Positive threshold.} Positives needed one shared label, not more than one (now Eq.~\ref{eq:posmask}).
+\item \textbf{Mining.} Eq.~\ref{eq:hardmine} selects the closest positive and farthest negative, which is easy mining; the text called it hard mining.
+\end{enumerate}
+Two further corrections concern the reporting. The Stage-1 and MoE rows of Table~\ref{tab1} were evaluated at 384~px and the proposed rows at 512~px, so part of the gain may be resolution adaptation rather than the method. The triplet utilization reported earlier (7.6\%) came from a different configuration (30-epoch schedule, 8-step accumulation, the under-trained checkpoint); Section~\ref{sec:util} gives the value for the Table~\ref{tab1} recipe. Items 1 and 2 are fixed in the corrected implementation (v3) evaluated in Section~\ref{sec:v3}; items 3 and 4 are kept, with the positive test restricted to non-head classes; the numbers in Tables~\ref{tab1} and~\ref{tab2} are unchanged because they are what the original code measured.
+
+\section{Results and Discussion}
+\label{sec:results}
+
+\begin{table}[htbp]
+\caption{Internal validation performance, all three rows sharing the same Stage-1 checkpoint used in our original submission~\cite{b12}. Stage-2 (proposed) is reported as mean $\pm$ sample standard deviation over 5 seeds and was produced by the original implementation (Section~\ref{sec:corrections}: pre-decoder embedding, misordered class weights). The Stage-1 and MoE rows are at 384~px, the proposed rows at 512~px.}
+\begin{center}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Method} & \textbf{mAP} & \textbf{mF1} & \textbf{mAUC} & \textbf{mECE} \\
+\hline
+Stage 1 (backbone)~\cite{b12} & 0.385 & 0.395 & 0.875 & 0.134 \\
+\hline
+Stage 2: MoE~\cite{b12} & 0.405 & 0.402 & 0.882 & 0.130 \\
+\hline
+Stage 2: Proposed (orig.\ impl.) & \textbf{0.414} & \textbf{0.407} & \textbf{0.889} & 0.143 \\
+ & $\pm$0.002 & $\pm$0.010 & $\pm$0.002 & $\pm$0.008 \\
+\hline
+\end{tabular}%
+}
+\label{tab1}
+\end{center}
+\end{table}
+
+Table~\ref{tab1} reports internal validation performance, with all three rows measured from the identical Stage-1 checkpoint. The comparison is not fully controlled, because the Stage-1 and MoE rows were evaluated at 384~px and the proposed rows at 512~px. Relative to its Stage-1 initialization, the proposed entropy-gated triplet cross-memory-bank stage improves mAP by 0.029, mF1 by 0.012, and mAUC by 0.014, all after only a single fine-tuning epoch. Calibration is not improved: mECE rises from 0.134 to 0.143, a modest but consistent regression that we discuss further below. The standard deviation across five seeds is small for mAP and mAUC (0.002) and moderate for mF1 (0.010), suggesting the discriminative gains are reliable rather than an artifact of a favorable seed.
+
+Compared against the previously published MoE-based Stage 2~\cite{b12}, which was fine-tuned from the same Stage-1 checkpoint for two epochs, the proposed method reaches higher mAP (+0.009) and mAUC (+0.007) with comparable mF1 (+0.005) after only a single epoch of fine-tuning, while its calibration is modestly worse (mECE +0.013 relative to MoE). Unlike the MoE stage, the proposed method adds no expert or router parameters and requires no changes to the deployed model: the memory bank and triplet head are used only during training and are discarded entirely at inference time. The calibration regression observed for both Stage-2 variants relative to Stage 1 suggests it may be a general side effect of this fine-tuning step rather than something specific to either method, though confirming that would require calibrating a wider set of fine-tuning objectives, which we leave to future work.
+
+\subsection{Sensitivity to Stage-1 Checkpoint Maturity}
+The result above depends on the quality of the Stage-1 checkpoint being extended. To test this, we repeated the identical Stage-2 fine-tuning recipe and five-seed protocol from an independently trained Stage-1 checkpoint that had not yet converged (best validation mAP 0.377 after 7 epochs, versus 0.385 for the checkpoint used in Table~\ref{tab1}). Table~\ref{tab2} reports both pairs side by side.
+
+\begin{table}[htbp]
+\caption{Stage-2 (proposed) applied to two independently trained Stage-1 checkpoints of different maturity. Stage-2 rows are mean $\pm$ sample standard deviation over the same 5 seeds used in Table~\ref{tab1}, with the original implementation (Section~\ref{sec:corrections}).}
+\begin{center}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|l|l|c|c|c|c|}
+\hline
+\textbf{Checkpoint} & \textbf{Stage} & \textbf{mAP} & \textbf{mF1} & \textbf{mAUC} & \textbf{mECE} \\
+\hline
+\multirow{2}{*}{Converged~\cite{b12}} & 1 & 0.385 & 0.395 & 0.875 & 0.134 \\
+\cline{2-6}
+ & 2 (ours) & 0.414 & 0.407 & 0.889 & 0.143 \\
+\hline
+\multirow{2}{*}{Under-trained} & 1 & 0.377 & 0.376 & 0.879 & 0.148 \\
+\cline{2-6}
+ & 2 (ours) & 0.393 & 0.379 & 0.886 & 0.151 \\
+\hline
+\end{tabular}%
+}
+\label{tab2}
+\end{center}
+\end{table}
+
+The under-trained checkpoint's own Stage-1 mAP (0.377) is close to, but not directly comparable with, the converged checkpoint's (0.385): mAUC is actually slightly higher for the under-trained checkpoint (0.879 vs.\ 0.875), while mAP, mF1 and mECE are all worse, consistent with a model that has learned a coarse decision boundary but has not yet sharpened per-class precision-recall trade-offs. Applying the proposed Stage 2 to this weaker checkpoint again improves mAP (+0.016), mF1 (+0.003) and mAUC (+0.007), the same direction as for the converged checkpoint, but with roughly half the absolute mAP gain (+0.016 vs.\ +0.029) and higher seed-to-seed variance in mF1 (std 0.014 vs.\ 0.010). Calibration again regresses slightly (mECE +0.003). We draw two conclusions from this experiment: first, the proposed method's benefit is not specific to one Stage-1 checkpoint and replicates in direction across an independently trained one; second, the size of that benefit and the achievable absolute mAP both scale with how well-converged the Stage-1 checkpoint already is, so Stage-1 training budget and Stage-2 fine-tuning are not fully independent design choices. At the time of writing, the under-trained checkpoint's own training job was still running, so the smaller gain reported here is a conservative, not necessarily final, estimate of the method's ceiling on that model lineage.
+
+\subsection{Triplet Utilization Rate}
+\label{sec:util}
+Because $\mathcal{N}(i)$ requires a memory entry that shares no label with the anchor, and the 96-slot bank is small, a step can easily fail to produce a usable triplet, particularly early in fine-tuning when memory bank entries with sufficient label overlap for the current anchor's rare classes may not yet be present. The Table~\ref{tab1} runs did not log this rate. Re-runs with the same settings and a three-epoch schedule (jobs 44274--44278) report that 13.1--14.0\% of first-epoch steps produced a valid mined triplet (11.9--12.8\% in later epochs); the remaining steps contributed only the Asymmetric Loss term. An earlier version of this paper reported 7.6\%, which came from a different configuration (Section~\ref{sec:corrections}). This suggests that the effective learning rate of the triplet objective is considerably lower than $\lambda_{tri}{=}0.1$ would imply on its own, and that the gains reported in Table~\ref{tab1} are being driven by a comparatively small number of high-value updates. We viewed improving this utilization rate, for instance through a larger memory bank or a positive threshold aimed at rare classes, as the most direct avenue for improvement. The corrected implementation of Section~\ref{sec:v3} does both (2,048 slots; positives must share a non-head label), and 74--82\% of its steps yield a triplet at 640--1024~px (batch size 4), 97\% at 512~px (batch size 8).
+
+\subsection{Corrected Implementation and Scaled Recipe (v3)}
+\label{sec:v3}
+After the audit we fixed items 1 and 2 of Section~\ref{sec:corrections} and changed the recipe: learning rate $10^{-4}$, a 2,048-slot memory bank, positives that must share a label outside the five most frequent classes, weight EMA (decay 0.999, EMA weights evaluated), and an 8-epoch cosine schedule, stepped per optimizer update after a 5\% linear warm-up, with early stopping. The higher-resolution runs use batch size 4 with 12-step accumulation (effective batch 48), and the 768 and 1024~px runs stop after four of the eight scheduled epochs, add stochastic depth 0.1 and average the EMA weights of the last three epochs (SWA). The entropy gate, Eq.~\ref{eq:entropy}, the margin, $\lambda_{tri}{=}0.1$ and the Stage-1 checkpoint are unchanged. Table~\ref{tab3} lists the results; all are on the same internal validation fold (17,270 images).
+
+\begin{table}[htbp]
+\caption{Corrected implementation (v3), internal validation. Single models report the best epoch of the EMA weights or their SWA, without test-time augmentation unless stated. ``Flip'' averages the prediction with that of the horizontally flipped image. The greedy ensemble is a uniform average of three models chosen by forward selection on this validation fold, so it is optimistic; the fixed four-model average has no selection. -- = not computed.}
+\begin{center}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|c|}
+\hline
+\textbf{Model} & \textbf{px} & \textbf{mAP} & \textbf{mAUC} & \textbf{mF1} & \textbf{mECE} \\
+\hline
+Original impl., Table~\ref{tab1} (5 seeds) & 512 & 0.414 & 0.889 & 0.407 & 0.143 \\
+\hline
+v3, best epoch (6 seeds) & 512 & 0.439 & 0.900 & 0.454 & 0.128 \\
+ & & $\pm$0.002 & $\pm$0.002 & $\pm$0.004 & $\pm$0.006 \\
+v3, SWA (seed 86) & 768 & 0.4566 & 0.9063 & 0.4676 & 0.1275 \\
+v3 + drop-path, SWA (seed 42) & 768 & 0.4600 & 0.9092 & 0.4685 & 0.1354 \\
+v3 + drop-path, SWA (seed 1024) & 768 & 0.4582 & 0.9104 & 0.4741 & 0.1354 \\
+v3 + drop-path, SWA (seed 86) & 1024 & 0.4619 & 0.9138 & 0.4679 & 0.1438 \\
+\hline
+768~px seed-42 SWA, flip & 768 & 0.4650 & -- & -- & -- \\
+Fixed 4-model SWA average, flip & 768--1024 & 0.4699 & 0.9154 & 0.4819 & 0.1385 \\
+Greedy 3-model ensemble, flip & 640--1024 & \textbf{0.4722} & -- & -- & -- \\
+\hline
+\end{tabular}%
+}
+\label{tab3}
+\end{center}
+\end{table}
+
+\textbf{Where the gain comes from.} The steps are approximate, because consecutive rows differ in seed as well as in the change named. At 512~px, the fixes and the new recipe raise mean mAP from 0.414 to 0.439 ($+0.025$). Moving to 768~px adds about $+0.017$ (seed 86: 0.4385 best epoch at 512~px, 0.4560 at 768~px), stochastic depth with SWA about $+0.002$ to $+0.005$ (the 768~px comparison also differs in seed), flip test-time augmentation $+0.005$ (0.4600 to 0.4650 for the seed-42 model), and the greedy ensemble $+0.007$. The three ensemble members are the 768~px seed-42 SWA, 1024~px seed-86 SWA and 640~px seed-86 best-epoch models. None of these models has an MoE stage, a Markov component or any other added component; they are the entropy-gated triplet method of Section~\ref{sec:method} with the corrections above. The 0.4722 ensemble is therefore a result of this paper. Section~\ref{sec:markov} uses it unchanged as the baseline for Markov-chain priors: label-graph priors do not improve on it, and a patient-history prior helps only when the patient's previous report is available, which the test set does not provide.
+
+\textbf{What this does not show.} (i) No run switches off the entropy gate or the triplet term in v3, so the share of the gain due to the gate is unknown; the 0.472 is a result of the v3 pipeline as a whole. (ii) The internal validation fold is not patient-disjoint: 77\% of its images share a patient with the training fold, and 30\% are lateral views, while the test set is frontal and patient-disjoint. On frontal images of unseen patients, the gain from 1024 over 512~px shrinks from $+0.020$ to $+0.007$ and is not significant (Section~\ref{sec:mk-limits}). (iii) The v3 models have not been scored on the challenge leaderboard, so their internal numbers cannot be set against the 0.4599 test mAP of our MoE submission.
+
+\section{Markov Priors for Label Co-occurrence}
+\label{sec:markov}
+Section~I named two difficulties: the long tail, and the co-occurrence of findings, since a rare finding is seldom seen alone and its gradient is entangled with that of the common findings it accompanies. The entropy-gated triplet stage treats co-occurrence only implicitly, through positives defined by label overlap (Eq.~\ref{eq:posmask}). This section asks whether modelling co-occurrence \emph{explicitly}, as the transition probabilities of a Markov chain, adds to the corrected v3 model of Section~\ref{sec:v3}. In the training labels, hydropneumothorax (38 training images) co-occurs most often with pleural effusion, and pneumothorax with support devices, so a chain could let confident evidence for a common finding raise the score of a rare finding that tends to accompany it.
+
+A Markov chain needs a sequence of states, and Task~1 offers two. \textbf{(A) The labels of one X-ray}: co-occurrence counts become label-to-label transition probabilities, the direct model of one image carrying several findings. \textbf{(B) A patient's studies over time}: the findings at one visit condition those at the next. Route (B) contains label-to-label terms as well (finding $k$ at one visit to finding $c$ at the next, and couplings between findings of the same visit), so it tests label-to-label and same-label transitions side by side. Every comparison below is against the same v3 model without the prior.
+
+\subsection{Route A: Label-to-Label Transitions}
+\label{sec:mk-labelgraph}
+Let $C_{ij}$ be the number of training images labelled with both $i$ and $j$. The co-occurrence chain has transition matrix
+\begin{equation}
+P_{ij} = \frac{C_{ij}}{\sum_{k \neq i} C_{ik}}, \quad i \neq j, \qquad P_{ii} = 0,
+\label{eq:transition}
+\end{equation}
+built from the training fold only. Given an image's predicted probabilities $p \in [0,1]^{30}$ with $s = \sum_c p_c$, one random-walk step moves probability from the detected findings to those that usually accompany them, blended with the prediction:
+\begin{equation}
+q = (1 - \alpha)\, p + \alpha\, s\, \bigl((p/s)\, P\bigr).
+\label{eq:smoothing}
+\end{equation}
+The opposite extreme of co-occurrence is exclusivity. The CXR-LT 2026 Task~1 winner~\cite{b15} suppresses every abnormal class by the predicted probability of Normal, $p_c \leftarrow p_c(1 - p_0)^{\alpha_{ng}}$ with $\alpha_{ng} = 0.5$; in our validation labels Normal co-occurs with a finding in only 26 of 17,270 images. Both priors are applied to the cached flip-TTA probabilities of the greedy three-model v3 ensemble (0.4722, Table~\ref{tab3}); nothing is retrained.
+
+\subsection{Route B: Transitions Across a Patient's Studies}
+\label{sec:mk-patient}
+We group studies into states, one per patient and date; the state $y_t \in \{0,1\}^{30}$ is the union of that date's report labels. For each class, a two-state chain gives the probability that the finding is present given whether it was present at the patient's previous state,
+\begin{equation}
+\pi_c(y_{t-1}) = a_c \text{ if } y_{t-1,c} = 1, \qquad b_c \text{ otherwise},
+\label{eq:chain}
+\end{equation}
+estimated with Laplace smoothing from the 24,180 consecutive-state pairs of the training fold. For an image whose patient has an earlier state, the prior is $r = [\operatorname{logit} \pi_c(y_{t-1}) - \operatorname{logit} \bar\pi_c]_{c=1}^{30} \oplus 1$, where $\bar\pi_c$ is the training prevalence and the last entry flags that a prior exists; otherwise $r = 0$.
+
+\textbf{In-network.} The prior offsets the 30 ML-Decoder label queries before they attend to the image, $Q_c \leftarrow Q_c + r_c\, u_c + W r$, with $u$ and $W$ initialised at zero so training starts exactly from v3. Each training image's prior is zeroed with probability 0.3, so the network also learns to classify without it. Training uses the v3 recipe at 768~px (seeds 42 and 1024); training images take their earlier state from the training fold only, so no validation label reaches a training input.
+
+\textbf{Post-prediction.} Alternatively, the classifier is frozen and the chain becomes the transition of a hidden Markov model whose emission is the classifier output. With calibrated logits $\tau \operatorname{logit} p_c(x) + \delta_c$, the fused score is
+\begin{equation}
+z_c = \tau \operatorname{logit} p_c(x) + \delta_c + w_h \bigl[\operatorname{logit} q_c - \operatorname{logit} \bar\pi_c\bigr],
+\label{eq:fuse}
+\end{equation}
+with $\tau$, $\delta$ and $w_h$ fitted on held-out patients. Arm H1 uses $q_c = \pi_c(y_{t-1})$. Arm H4 (pre-specified primary) replaces it with a logistic transition that adds the time gap, patient metadata and, the term that tests route (A) across visits, \emph{cross-label} edges $B_{ck}$ from finding $k$ at $t-1$ to finding $c$ at $t$:
+\begin{equation}
+\operatorname{logit} q_c = \alpha_c + \beta_c y_{t-1,c} + \textstyle\sum_{k \neq c} B_{ck}\, y_{t-1,k} + \dots
+\label{eq:trans}
+\end{equation}
+Arm H5 adds within-visit label couplings $J$, a pairwise Markov random field over the 30 findings of one study fitted by pseudo-likelihood, applied by damped mean field with a fitted weight $w_J$: the co-occurrence model of route (A) learned inside the patient model.
+
+\textbf{Evaluation.} Route (B) can only be simulated on our internal folds: CXR-LT test patients are de-duplicated against training and their identifiers are withheld~\cite{b14}, and no development or test image is ever linked to the PadChest metadata. Validation images take their history from both folds, as in a hospital archive; 5,759 of the 17,270 have an earlier state, and the primary subset is the 4,061 of these that are frontal. Post-prediction weights are cross-fitted on two patient halves, AP is computed within each half and averaged, and differences use a paired patient-clustered bootstrap (300 resamples). The in-network models are also scored with every prior set to zero (\emph{withheld}), the only condition available on the test set.
+
+\subsection{Results}
+\label{sec:mk-results}
+\textbf{Label-to-label transitions do not help.} Every strength of random-walk smoothing lowers mAP (Table~\ref{tab:mk-graph}), and Normal-gating lowers it by up to $0.046$, with 28 of 30 classes worse at the winner's setting. The winner trained with a Distribution-Balanced loss~\cite{b23} that pushes abnormal scores up; our Asymmetric-Loss model has no such bias, so the gate only spreads the errors in $p_0$ into every other class's ranking.
+
+\begin{table}[htbp]
+\caption{Label-graph priors (route A) applied post hoc to the greedy three-model v3 ensemble, flip TTA, $n = 17{,}270$. The first row is v3 without any Markov step.}
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Prior} & \textbf{mAP} & \textbf{$\Delta$} \\
+\hline
+none (v3 ensemble, Table~\ref{tab3}) & 0.4722 & --- \\
+\hline
+random walk, $\alpha = 0.02$ & 0.4716 & $-0.0006$ \\
+random walk, $\alpha = 0.05$ & 0.4710 & $-0.0012$ \\
+random walk, $\alpha = 0.10$ & 0.4698 & $-0.0024$ \\
+random walk, $\alpha = 0.20$ & 0.4669 & $-0.0053$ \\
+\hline
+Normal-gating, $\alpha_{ng} = 0.25$ & 0.4619 & $-0.0103$ \\
+Normal-gating, $\alpha_{ng} = 0.5$ (winner) & 0.4483 & $-0.0239$ \\
+Normal-gating, $\alpha_{ng} = 1.0$ & 0.4264 & $-0.0459$ \\
+\hline
+\end{tabular}
+\label{tab:mk-graph}
+\end{center}
+\end{table}
+
+\textbf{Same-label transitions across visits do help when the previous report is available.} Fed into the label queries, the patient prior raises mAP by $+0.019$ at both seeds (Table~\ref{tab:mk-innet}; training-log SWA without TTA: 0.4600 to 0.4807 and 0.4582 to 0.4786). A rerun of both seeds with identical settings gives SWA 0.4731 and 0.4764, so the gain reproduces at a smaller size ($+0.013$ to $+0.018$); the two-seed flip ensemble scores 0.4867 (original) and 0.4797 (rerun) with the prior, against 0.4659 for the two v3 models. Almost all of the gain is on images with an earlier state: on the frontal ones it is $+0.0270$ (95\% CI $+0.0081$ to $+0.0497$) at seed 42 and $+0.0380$ ($+0.0265$ to $+0.0547$) at seed 1024, and it reaches all 3 head and all 20 medium classes (mean $\Delta$AP $+0.018$ and $+0.036$) and 5 of the 7 tail classes at seed 42. The largest per-class gains are on fracture, bronchiectasis, calcified densities and aortic atheromatosis ($+0.06$ to $+0.15$ AP); support devices, already near ceiling, gain little. Post-prediction fusion gives the same gain without retraining (Table~\ref{tab:mk-hmm}): H4 minus the in-network model is $+0.0021$ ($-0.0155$ to $+0.0197$) and $-0.0022$ ($-0.0204$ to $+0.0158$) on the primary subset.
+
+\begin{table}[htbp]
+\caption{Patient-history prior fed into the label queries, against the identical v3 model without it; internal validation, SWA, flip TTA. Withheld: every prior set to zero, the test-set condition. Earlier: images with an earlier state (5,759); frontal earlier (4,061); none (11,511).}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|l|l|c|c|c|c|}
+\hline
+\textbf{Seed} & \textbf{Model} & \textbf{All} & \textbf{Earlier} & \textbf{Fr.\ earlier} & \textbf{None} \\
+\hline
+42 & v3 & 0.4650 & 0.4894 & 0.4909 & 0.4529 \\
+ & + prior & \textbf{0.4839} & \textbf{0.5276} & \textbf{0.5179} & \textbf{0.4562} \\
+ & withheld & 0.4624 & 0.4811 & 0.4783 & \textbf{0.4562} \\
+\hline
+1024 & v3 & 0.4626 & 0.4807 & 0.4791 & 0.4534 \\
+ & + prior & \textbf{0.4820} & \textbf{0.5265} & \textbf{0.5171} & \textbf{0.4548} \\
+ & withheld & 0.4663 & 0.4830 & 0.4838 & \textbf{0.4548} \\
+\hline
+\end{tabular}
+\label{tab:mk-innet}
+\end{center}
+\end{table}
+
+\textbf{Inside the patient model, the label-to-label terms are not used.} The simplest chain is the best (Table~\ref{tab:mk-hmm}): H1 has the highest mAP on every subset with a prior (primary subset 0.5511 against 0.5411 for H4 at seed 42). Adding cross-label edges, gap and metadata (H4) improves the held-out transition prior itself (macro AUROC 0.66 to 0.81, log-loss 0.1513 to 0.1370) but not the fused prediction. The within-visit random field (H5) selected $w_J = 0$ in every fold, so H5 equals H4. The strongest couplings it learned are those between Normal and pleural effusion ($-1.51$), cardiomegaly ($-1.40$) and support devices ($-1.31$), and between support devices and central venous catheters ($+1.46$): co-occurrence that the classifier already captures. Patient metadata behave the same way: on their own they predict the findings (held-out macro AUROC 0.76), but stacked on the image logit they lower mAP by $0.003$ to $0.016$.
+
+\begin{table}[htbp]
+\caption{Post-prediction patient HMM: change in macro mAP relative to the frozen v3 768~px SWA model (E, flip TTA; the E row is absolute). Primary: frontal images with an earlier state ($n = 4{,}061$). Cross-fitted on patient halves, mean over three splits; 95\% CI from a patient-clustered bootstrap on the first split. $^\dagger$: no bootstrap (difference of three-split means). Internal simulation; leaderboard effect 0.}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{2.5pt}
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+ & \multicolumn{2}{c|}{\textbf{Seed 42}} & \multicolumn{2}{c|}{\textbf{Seed 1024}} \\
+\textbf{Arm} & full & primary & full & primary \\
+\hline
+E (v3) & 0.4652 & 0.5020 & 0.4635 & 0.4937 \\
+\hline
+H1 same-label & \shortstack{+0.0222\\{\scriptsize[+0.014,+0.035]}} & \shortstack{+0.0477\\{\scriptsize[+0.030,+0.066]}} & \shortstack{+0.0259\\{\scriptsize[+0.017,+0.040]}} & \shortstack{+0.0527\\{\scriptsize[+0.035,+0.075]}} \\
+H4 + gap, meta., cross-label & \shortstack{+0.0152\\{\scriptsize[+0.009,+0.023]}} & \shortstack{+0.0375\\{\scriptsize[+0.023,+0.051]}} & \shortstack{+0.0158\\{\scriptsize[+0.009,+0.025]}} & \shortstack{+0.0424\\{\scriptsize[+0.028,+0.059]}} \\
+H5 + within-visit & +0.0160$^\dagger$ & +0.0390$^\dagger$ & +0.0168$^\dagger$ & +0.0459$^\dagger$ \\
+\hline
+In-network & \shortstack{+0.0191\\{\scriptsize[+0.013,+0.026]}} & \shortstack{+0.0339\\{\scriptsize[+0.015,+0.055]}} & \shortstack{+0.0185\\{\scriptsize[+0.011,+0.025]}} & \shortstack{+0.0436\\{\scriptsize[+0.025,+0.063]}} \\
+Withheld & \shortstack{$-$0.0027\\{\scriptsize[$-$0.009,+0.005]}} & \shortstack{$-$0.0071\\{\scriptsize[$-$0.020,+0.001]}} & \shortstack{+0.0004\\{\scriptsize[$-$0.005,+0.005]}} & \shortstack{0.0000\\{\scriptsize[$-$0.007,+0.009]}} \\
+\hline
+\end{tabular}%
+}
+\label{tab:mk-hmm}
+\end{center}
+\end{table}
+
+\textbf{The gain needs the previous report and does not reach the test set.} With the prior withheld, the in-network model is no better than v3 ($-0.0026$, $-0.0109$ to $+0.0075$, at seed 42; $+0.0037$ at seed 1024); the two-seed ensemble scores 0.4693 (rerun 0.4611) against 0.4659. When the previous state is inferred from the patient's earlier images instead of read from the report, the primary-subset gain of H4 falls from $+0.0375$ to $+0.0092$ ($-0.0013$ to $+0.0181$). A model that copies the previous report and genuine persistence of findings would both give this pattern, and report-derived labels cannot separate them.
+
+\subsection{Discussion}
+\label{sec:mk-limits}
+\textbf{Co-occurrence is already modelled.} The answer to the question of this section is negative for label-to-label transitions and positive for same-label transitions across visits. ML-Decoder's query self-attention is itself a row-stochastic $30 \times 30$ mixing over labels, recomputed for every image on 768-dimensional label embeddings, over 8 heads in each of 2 blocks. A co-occurrence chain applies one global matrix to the probabilities, so for a ranking metric it can only move the scores of every image with similar predicted findings in the same direction. The within-visit couplings that the patient model learned, and then gave zero weight, are the same label correlations. We read this as the decoder, trained jointly with the label-overlap triplet objective, having already captured what a global co-occurrence prior could add.
+
+\textbf{What patient history adds.} A same-label chain over the patient's studies carries information the current image does not contain: the findings recorded at the previous visit, many of which persist. On images with an earlier state, the post-prediction gain is larger for medium and tail classes ($+0.044$ and $+0.046$) than for head classes ($+0.013$) at seed 42. The prior thus reaches the tail findings that Section~I identified as entangled with common ones, but through their persistence over time, not through their co-occurrence within one image.
+
+\textbf{Limits.} (i) The test-set effect is zero by construction, because test patients have no history; the result applies to deployments with prior reports. (ii) The internal validation fold is not patient-disjoint: 77.0\% of its images share a patient with training, as do 98.6\% of the images with an earlier state, and 30\% are lateral. On frontal images of unseen patients, the 1024-over-512~px gain of Section~\ref{sec:v3} shrinks from $+0.020$ ($+0.005$ to $+0.036$) on seen patients to $+0.007$ ($-0.020$ to $+0.027$), and H4 changes mAP by $-0.0053$ ($-0.0151$ to $-0.0006$) at seed 42. (iii) The rerun shows run-to-run differences of up to 0.008 mAP in the in-network prior, larger than the $\pm0.002$ seed spread of v3 at 512~px. (iv) Labels are extracted from reports, and there is one validation fold.
+
+\section{Conclusion}
+We presented an entropy-gated triplet cross-memory-bank fine-tuning stage for long-tailed, multi-label chest X-ray classification, extending our prior two-stage ConvNeXt framework without altering its deployed architecture. By using the model's own predictive Shannon entropy to select which samples to use as triplet anchors at each step, and taking the closest positive and farthest negative from a persistent cross-batch memory bank, a single epoch of fine-tuning improves mAP, mF1, and mAUC over the Stage-1 backbone in a same-checkpoint comparison (at 512 against 384~px), and reaches mAP and mAUC comparable to our previously reported Mixture-of-Experts Stage~2 in a single epoch instead of two, at no additional inference-time cost; calibration is slightly worse than either the Stage-1 backbone or the MoE stage, which we report plainly rather than obscure. Repeating the full protocol on an independently trained, less mature Stage-1 checkpoint reproduces the same qualitative pattern at a smaller magnitude, showing that the gain is not specific to one checkpoint while also showing that it is sensitive to Stage-1 convergence. An empirical analysis further shows that only about 13\% of training steps yielded a usable triplet in the original implementation. An audit found that this implementation differed from the method as described in its triplet embedding, class-weight order, anchor rule, positive threshold and mining rule, and that the comparison with Stage~1 and the MoE stage mixes 384 and 512~px input; we have corrected the description and report these differences. The corrected implementation (v3), with a larger memory bank, a longer schedule and higher resolution, reaches 0.460 internal-validation mAP as a single model and 0.472 as a three-model flip-TTA ensemble. These numbers come from a validation fold that shares patients with training, have not been scored on the leaderboard, and do not isolate the entropy gate; an ablation without the gate, a patient-disjoint validation split and per-class (head, medium, tail) results are the next steps.
+
+We also tested whether Markov chains can model label co-occurrence explicitly on top of v3. Label-to-label transition priors, applied after the classifier or learned inside a patient-level model, do not improve it, which we attribute to the per-image label mixing of the ML-Decoder head. Same-label transitions across a patient's studies raise internal-validation mAP from 0.460 to 0.481 for a single model (0.473 to 0.476 in a rerun) when the previous report is available, with gains in the medium and tail classes, and give nothing when it is withheld. Because CXR-LT test patients have no history, this result applies to deployments with prior reports, not to the leaderboard.
+
+\section*{Acknowledgment}
+The authors thank the organizers of the ISBI 2026 CXR-LT challenge for providing the benchmark dataset and evaluation infrastructure that made this comparison possible.
+
+\begin{thebibliography}{00}
+\bibitem{b1} Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie, ``A ConvNet for the 2020s,'' in IEEE/CVF Conference on Computer Vision and Pattern Recognition, CVPR 2022, New Orleans, LA, USA, June 18-24, 2022, pp. 11966--11976, IEEE.
+\bibitem{b2} Tal Ridnik, Gilad Sharir, Avi Ben-Cohen, Emanuel Ben-Baruch, and Asaf Noy, ``ML-Decoder: Scalable and versatile classification head,'' arXiv:2111.12933, 2021.
+\bibitem{b3} Tal Ridnik, Emanuel Ben Baruch, Nadav Zamir, Asaf Noy, Itamar Friedman, Matan Protter, and Lihi Zelnik-Manor, ``Asymmetric loss for multi-label classification,'' in 2021 IEEE/CVF International Conference on Computer Vision, ICCV 2021, Montreal, QC, Canada, October 10-17, 2021, pp. 82--91, IEEE.
+\bibitem{b4} Florian Schroff, Dmitry Kalenichenko, and James Philbin, ``FaceNet: A unified embedding for face recognition and clustering,'' in IEEE Conference on Computer Vision and Pattern Recognition, CVPR 2015, Boston, MA, USA, June 7-12, 2015, pp. 815--823, IEEE.
+\bibitem{b5} Alexander Hermans, Lucas Beyer, and Bastian Leibe, ``In defense of the triplet loss for person re-identification,'' arXiv:1703.07737, 2017.
+\bibitem{b6} Xun Wang, Haozhi Zhang, Weilin Huang, and Matthew R. Scott, ``Cross-batch memory for embedding learning,'' in IEEE/CVF Conference on Computer Vision and Pattern Recognition, CVPR 2020, Seattle, WA, USA, June 13-19, 2020, IEEE.
+\bibitem{b7} Burr Settles, ``Active learning literature survey,'' Computer Sciences Technical Report 1648, University of Wisconsin--Madison, 2009.
+\bibitem{b8} Dmitry Lepikhin, HyoukJoong Lee, Yuanzhong Xu, Dehao Chen, Orhan Firat, Yanping Huang, Maxim Krikun, Noam Shazeer, and Zhifeng Chen, ``Gshard: Scaling giant models with conditional computation and automatic sharding,'' in 9th International Conference on Learning Representations, ICLR 2021, Virtual Event, Austria, May 3-7, 2021, OpenReview.net.
+\bibitem{b9} Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de la Iglesia-Vaya, ``Padchest: A large chest x-ray image dataset with multi-label annotated reports,'' Medical Image Analysis, vol. 66, pp. 101797, 2020.
+\bibitem{b10} Daniel Coelho de Castro, Aurelia Bustos, Shruthi Bannur, Stephanie L. Hyland, Kenza Bouzid, Maria Teodora Wetscherek, Maria Dolores S\'anchez-Valverde, Lara Jaques-P\'erez, Lourdes P\'erez-Rodr\'iguez, Kenji Takeda, Jos\'e Mar\'ia Salinas-Serrano, Javier Alvarez-Valle, Joaqu\'in Galant-Herrero, and Antonio Pertusa, ``Padchest-gr: A bilingual chest x-ray dataset for grounded radiology report generation,'' NEJM AI, vol. 2, no. 7, June 2025.
+\bibitem{b11} Hexin Dong, Yi Lin, Pengyu Zhou, Xuan Zhong Feng, Alan Clint Legasto, Mingquan Lin, Hao Chen, Yuzhe Yang, George Shih, and Yifan Peng, ``Overview of the cxr-lt 2026 challenge: Multi-center long-tailed and zero shot chest x-ray classification,'' arXiv preprint arXiv:2602.22092, 2026.
+\bibitem{b12} Huy Le Pham, Khoa Ha Anh, Nguyen-Thanh-Thao Vo, Ky Trung Nguyen, Chau Ly Thi Huyen, Hien Q. Ta, and Thang Doan Van, ``An efficient framework for long-tailed and multi-label classification on chest X-rays,'' ISBI 2026 Task 1, 2026.
+\bibitem{b13} Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko, ``End-to-end object detection with transformers,'' in Computer Vision - ECCV 2020 - 16th European Conference, Glasgow, UK, August 23-28, 2020, Proceedings, Part I, vol. 12346 of Lecture Notes in Computer Science, pp. 213--229, Springer.
+\bibitem{b14} Hexin Dong, Yi Lin, Pengyu Zhou, \textit{et al.}, ``CXR-LT 2026 challenge: Multi-center long-tailed and zero shot chest X-ray classification,'' arXiv:2604.15555, 2026.
+\bibitem{b15} Ha-Hieu Pham, Hai-Dang Nguyen, Thanh-Huy Nguyen, Min Xu, Ulas Bagci, Trung-Nghia Le, and Huy-Hieu Pham, ``Handling supervision scarcity in chest X-ray classification: Long-tailed and zero-shot learning,'' in 2026 IEEE 23rd International Symposium on Biomedical Imaging (ISBI), 2026, arXiv:2602.13430.
+\bibitem{b23} Tong Wu, Qingqiu Huang, Ziwei Liu, Yu Wang, and Dahua Lin, ``Distribution-balanced loss for multi-label classification in long-tailed datasets,'' in Computer Vision -- ECCV 2020, Lecture Notes in Computer Science, pp. 162--178, Springer, 2020.
+\end{thebibliography}
+
+\end{document}

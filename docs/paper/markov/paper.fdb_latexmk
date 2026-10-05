@@ -1,5 +1,5 @@
 # Fdb version 4
-["pdflatex"] 1790887339.08848 "paper.tex" "paper.pdf" "paper" 1790887339.90327 0
+["pdflatex"] 1790976630.36569 "paper.tex" "paper.pdf" "paper" 1790976631.14214 0
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/adobe/courier/pcrr8r.tfm" 1136768653 1292 bd42be2f344128bff6d35d98474adfe3 ""
@@ -61,8 +61,6 @@
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb" 1248133631 32716 08e384dc442464e7285e891af9f45947 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb" 1248133631 32626 4f5c1b83753b1dd3a97d1b399a005b4b ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb" 1248133631 32442 c975af247b6702f7ca0c299af3616b80 ""
-  "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmbsy8.pfb" 1248133631 29407 8c6dfc0f2d83bfc4807c3b1dc90ef23e ""
-  "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmex8.pfb" 1248133631 30273 87a352d78b6810ae5cfdc68d2fb827b2 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cmextra/cmmib8.pfb" 1248133631 35479 892d27442ef9ef29ce1ee57aa0e8a665 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb" 1248133631 34694 ad62b13721ee8eda1dcc8993c8bd7041 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb" 1248133631 35309 940e81a5b9e04201a07e8b33a3ae6e64 ""
@@ -181,8 +179,8 @@
   "figures/assoc_heatmap.pdf" 1790869675.50683 39617 c5f4e1f70d0b792205e5a6833307fc70 ""
   "figures/metadata_only_auroc.pdf" 1790869675.52683 15092 a99291b57bd662a096350fdd0bd33445 ""
   "figures/persistence_by_acuity.pdf" 1790869675.54683 13051 4a0179bc05d4dfe1f0b8e0ae5639e9ae ""
-  "paper.aux" 1790887339.80782 12327 e248fb6494af1f6ebe7fbea3919f0799 "pdflatex"
-  "paper.tex" 1790887338.98584 69399 dee8fad7e7c06ee0d8513f48cc2b4d13 ""
+  "paper.aux" 1790976631.04892 13027 10addb4234159fc877944ab99fe94601 "pdflatex"
+  "paper.tex" 1790976612.21733 73804 1eae9b628c3b714ecc18c2375acc8110 ""
   (generated)
   "paper.aux"
   "paper.log"

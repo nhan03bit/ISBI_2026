@@ -18,7 +18,7 @@
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
 
-\title{Do Markov Label Priors Help Long-Tailed Multi-Label Chest X-Ray Classification? A Negative Result and a Validation-Proxy Audit on CXR-LT 2026}
+\title{When Do Markov Priors Help Long-Tailed Multi-Label Chest X-Ray Classification? Patient History Helps, Label Graphs Do Not}
 
 \author{
 \IEEEauthorblockN{Dr. Christian Wagner}
@@ -55,11 +55,11 @@ ititiu20216@student.hcmiu.edu.vn}
 \maketitle
 
 \begin{abstract}
-Rare chest X-ray findings seldom appear alone, so label co-occurrence is an obvious source of extra signal for long-tailed multi-label classification. Markov chains offer an interpretable way to use it, over two possible state sequences: the label graph, where co-occurrence frequencies become transition probabilities, and a patient's series of studies, where a hidden disease state evolves between visits. We test both on the CXR-LT 2026 Task~1 benchmark (30 PadChest findings, macro mAP) with our ConvNeXt/ML-Decoder model. Post-hoc random-walk smoothing over the label graph lowers mAP at every strength ($-0.0006$ to $-0.0053$). The Normal-gating prior used by the challenge winner lowers it by $0.010$ to $0.046$ and hurts 28 of 30 classes. A trainable, identity-initialised Markov label layer, fine-tuned end to end, does not beat a matched baseline in any of three variants (SWA mAP $-0.0031$ to $-0.0049$), and its learned gates stay close to zero. A longitudinal hidden Markov model cannot be used on the leaderboard, because test patients have no history, but in a longitudinal simulation a post-prediction patient HMM raises mAP on images with a prior study by about $+0.04$ and matches a network that is fed the same prior. Most of that gain comes from the previous report: with image-only history it falls to $+0.009$. In the PadChest metadata, patient, study and scanner fields predict the findings on their own (held-out macro AUROC 0.76) but add nothing to the image model: stacking them lowers mAP by $0.003$ to $0.012$. We attribute the label-graph results to overlap with the ML-Decoder, whose query self-attention already mixes labels with image-specific weights. The same investigation exposed a larger problem: our internal validation split shares patients with training (77.0\% of validation images) and is 30\% lateral views, while the test set is frontal and patient-disjoint. On a frontal, unseen-patient subset, the gain from 1024 over 512~px input shrinks from $+0.020$ to $+0.007$ and is no longer significant. We recommend such a subset as the internal proxy for leaderboard mAP.
+Rare chest X-ray findings seldom appear alone, and many persist from one study of a patient to the next. Markov chains can model both dependencies: over the label graph, where co-occurrence frequencies become transition probabilities, and over a patient's series of studies, where the finding state evolves between visits. We test both on the CXR-LT 2026 Task~1 benchmark (30 PadChest findings, macro mAP) as add-ons to our entropy-gated ConvNeXt/ML-Decoder model, measuring each against the same model without the prior. Label-graph priors do not help: post-hoc random-walk smoothing lowers mAP at every strength ($-0.0006$ to $-0.0053$), and the Normal-gating prior used by the challenge winner lowers it by $0.010$ to $0.046$. A patient-history Markov prior does help when the patient's previous report is available. Fed into the network's label queries, the prior from the previous report raises a single model's internal-validation mAP from 0.460 to 0.481 (0.458 to 0.479 at a second seed), almost all of it on images with an earlier study; fused after a frozen classifier, it gives a similar gain without retraining ($+0.0375$ on frontal images with an earlier study). With the prior withheld, as on the CXR-LT test set, whose patients have no history, the gain disappears ($-0.003$, 95\% CI $-0.011$ to $+0.007$), and with history inferred from earlier images instead of the previous report it falls to $+0.009$. In the PadChest metadata, patient, study and scanner fields predict the findings on their own (held-out macro AUROC 0.76) but add nothing to the image model: stacking them lowers mAP by $0.003$ to $0.016$. The investigation also exposed a larger problem: our internal validation split shares patients with training (77.0\% of validation images) and is 30\% lateral, while the test set is frontal and patient-disjoint. On a frontal, unseen-patient subset, the gain from 1024 over 512~px shrinks from $+0.020$ to $+0.007$ and is no longer significant. We recommend such a subset as the internal proxy for leaderboard mAP.
 \end{abstract}
 
 \begin{IEEEkeywords}
-Medical Image Classification, Long-Tail Distribution, Label Co-occurrence, Markov Chains, Hidden Markov Models, Data Leakage, Negative Results, ConvNeXt.
+Medical Image Classification, Long-Tail Distribution, Label Co-occurrence, Markov Chains, Patient History, Hidden Markov Models, Data Leakage, ConvNeXt.
 \end{IEEEkeywords}
 
 \section{Introduction}
@@ -70,9 +70,9 @@ A Markov chain is the simplest model of such dependencies, and it needs a sequen
 We evaluated both routes for our CXR-LT 2026 Task~1 system~\cite{b12,b14}. Our contributions are:
 \begin{itemize}
 \item We show that a fixed co-occurrence prior, applied post hoc as random-walk smoothing, lowers mAP at every strength we tried, and that the loss falls mainly on the head classes.
-\item We show that the Normal-gating prior used by the Task~1 winner~\cite{b15} lowers the mAP of our Asymmetric-Loss-trained model on 28 of 30 classes, and explain why it helped a model trained with a different loss.
-\item We fine-tune a trainable, identity-initialised Markov label layer end to end, in three variants, and find no gain over a matched baseline.
-\item We show that a longitudinal HMM has nothing to condition on at test time under the challenge's de-duplication and data-use rules.
+\item We show that the Normal-gating prior used by the Task~1 winner~\cite{b15} lowers the mAP of our Asymmetric-Loss-trained model and, at the winner's setting, the AP of 28 of 30 classes, and explain why it helped a model trained with a different loss.
+\item We show that a patient-history Markov prior, built from the previous report, raises internal-validation mAP when that report is available, whether it is fed into the network's label queries or fused after a frozen classifier, and that the two fusion points do not differ significantly.
+\item We show that this prior has nothing to condition on at test time under the challenge's de-duplication and data-use rules, and that with history withheld it gives nothing.
 \item We audit our internal validation split against the challenge test set. It is not patient-disjoint and contains lateral views, and on a frontal, unseen-patient subset one of our main design conclusions (higher input resolution) is no longer significant.
 \end{itemize}
 
@@ -88,31 +88,33 @@ We evaluated both routes for our CXR-LT 2026 Task~1 system~\cite{b12,b14}. Our c
 \section{Method}
 
 \subsection{Baseline Model}
-All experiments use our Stage-2 model~\cite{b12} (Fig.~\ref{fig:pipeline}). A ConvNeXt~\cite{b1} backbone with five stages and total stride 64 produces $S$ image tokens ($S{=}144$ at 768~px, $256$ at 1024~px). An ML-Decoder~\cite{b2} head holds 30 label queries; each of its two decoder blocks applies cross-attention to the image tokens, then self-attention among the queries, and a per-class GroupFC layer outputs logits $u \in \mathbb{R}^{30}$. Training minimises Asymmetric Loss~\cite{b3} plus $0.1\times$ an auxiliary triplet loss over a cross-batch memory bank~\cite{b6}; the triplet branch shapes the label embeddings only and does not touch the logits.
+All experiments use our Stage-2 model v3 (Fig.~\ref{fig:pipeline}): the entropy-gated triplet method of our companion paper~\cite{b25} in its corrected implementation, which replaced the Mixture-of-Experts Stage~2 of our challenge submission~\cite{b12}. It has no Mixture-of-Experts layer and no Markov component. A ConvNeXt~\cite{b1} backbone with five stages and total stride 64 produces $S$ image tokens ($S{=}144$ at 768~px, $256$ at 1024~px). An ML-Decoder~\cite{b2} head holds 30 label queries; each of its two decoder blocks applies cross-attention to the image tokens, then self-attention among the queries, and a per-class GroupFC layer outputs logits $u \in \mathbb{R}^{30}$. Training minimises Asymmetric Loss~\cite{b3} plus $0.1\times$ an auxiliary triplet loss over a cross-batch memory bank~\cite{b6}, whose anchors are the images with softmax entropy at or above the batch mean; the triplet loss acts on the mean of the decoded label embeddings, not on the logits directly.
 
 \begin{figure}[htbp]
 \centering
 \begin{tikzpicture}[font=\footnotesize, node distance=3mm,
-  box/.style={draw=blue!60!black, fill=blue!6, rounded corners=2pt, align=center, text width=4.5cm, inner sep=2.5pt},
-  newbox/.style={box, draw=orange!80!black, fill=orange!15, line width=0.9pt},
+  box/.style={draw=blue!60!black, fill=blue!6, rounded corners=2pt, align=center, text width=3.5cm, inner sep=2.5pt},
+  newbox/.style={draw=orange!80!black, fill=orange!15, rounded corners=2pt, align=center, text width=1.95cm, inner sep=2.5pt, line width=0.9pt},
   lossbox/.style={box, draw=violet!70!black, fill=violet!8},
-  databox/.style={box, draw=gray!70!black, fill=white},
-  aux/.style={draw=gray!70!black, dashed, fill=gray!8, rounded corners=2pt, align=center, text width=2.1cm, inner sep=2pt, font=\scriptsize},
+  databox/.style={draw=gray!70!black, fill=white, rounded corners=2pt, align=center, inner sep=2.5pt},
+  aux/.style={draw=gray!70!black, dashed, fill=gray!8, rounded corners=2pt, align=center, text width=1.75cm, inner sep=2pt, font=\scriptsize},
   arr/.style={-{Stealth[length=1.8mm]}},
   lab/.style={font=\scriptsize, right, inner sep=2pt}]
-\node[databox] (x) {chest X-ray $x$};
+\node[databox, text width=3.5cm] (x) {chest X-ray $x_t$};
 \node[box, below=of x] (bb) {\textbf{ConvNeXt backbone}\\5 stages, stride 64};
 \node[box, below=5mm of bb] (dec) {\textbf{ML-Decoder}, 30 label queries\\cross-attention $\rightarrow$ query self-attention\\$\rightarrow$ GroupFC};
-\node[newbox, below=5mm of dec] (mk) {\textbf{Markov label layer} (v4 only)\\$z = u + g \odot \bigl(\sigma(u)P\bigr) + b$};
-\node[lossbox, below=5mm of mk] (asl) {\textbf{Asymmetric loss}};
-\node[aux, right=4mm of dec] (tri) {triplet loss (memory bank); embeddings only};
+\node[lossbox, below=6mm of dec] (asl) {\textbf{Asymmetric loss}};
+\node[aux, right=3mm of dec] (tri) {triplet loss (memory bank); embeddings only};
+\node[newbox, left=3mm of dec] (pri) {\textbf{patient Markov prior} $r$\\$\rightarrow$ query offset};
+\node[databox, text width=1.95cm, font=\scriptsize, above=4mm of pri] (rep) {previous report $y_{t-1}$};
 \draw[arr] (x) -- (bb);
 \draw[arr] (bb) -- node[lab]{$S$ image tokens} (dec);
-\draw[arr] (dec) -- node[lab]{logits $u \in \mathbb{R}^{30}$} (mk);
-\draw[arr] (mk) -- node[lab]{refined logits $z$} (asl);
+\draw[arr] (dec) -- node[lab]{logits $u \in \mathbb{R}^{30}$} (asl);
 \draw[arr, dashed] (dec) -- (tri);
+\draw[arr] (rep) -- (pri);
+\draw[arr, line width=0.9pt] (pri) -- (dec);
 \end{tikzpicture}
-\caption{Where the Markov step sits. The baseline (v3) is the model without the orange layer. The post-hoc variants of Sections~\ref{sec:smoothing} and~\ref{sec:gating} act on the probabilities $\sigma(u)$ of a trained v3 model at inference; the trainable layer of Section~\ref{sec:layer} is inserted before the loss and fine-tuned end to end. The post-prediction patient HMM of Section~\ref{sec:hmm} also acts on $\sigma(u)$ of a frozen model, combined with the patient's history and metadata (Fig.~\ref{fig:hmm}).}
+\caption{Where the Markov priors enter. The baseline (v3) is the model without the orange box. In the in-network variant (Section~\ref{sec:phprior}), the patient-history Markov prior $r$, computed from the previous report, offsets the ML-Decoder label queries. In the post-prediction variant (Section~\ref{sec:hmm}), the same chain is fused with the probabilities $\sigma(u)$ of a frozen model, together with metadata (Fig.~\ref{fig:hmm}). The label-graph priors of Sections~\ref{sec:smoothing} and~\ref{sec:gating} act on $\sigma(u)$ at inference.}
 \label{fig:pipeline}
 \end{figure}
 
@@ -142,39 +144,32 @@ p_c \leftarrow p_c\,(1 - p_0)^{\alpha_{ng}}, \qquad \alpha_{ng} = 0.5.
 \end{equation}
 This is a hard-exclusivity prior. In our validation labels, Normal co-occurs with an abnormal finding in only 26 of 17,270 images. We also test a reverse gate that suppresses Normal instead, $p_0 \leftarrow p_0\,(1 - \max_{c \neq 0} p_c)^{0.5}$.
 
-\subsection{Trainable Markov Label Layer}
-\label{sec:layer}
-A fixed prior cannot adapt to what the network has already learned. We therefore also insert a trainable layer after the logits (Fig.~\ref{fig:layer}):
-\begin{align}
-P &= \operatorname{softmax}_{\mathrm{row}}\bigl(A \odot (1 - I) - \infty \cdot I\bigr), \label{eq:layerP}\\
-z^{(k)} &= u + g \odot \bigl(\sigma(z^{(k-1)})\, P\bigr) + b, \qquad k = 1, \dots, K, \label{eq:layer}
-\end{align}
-with $z^{(0)} = u$ and output $z = z^{(K)}$. The $30 \times 30$ matrix $A$ is initialised from the log co-occurrence of the training labels, so $P$ starts close to Eq.~\eqref{eq:transition} and stays row-stochastic throughout training. The per-class gate $g$ and bias $b$ start at zero, so the model starts exactly as the baseline and the layer contributes only what training finds useful. The gate is signed: a negative $g_j$ lets co-occurring evidence \emph{lower} the score of label $j$, which is the only way the layer can express exclusivity. The layer has $30 \times 30 + 30 + 30 = 960$ parameters. We train three variants: $K{=}1$ with learnable $A$ (mk1), $K{=}2$ with learnable $A$ (mk2), and $K{=}1$ with $A$ frozen at its co-occurrence initialisation (mk1fix).
+\subsection{Patient-History Markov Prior}
+\label{sec:phprior}
+Route (B) uses the order of a patient's studies. We group studies into states, one per patient and date; the state $y_t \in \{0,1\}^{30}$ is the union of the label sets of that date's studies, as read from their reports. For each class, a two-state Markov chain gives the probability that the finding is present at a state, given whether it was present at the patient's previous state:
+\begin{equation}
+\pi_c(y_{t-1}) = \begin{cases} a_c, & y_{t-1,c} = 1,\\ b_c, & y_{t-1,c} = 0, \end{cases}
+\label{eq:chain}
+\end{equation}
+with $a_c$ and $b_c$ estimated, with Laplace smoothing, from the 24,180 pairs of consecutive states in the training fold. For an image whose patient has a strictly earlier state, we summarise the prior as
+\begin{equation}
+r = \bigl[\operatorname{logit} \pi_c(y_{t-1}) - \operatorname{logit} \bar\pi_c\bigr]_{c=1}^{30} \oplus 1,
+\label{eq:rvec}
+\end{equation}
+where $\bar\pi_c$ is the training prevalence of class $c$ and the last entry flags that a prior exists; an image without an earlier state gets $r = 0$. We use the prior in two ways.
 
-\begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[font=\footnotesize, node distance=4mm,
-  op/.style={draw=orange!80!black, fill=orange!15, rounded corners=2pt, align=center, inner sep=3pt, minimum height=7mm},
-  par/.style={draw=orange!80!black, fill=orange!5, rounded corners=2pt, align=center, inner sep=3pt, font=\scriptsize},
-  arr/.style={-{Stealth[length=1.8mm]}}]
-\node (u) {$u$};
-\node[op, right=of u] (q) {$q = \sigma(u)$};
-\node[op, right=of q] (m) {$m = qP$};
-\node[op, right=of m] (z) {$z = u + g \odot m + b$};
-\node[par, above=4mm of m] (P) {$P = \operatorname{softmax}_{\mathrm{row}}(A)$\\diagonal masked, init.\ from co-occurrence};
-\draw[arr] (u) -- (q);
-\draw[arr] (q) -- (m);
-\draw[arr] (m) -- (z);
-\draw[arr, line width=0.9pt] (P) -- (m);
-\draw[arr] (u.south) -- ++(0,-5mm) -| node[pos=0.25, below, font=\scriptsize]{identity path: $z = u$ when $g = b = 0$} (z.south);
-\end{tikzpicture}
-\caption{The trainable Markov label layer for $K{=}1$. $P$ is one global matrix shared by all images; only its input $q$ is image-specific. For $K{=}2$ the step is repeated with $\sigma(z^{(1)})$ in place of $q$.}
-\label{fig:layer}
-\end{figure}
+\textbf{In-network.} The prior offsets the 30 ML-Decoder label queries before they attend to the image:
+\begin{equation}
+Q_c \leftarrow Q_c + r_c\, u_c + W r, \qquad c = 1, \dots, 30,
+\label{eq:qprior}
+\end{equation}
+where $u \in \mathbb{R}^{30 \times 768}$ and $W \in \mathbb{R}^{768 \times 31}$ start at zero, so training starts exactly from the baseline and an image without a prior always receives a zero offset. During training, each image's prior is set to zero with probability 0.3, so the network also learns to classify without it. Patient identity is used only to find the earlier state; no metadata enter the network.
+
+\textbf{Post-prediction.} Alternatively, the classifier is kept frozen and the chain becomes the transition of a hidden Markov model whose emission is the classifier output (Section~\ref{sec:hmm}). Its simplest calibrated arm (H1) adds $w_h\,[\operatorname{logit} \pi_c(y_{t-1}) - \operatorname{logit} \bar\pi_c]$ to the calibrated logits, with $w_h$ fitted on held-out patients; richer arms add the time gap, patient and study metadata, and cross-class terms to the transition.
 
 \subsection{Post-Prediction Patient HMM}
 \label{sec:hmm}
-For route (B) we keep the classifier frozen and place the Markov model after it, so that the network only extracts image evidence and the patient information enters through the prior.
+For post-prediction fusion we keep the classifier frozen and place the Markov model after it, so that the network only extracts image evidence and the patient information enters through the prior.
 
 \textbf{Graphical model.} A patient's studies are grouped into states, one per patient and date (Fig.~\ref{fig:hmm}). The state $y_t \in \{0,1\}^{30}$ is the element-wise OR of the label vectors of that date's studies, and $m_t$ is the date's metadata. The model is a hidden Markov model whose emission is the classifier:
 \begin{equation}
@@ -298,19 +293,17 @@ H4-F & H4 in the filtered mode \\
 \end{center}
 \end{table}
 
-\textbf{In-network comparator (B-early).} The alternative is to give the network the same prior. B-early maps the pooled-chain prior vector $\bigl[\operatorname{logit} \pi_c(y_{t-1}) - \operatorname{logit} \bar\pi_c\bigr]_{c} \oplus \mathbf{1}[\text{earlier state}]$, through two zero-initialised linear maps, to an offset on the 30 ML-Decoder label queries. It is fine-tuned with the baseline recipe (prior dropout 0.3) at seeds 42 and 1024, and starts exactly as the baseline. B-early0 is the same network evaluated with every prior set to zero, the only condition available on the test set.
-
 \section{Experimental Setup}
 \label{sec:setup}
 \textbf{Data.} We use the CXR-LT 2026 Task~1 training data: PadChest~\cite{b9} images with 30 report-derived target labels, split into an internal training fold (103,303 images after filtering) and a validation fold (17,270 scored images). Patient identifiers, study identifiers and projections come from the original PadChest metadata.
 
-\textbf{Post-hoc experiments.} Sections~\ref{sec:smoothing} and~\ref{sec:gating} are evaluated on cached validation probabilities with horizontal-flip test-time augmentation (TTA). The base model is our best greedy three-model ensemble: two SWA checkpoints (768~px, seed 42; 1024~px, seed 86) and one best-epoch checkpoint (640~px, seed 86). The metric is macro mAP over the 30 classes. No model is retrained.
+\textbf{Post-hoc experiments.} Sections~\ref{sec:smoothing} and~\ref{sec:gating} are evaluated on cached validation probabilities with horizontal-flip test-time augmentation (TTA). The base model is our best greedy three-model ensemble of v3 models: two SWA checkpoints (768~px, seed 42; 1024~px, seed 86) and one best-epoch checkpoint (640~px, seed 86). The ensemble is a uniform average of probabilities; its members were chosen by forward selection, adding at each step the model that most raised validation mAP and stopping when the gain fell below $10^{-4}$. Because the members were selected on the fold they are scored on, its mAP of 0.4722 is slightly optimistic; the fixed average of four v3 SWA models scores 0.4699. Neither contains a Markov component. The metric is macro mAP over the 30 classes. No model is retrained.
 
-\textbf{Trainable-layer experiments.} Each variant fine-tunes from the same Stage-1 checkpoint with our final Stage-2 recipe: 768~px input, seed 42, drop-path 0.1, four epochs of an eight-epoch cosine schedule, effective batch size 48, triplet weight $\lambda = 0.1$ and a memory bank of 2,048 embeddings. The baseline is the identical run without the layer. $A$, $g$ and $b$ are trained with a learning rate ten times the base rate ($10^{-3}$ versus $10^{-4}$) and no weight decay, because $g$ and $b$ start from zero. We report the best epoch of the EMA weights and the stochastic weight average (SWA) of the EMA weights over the last three epochs.
+\textbf{Patient-history prior (in-network).} Each seed (42 and 1024) fine-tunes from the same Stage-1 checkpoint with our final Stage-2 recipe (768~px input, drop-path 0.1, four epochs of an eight-epoch cosine schedule, effective batch size 48, triplet weight $\lambda = 0.1$ and a memory bank of 2,048 embeddings), with the prior of Eq.~\eqref{eq:qprior}, prior dropout 0.3, and a learning rate ten times the base rate ($10^{-3}$ versus $10^{-4}$) for $u$ and $W$. The baselines are the identical runs without the prior. Training images take their earlier state from the training fold only, so no validation label reaches a training input; validation images take it from both folds, as in a hospital archive, and 5,759 of the 17,270 have one. We report the stochastic weight average (SWA) of the EMA weights over the last three epochs, evaluated with horizontal-flip TTA both with the prior and with every prior set to zero (\emph{withheld}), the only condition available on the test set. Because no weight is fitted on validation data, these models are scored on the whole fold.
 
 \textbf{Metadata analysis.} We relate PadChest patient, study and acquisition metadata to the 30 labels on the training fold only (50,604 patients, 75,819 studies). Labels come from the challenge label lists, never from the PadChest report or label columns, and only a whitelist of metadata columns is read, for training and validation images only. Patient and study fields (sex, age at study, pediatric flag, number of earlier states, days since the previous study, study year, study acuity) are counted per study; view and acquisition fields (projection, scanner manufacturer, spatial resolution, exposure, image size and others) are counted per image. For each field and class we compute Cram\'er's V, mutual information, a chi-square test with Benjamini--Hochberg correction, and the log odds ratio of the most extreme level with a patient-clustered bootstrap interval (200 resamples). The tests ignore the clustering of studies within patients, so we rank by effect size. A per-class logistic regression on metadata alone is scored by patient-grouped five-fold cross-validation, with each feature group (patient: sex and age; temporal; view; acquisition) alone and removed in turn. To test whether metadata add to the image model, we fit on the validation fold, for each class, a logistic model of the label on the image logit plus the metadata, fitted on one half of the patients and scored on the other (both directions). We compute mAP within each half, average the two, and compare with the unmodified image probabilities by a paired patient-clustered bootstrap (300 resamples). The image models are the 768~px seed-42 SWA model and the greedy three-model ensemble, both with flip TTA.
 
-\textbf{Longitudinal simulation.} Route (B) is evaluated on the internal folds only, as a simulation of reading with prior studies; no development or test image is ever linked to the PadChest metadata, and only a whitelist of metadata columns is read (dates, projection, sex and birth year, plus acquisition fields for H4-acq), never the report or label columns. The prior is fitted on training-fold states only (74,782 states, 24,180 consecutive pairs). Validation images take their history from both folds, as in a hospital archive: 5,759 of the 17,270 have an earlier state, and the primary subset is the 4,061 of these that are frontal. Calibration and fusion weights are cross-fitted: the validation patients are split into two halves, all parameters are fitted on one half (the weights by macro mAP on the grid $\{0, 0.25, \dots, 1.5\}$) and applied to the other, for three random splits. Because the halves receive different calibrations, AP is computed within each half and averaged; pooling them would mix two scales inside each class ranking. The emissions are the 768~px SWA models at seeds 42 and 1024 and the greedy ensemble, all with flip TTA, and B-early is compared with the emission of the same seed. In the filtered mode, training-fold images have in-sample emissions from the seed-42 model (mAP 0.713 on the training fold), so a filtered history built from training images is optimistic. Differences use a paired patient-clustered bootstrap of 300 resamples on the first split.
+\textbf{Longitudinal simulation.} Route (B) is evaluated on the internal folds only, as a simulation of reading with prior studies; no development or test image is ever linked to the PadChest metadata, and only a whitelist of metadata columns is read (dates, projection, sex and birth year, plus acquisition fields for H4-acq), never the report or label columns. The prior is fitted on training-fold states only (74,782 states, 24,180 consecutive pairs). Validation images take their history from both folds, as in a hospital archive: 5,759 of the 17,270 have an earlier state, and the primary subset is the 4,061 of these that are frontal. Calibration and fusion weights are cross-fitted: the validation patients are split into two halves, all parameters are fitted on one half (the weights by macro mAP on the grid $\{0, 0.25, \dots, 1.5\}$) and applied to the other, for three random splits. Because the halves receive different calibrations, AP is computed within each half and averaged; pooling them would mix two scales inside each class ranking. The emissions are the 768~px SWA models at seeds 42 and 1024 and the greedy ensemble, all with flip TTA, and the in-network prior is compared with the emission of the same seed. In the filtered mode, training-fold images have in-sample emissions from the seed-42 model (mAP 0.713 on the training fold), so a filtered history built from training images is optimistic. Differences use a paired patient-clustered bootstrap of 300 resamples on the first split.
 
 \textbf{Validation subsets.} To compare with the test set, we split the validation fold by projection (frontal: PA, AP and AP horizontal; lateral) and by whether the image's patient also appears in the training fold. Scores on a subset are macro mAP over the classes with at least one positive in that subset (28 classes for the frontal, unseen-patient subset). The cached probabilities carry no sample keys, so we rebuilt their row order from the evaluation data-loader schedule; the rebuilt order reproduces all 17,270 stored label rows exactly, and only one arrangement of the four images missing from the shards fits. Differences between two models are tested with a patient-clustered bootstrap of 300 resamples.
 
@@ -320,13 +313,13 @@ H4-F & H4 in the filtered mode \\
 Table~\ref{tab:smoothing} shows that smoothing lowers mAP at every strength, and the loss grows with $\alpha$. At $\alpha = 0.05$ the loss falls mainly on the head classes: the mean change in per-class AP is $-0.0021$ over the ten most frequent classes and $-0.0001$ over the ten rarest.
 
 \begin{table}[htbp]
-\caption{Post-hoc random-walk smoothing (Eq.~\eqref{eq:smoothing}) on the greedy-3 ensemble, flip TTA, $n_{val} = 17{,}270$.}
+\caption{Post-hoc random-walk smoothing (Eq.~\eqref{eq:smoothing}) applied to the greedy-3 ensemble of the entropy-gated v3 model~\cite{b25}, flip TTA, $n_{val} = 17{,}270$. The first row is that model without any Markov step; its 0.4722 is the companion paper's result, not a result of this paper. Every smoothing strength lowers it.}
 \begin{center}
 \begin{tabular}{|c|c|c|}
 \hline
 $\boldsymbol{\alpha}$ & \textbf{mAP} & \textbf{$\Delta$ vs base} \\
 \hline
-0 (base) & \textbf{0.4722} & --- \\
+0 (entropy-gated v3 baseline~\cite{b25}, no Markov) & 0.4722 & --- \\
 \hline
 0.02 & 0.4716 & $-0.0006$ \\
 \hline
@@ -344,16 +337,16 @@ $\boldsymbol{\alpha}$ & \textbf{mAP} & \textbf{$\Delta$ vs base} \\
 AP is a per-class ranking metric. Smoothing moves probability from an image's confident findings to findings that accompany them \emph{on average}, which blurs the per-image evidence the ranking depends on. The ML-Decoder already learns label interactions through its queries, so a fixed co-occurrence prior adds no new information.
 
 \subsection{Normal-Gating}
-Normal-gating lowers mAP at every strength (Table~\ref{tab:gating}), and 28 of 30 classes get worse. The single 1024~px model behaves the same way ($-0.024$ at $\alpha_{ng} = 0.5$). The reverse gate leaves mAP unchanged. The winner trained with a Distribution-Balanced loss~\cite{b23} and class-aware sampling, both of which push abnormal scores up, and used the gate to \emph{``suppress spurious abnormal predictions''}~\cite{b15}. Our Asymmetric-Loss model has no such bias, so the gate only spreads the errors in $p_0$ into every other class's ranking. This comparison uses report-derived labels; the leaderboard uses radiologist labels.
+Normal-gating lowers mAP at every strength (Table~\ref{tab:gating}); at the winner's setting ($\alpha_{ng} \ge 0.5$) 28 of 30 classes get worse (26 at $\alpha_{ng} = 0.25$). The single 1024~px model behaves the same way ($-0.024$ at $\alpha_{ng} = 0.5$). The reverse gate leaves mAP unchanged. The winner trained with a Distribution-Balanced loss~\cite{b23} and class-aware sampling, both of which push abnormal scores up, and used the gate to \emph{``suppress spurious abnormal predictions''}~\cite{b15}. Our Asymmetric-Loss model has no such bias, so the gate only spreads the errors in $p_0$ into every other class's ranking. This comparison uses report-derived labels; the leaderboard uses radiologist labels.
 
 \begin{table}[htbp]
-\caption{Normal-gating (Eq.~\eqref{eq:gating}) on the greedy-3 ensemble, flip TTA.}
+\caption{Normal-gating (Eq.~\eqref{eq:gating}) applied to the greedy-3 ensemble of the entropy-gated v3 model~\cite{b25}, flip TTA. The first row is that model without any Markov step (the companion paper's result); every gate lowers it or leaves it unchanged.}
 \begin{center}
 \begin{tabular}{|l|c|c|}
 \hline
 \textbf{Variant} & \textbf{mAP} & \textbf{$\Delta$} \\
 \hline
-base & \textbf{0.4722} & --- \\
+entropy-gated v3 baseline~\cite{b25}, no Markov & 0.4722 & --- \\
 \hline
 gate, $\alpha_{ng} = 0.25$ & 0.4619 & $-0.0103$ \\
 \hline
@@ -368,31 +361,31 @@ reverse gate on Normal & 0.4722 & $\pm 0.0000$ \\
 \end{center}
 \end{table}
 
-\subsection{Trainable Markov Label Layer}
-\label{sec:layerres}
-None of the three variants improves on the matched baseline (Table~\ref{tab:layer}). Best-epoch mAP changes by $-0.0044$ (mk1), $-0.0000$ (mk2) and $-0.0016$ (mk1fix), and SWA mAP by $-0.0049$, $-0.0033$ and $-0.0031$. mAUC and mECE stay within 0.001 of the baseline, and mF1 moves in both directions. The SWA shortfall is consistent in sign but small against seed noise. Over six seeds of our 512~px recipe, best-epoch mAP spans 0.0065 (standard deviation about 0.0031), and two seeds of the 768~px baseline recipe differ by 0.0021 (best epoch) and 0.0018 (SWA). With one seed per variant, we cannot tell no effect from a slight harm, or rank the variants against each other.
+\subsection{Patient-History Markov Prior (In-Network)}
+\label{sec:phres}
+Table~\ref{tab:phprior} compares each in-network model with its baseline. With the patient-history prior, mAP rises by $+0.019$ at both seeds (0.4650 to 0.4839 and 0.4626 to 0.4820), and the training-log SWA scores without TTA give the same picture (0.4600 to 0.4807 and 0.4582 to 0.4786). Almost all of the gain is on the 5,759 images with an earlier state (0.4894 to 0.5276 at seed 42), 98.6\% of which belong to patients also in the training fold; on the frontal ones, the paired difference is $+0.0270$ (95\% CI $+0.0081$ to $+0.0497$) at seed 42 and $+0.0380$ ($+0.0265$ to $+0.0547$) at seed 1024. On images without an earlier state, where the offset is zero by construction, the network trained with the prior scores 0.4562 against 0.4529 at seed 42. On the frontal images with an earlier state, the gain reaches all 3 head and all 20 medium classes at seed 42 (mean $\Delta$AP $+0.0175$ and $+0.0360$) and 5 of the 7 tail classes ($+0.0055$; $+0.0546$, 6 of 7, at seed 1024). With the prior withheld, mAP is 0.4624 against 0.4650 at seed 42 (paired $-0.0026$, $-0.0109$ to $+0.0075$) and 0.4663 against 0.4626 at seed 1024 ($+0.0037$, $-0.0029$ to $+0.0106$): without history, the network is no better than the baseline. A two-seed ensemble scores 0.4867 with the prior and 0.4693 with it withheld, against 0.4659 for the two baseline models. Table~\ref{tab:hmm} scores the same models within patient halves, to match the cross-fitted HMM, so its in-network rows differ slightly from these.
 
-\begin{table*}[htbp]
-\caption{Trainable Markov label layer versus the matched baseline (768~px, seed 42, no TTA). Best: EMA weights at the best epoch. SWA: average of the EMA weights of epochs 2--4; mAUC, mF1 and mECE are for the SWA weights. $|g|$: mean / max absolute gate after the final epoch.}
+\begin{table}[htbp]
+\caption{Patient-history Markov prior fed into the network (in-network), against the identical model without it (v3): internal validation, flip TTA, SWA weights. Withheld: the same network with every prior set to zero, the only condition available on the test set. Earlier: images whose patient has an earlier state (5,759); frontal earlier: the frontal ones among them (4,061); none: images without an earlier state (11,511).}
 \begin{center}
-\begin{tabular}{|l|c|c|c|c|c|c|c|c|}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|l|l|c|c|c|c|}
 \hline
-\textbf{Model} & $\boldsymbol{K}$ & $\boldsymbol{A}$ & \textbf{Best mAP} & \textbf{SWA mAP} & \textbf{mAUC} & \textbf{mF1} & \textbf{mECE} & $\boldsymbol{|g|}$ \\
+\textbf{Seed} & \textbf{Model} & \textbf{All} & \textbf{Earlier} & \textbf{Frontal earlier} & \textbf{None} \\
 \hline
-Baseline (v3) & --- & --- & \textbf{0.4585} & \textbf{0.4600} & 0.9092 & 0.4685 & 0.1354 & --- \\
+42 & v3 & 0.4650 & 0.4894 & 0.4909 & 0.4529 \\
+ & + prior & \textbf{0.4839} & \textbf{0.5276} & \textbf{0.5179} & \textbf{0.4562} \\
+ & withheld & 0.4624 & 0.4811 & 0.4783 & \textbf{0.4562} \\
 \hline
-mk1 & 1 & learned & 0.4541 & 0.4551 & 0.9096 & 0.4661 & 0.1360 & 0.013 / 0.061 \\
-\hline
-mk2 & 2 & learned & \textbf{0.4585} & 0.4566 & 0.9097 & 0.4719 & 0.1354 & 0.011 / 0.047 \\
-\hline
-mk1fix & 1 & frozen & 0.4569 & 0.4569 & 0.9088 & 0.4642 & 0.1353 & 0.013 / 0.061 \\
+1024 & v3 & 0.4626 & 0.4807 & 0.4791 & 0.4534 \\
+ & + prior & \textbf{0.4820} & \textbf{0.5265} & \textbf{0.5171} & \textbf{0.4548} \\
+ & withheld & 0.4663 & 0.4830 & 0.4838 & \textbf{0.4548} \\
 \hline
 \end{tabular}
-\label{tab:layer}
+\label{tab:phprior}
 \end{center}
-\end{table*}
-
-The gates show why. Starting from zero, the mean $|g|$ grew slowly and steadily to 0.011--0.013 by the fourth epoch, with a maximum of 0.047--0.061. The gate statistics are nearly identical whether $A$ is learned or frozen, and the learned $A$ moved little from its initialisation. Even with ten times the base learning rate, training kept the layer close to the identity. We have not tested whether a larger learning-rate multiplier or a longer schedule would change this. These checkpoints were not evaluated with TTA, per class, or on the validation subsets of Section~\ref{sec:audit}.
+\end{table}
 
 \subsection{Longitudinal Markov Model}
 \label{sec:hmmres}
@@ -402,18 +395,18 @@ We nevertheless measure what such a model would do, as a simulation on the inter
 
 \textbf{Main result.} The primary arm H4 raises mAP on validation images that have an earlier state and are frontal (the primary subset, $n = 4{,}061$) by $+0.0375$ (95\% CI $+0.0228$ to $+0.0513$) with the 768~px seed-42 model and by $+0.0424$ ($+0.0279$ to $+0.0592$) with the seed-1024 model; the three-model ensemble gives $+0.0364$ ($+0.0209$ to $+0.0517$). On the primary subset, mAP goes from 0.502 to 0.541 for seed 42 (mean over three splits). On images with an earlier state, the gain is largest for medium and tail classes ($+0.044$ and $+0.046$ against $+0.013$ for head classes at seed 42, with the CXR-LT frequency groups of 3 head, 20 medium and 7 tail classes), as expected if it comes from findings that persist between visits. Calibration also repairs the probabilities: mECE falls from 0.135 to 0.007.
 
-\textbf{H4 versus B-early.} The paired difference between H4 and the network that is fed the same prior (B-early) is $+0.0021$ ($-0.0155$ to $+0.0197$) at seed 42 and $-0.0022$ ($-0.0204$ to $+0.0158$) at seed 1024 on the primary subset, and $-0.0037$ and $-0.0022$ on the full validation fold; every interval includes 0. A model that is retrained with the prior therefore gains nothing over fusing the prior after the classifier, which needs no retraining. Evaluated with its prior set to zero, the only condition possible on the test set, B-early is no better than E ($-0.0027$ and $+0.0004$ on the full fold).
+\textbf{Post-prediction versus in-network.} The paired difference between H4 and the network that is fed the same prior (Section~\ref{sec:phprior}) is $+0.0021$ ($-0.0155$ to $+0.0197$) at seed 42 and $-0.0022$ ($-0.0204$ to $+0.0158$) at seed 1024 on the primary subset, and $-0.0037$ and $-0.0022$ on the full validation fold; every interval includes 0. A model that is retrained with the prior therefore gains nothing over fusing the prior after the classifier, which needs no retraining. Evaluated with its prior withheld, the only condition possible on the test set, the in-network model is no better than E ($-0.0027$ and $+0.0004$ on the full fold).
 
-\textbf{The simplest arm is best.} Adding terms to the chain does not help (Table~\ref{tab:hmm}). H1, which only adds the calibration and a fitted weight $w_h$ to the pooled chain, has the highest mAP on every subset with a prior, at all three emissions (primary subset: 0.5511 against 0.5411 for H4 at seed 42). The gap (H2), metadata (H3), cross-class edges (H4), a within-state random field (H5) and acquisition fields (H4-acq) each add nothing, although the held-out transition prior improves with each of them (macro AUROC 0.66, 0.76, 0.80 and 0.81 for the table, gap, metadata and cross-class models; log-loss 0.1513 to 0.1370). The reason is the one given in Section~\ref{sec:metaeda}: metadata are redundant with the image, and the image already shows what the prior would add. Without the calibration (H0, which reproduces the late fusion of our earlier study), the gain is smaller ($+0.0354$ and $+0.0425$ on the primary subset) and the full-fold change is not significant. The H1 comparisons with B-early are exploratory: $+0.0124$ ($-0.0076$ to $+0.0348$) at seed 42 and $+0.0081$ ($-0.0126$ to $+0.0285$) at seed 1024 on the primary subset.
+\textbf{The simplest arm is best.} Adding terms to the chain does not help (Table~\ref{tab:hmm}). H1, which only adds the calibration and a fitted weight $w_h$ to the pooled chain, has the highest mAP on every subset with a prior, at all three emissions (primary subset: 0.5511 against 0.5411 for H4 at seed 42). The gap (H2), metadata (H3), cross-class edges (H4), a within-state random field (H5) and acquisition fields (H4-acq) each add nothing, although the held-out transition prior improves with each of them (macro AUROC 0.66, 0.76, 0.80 and 0.81 for the table, gap, metadata and cross-class models; log-loss 0.1513 to 0.1370). The reason is the one given in Section~\ref{sec:metaeda}: metadata are redundant with the image, and the image already shows what the prior would add. Without the calibration (H0, which reproduces the late fusion of our earlier study), the gain is smaller ($+0.0354$ and $+0.0425$ on the primary subset) and the full-fold change is not significant. The H1 comparisons with the in-network prior are exploratory: $+0.0124$ ($-0.0076$ to $+0.0348$) at seed 42 and $+0.0081$ ($-0.0126$ to $+0.0285$) at seed 1024 on the primary subset.
 
-\textbf{Filtered mode.} Most of the gain needs the previous report. When the previous state is inferred from the patient's earlier images instead of read from the report (H4-F, seed 42), the primary-subset gain falls from $+0.0375$ to $+0.0092$ ($-0.0013$ to $+0.0181$), about a quarter. On the 248 images whose history is entirely out-of-sample it is $+0.0043$ ($-0.0098$ to $+0.0187$). The filtered history of training images uses in-sample emissions (training mAP 0.713 against about 0.465 on validation), so this figure is if anything optimistic. A model that copies the previous report would give the same pattern, and so would genuine persistence of findings; we cannot separate the two with report-derived labels. H4-F is clearly below B-early on the primary subset ($-0.0265$, $-0.0467$ to $-0.0063$, exploratory).
+\textbf{Filtered mode.} Most of the gain needs the previous report. When the previous state is inferred from the patient's earlier images instead of read from the report (H4-F, seed 42), the primary-subset gain falls from $+0.0375$ to $+0.0092$ ($-0.0013$ to $+0.0181$), about a quarter. On the 248 images whose history is entirely out-of-sample it is $+0.0043$ ($-0.0098$ to $+0.0187$). The filtered history of training images uses in-sample emissions (training mAP 0.713 against about 0.465 on validation), so this figure is if anything optimistic. A model that copies the previous report would give the same pattern, and so would genuine persistence of findings; we cannot separate the two with report-derived labels. H4-F is clearly below the in-network prior on the primary subset ($-0.0265$, $-0.0467$ to $-0.0063$, exploratory).
 
 \textbf{Ablations.} The random field (H5) selected its weight $w_J = 0$ in every fold, so H5 equals H4 to four decimals. The strongest within-state couplings it learned are among Normal and pleural effusion ($-1.51$), cardiomegaly ($-1.40$) and Support Devices ($-1.31$), and between Support Devices and central venous catheters ($+1.46$): label correlations that the ML-Decoder head already uses. Acquisition fields (H4-acq) leave the primary-subset gain unchanged ($+0.0377$ against $+0.0375$ at seed 42; $+0.0431$ against $+0.0424$ at seed 1024), although they lower the prior's held-out log-loss from 0.1370 to 0.1346 and raise its AUROC from 0.813 to 0.836. The largest learned cross-class edges are negative from Normal or a sternotomy to a new finding in the next study ($-0.86$ for sternotomy to Normal, $-0.85$ for Normal to pleural effusion).
 
 \textbf{Guards and copy check.} On images with no earlier state, H4 is slightly worse than E at seed 42 ($-0.0009$, $-0.0018$ to $-0.0001$) and neutral at seed 1024 ($-0.0005$, $-0.0015$ to $+0.0005$); H1 leaves these images unchanged. A copy check on findings that are new relative to the previous report (28 classes) shows a small drop in AP for H4 (0.3678 to 0.3621 at seed 42, 0.3647 to 0.3615 at seed 1024; no interval computed). Thus the gain is not bought on new findings, but the prior does not help them either, and the H4 guards are met only approximately. On patients unseen in training, H4 changes mAP by $-0.0053$ ($-0.0151$ to $-0.0006$) at seed 42. Why metadata add nothing is shown in Section~\ref{sec:metaeda}.
 
 \begin{table*}[htbp]
-\caption{Post-prediction patient HMM on the internal validation fold: change in macro mAP relative to the emission E (the frozen 768~px SWA model with flip TTA; the E row gives absolute mAP). Primary = frontal images with an earlier state ($n = 4{,}061$); full = 17,270 images; no\_prior = 11,511 images without an earlier state. mAP is computed within each of two patient halves (calibration and fusion weights are fitted on one half and applied to the other) and averaged, over three random splits. Each entry is the mean difference with a 95\% CI from a paired patient-clustered bootstrap (300 resamples) on the first split. Entries marked $^\dagger$ (H2, H5) have no bootstrap: they are differences of the three-split mean mAP and are not comparable to the other entries at the 0.001 level. H4-F (image-only history) was run for seed 42 only; B-early and B-early0 are the in-network comparator with and without its prior. This is an internal longitudinal simulation with report-derived history; its leaderboard effect is 0. Results for the three-model ensemble are given in the text.}
+\caption{Post-prediction patient HMM on the internal validation fold: change in macro mAP relative to the emission E (the frozen entropy-gated v3 768~px SWA model of~\cite{b25} with flip TTA, no Markov component; the E row gives absolute mAP). Primary = frontal images with an earlier state ($n = 4{,}061$); full = 17,270 images; no\_prior = 11,511 images without an earlier state. mAP is computed within each of two patient halves (calibration and fusion weights are fitted on one half and applied to the other) and averaged, over three random splits. Each entry is the mean difference with a 95\% CI from a paired patient-clustered bootstrap (300 resamples) on the first split. Entries marked $^\dagger$ (H2, H5) have no bootstrap: they are differences of the three-split mean mAP and are not comparable to the other entries at the 0.001 level. H4-F (image-only history) was run for seed 42 only; In-network and Withheld are the network fed the prior (Section~\ref{sec:phprior}), evaluated with and without it. This is an internal longitudinal simulation with report-derived history; its leaderboard effect is 0. Results for the three-model ensemble are given in the text.}
 \begin{center}
 \footnotesize
 \setlength{\tabcolsep}{3pt}
@@ -422,7 +415,7 @@ We nevertheless measure what such a model would do, as a simulation on the inter
  & \multicolumn{3}{c|}{\textbf{Seed 42 (768~px)}} & \multicolumn{3}{c|}{\textbf{Seed 1024 (768~px)}} \\
 \textbf{Arm} & full & primary & no\_prior & full & primary & no\_prior \\
 \hline
-E (absolute mAP) & 0.4652 & 0.5020 & 0.4543 & 0.4635 & 0.4937 & 0.4551 \\
+E (v3, abs.\ mAP) & 0.4652 & 0.5020 & 0.4543 & 0.4635 & 0.4937 & 0.4551 \\
 \hline
 H0 & \shortstack{+0.0090\\{[$-$0.0033,+0.0242]}} & \shortstack{+0.0354\\{[+0.0150,+0.0583]}} & 0 (identical) & \shortstack{+0.0115\\{[$-$0.0003,+0.0274]}} & \shortstack{+0.0425\\{[+0.0222,+0.0669]}} & 0 (identical) \\
 H1 & \shortstack{+0.0222\\{[+0.0135,+0.0353]}} & \shortstack{+0.0477\\{[+0.0298,+0.0664]}} & 0 (identical) & \shortstack{+0.0259\\{[+0.0165,+0.0396]}} & \shortstack{+0.0527\\{[+0.0346,+0.0752]}} & 0 (identical) \\
@@ -432,8 +425,8 @@ H4 & \shortstack{+0.0152\\{[+0.0089,+0.0226]}} & \shortstack{+0.0375\\{[+0.0228,
 H5 & +0.0160$^\dagger$ & +0.0390$^\dagger$ & $-$0.0003$^\dagger$ & +0.0168$^\dagger$ & +0.0459$^\dagger$ & $-$0.0002$^\dagger$ \\
 H4-acq & \shortstack{+0.0174\\{[+0.0111,+0.0247]}} & \shortstack{+0.0377\\{[+0.0230,+0.0515]}} & \shortstack{$-$0.0001\\{[$-$0.0026,+0.0023]}} & \shortstack{+0.0177\\{[+0.0117,+0.0249]}} & \shortstack{+0.0431\\{[+0.0287,+0.0599]}} & \shortstack{+0.0011\\{[$-$0.0025,+0.0045]}} \\
 H4-F & \shortstack{+0.0032\\{[$-$0.0016,+0.0083]}} & \shortstack{+0.0092\\{[$-$0.0013,+0.0181]}} & \shortstack{$-$0.0009\\{[$-$0.0018,$-$0.0001]}} & \multicolumn{3}{c|}{not run} \\
-B-early & \shortstack{+0.0191\\{[+0.0129,+0.0257]}} & \shortstack{+0.0339\\{[+0.0152,+0.0554]}} & \shortstack{+0.0014\\{[$-$0.0045,+0.0130]}} & \shortstack{+0.0185\\{[+0.0106,+0.0246]}} & \shortstack{+0.0436\\{[+0.0254,+0.0632]}} & \shortstack{+0.0002\\{[$-$0.0058,+0.0062]}} \\
-B-early0 & \shortstack{$-$0.0027\\{[$-$0.0092,+0.0047]}} & \shortstack{$-$0.0071\\{[$-$0.0197,+0.0013]}} & \shortstack{+0.0014\\{[$-$0.0045,+0.0130]}} & \shortstack{+0.0004\\{[$-$0.0045,+0.0049]}} & \shortstack{0.0000\\{[$-$0.0074,+0.0091]}} & \shortstack{+0.0002\\{[$-$0.0058,+0.0062]}} \\
+In-network & \shortstack{+0.0191\\{[+0.0129,+0.0257]}} & \shortstack{+0.0339\\{[+0.0152,+0.0554]}} & \shortstack{+0.0014\\{[$-$0.0045,+0.0130]}} & \shortstack{+0.0185\\{[+0.0106,+0.0246]}} & \shortstack{+0.0436\\{[+0.0254,+0.0632]}} & \shortstack{+0.0002\\{[$-$0.0058,+0.0062]}} \\
+Withheld & \shortstack{$-$0.0027\\{[$-$0.0092,+0.0047]}} & \shortstack{$-$0.0071\\{[$-$0.0197,+0.0013]}} & \shortstack{+0.0014\\{[$-$0.0045,+0.0130]}} & \shortstack{+0.0004\\{[$-$0.0045,+0.0049]}} & \shortstack{0.0000\\{[$-$0.0074,+0.0091]}} & \shortstack{+0.0002\\{[$-$0.0058,+0.0062]}} \\
 \hline
 \end{tabular}
 \label{tab:hmm}
@@ -479,7 +472,7 @@ All $-$ acquisition & 0.729 & 0.133 \\
 \textbf{Metadata add nothing to the image.} Stacking metadata on the image logit lowers mAP in every cell (Table~\ref{tab:incr}). On all validation images, the patient fields change mAP by $-0.0026$ (seed 42) and $-0.0049$ (ensemble), and all three groups together by $-0.0095$ and $-0.0123$. On frontal images the changes are similar. The 95\% intervals exclude zero in 15 of 16 cells. This is not a calibration artefact: refitting only a per-class slope and intercept changes mAP by $0.0000$ (seed 42) and $-0.0003$ (ensemble). The image already shows devices, age-related aortic change and the AP-supine geometry, so the metadata add only noise.
 
 \begin{table*}[htbp]
-\caption{Change in validation mAP when metadata are stacked on the image logit (cross-fitted on patient halves; 95\% patient-clustered bootstrap interval in brackets). Base: mAP of the image model alone, averaged over the two halves. s42: 768~px seed-42 SWA model; ens: greedy three-model ensemble; both with flip TTA.}
+\caption{Change in validation mAP when metadata are stacked on the image logit (cross-fitted on patient halves; 95\% patient-clustered bootstrap interval in brackets). Base: mAP of the entropy-gated v3 image model alone (no Markov, no metadata), averaged over the two halves. s42: 768~px seed-42 SWA model; ens: greedy three-model ensemble; both with flip TTA.}
 \begin{center}
 \footnotesize
 \setlength{\tabcolsep}{2.1pt}
@@ -542,14 +535,14 @@ Checking route (B) required patient identifiers for our own folds, which reveale
 \end{itemize}
 
 \begin{table*}[htbp]
-\caption{Macro mAP (flip TTA) on subsets of the internal validation fold. Seen and unseen refer to whether the image's patient appears in the training fold. The frontal, unseen-patient subset is the closest local proxy for the test set. Each subset is scored over the classes with at least one positive in it.}
+\caption{Macro mAP (flip TTA) of the entropy-gated v3 models of~\cite{b25} (no Markov component) on subsets of the internal validation fold. These are baseline models, not results of the Markov methods. Seen and unseen refer to whether the image's patient appears in the training fold. The frontal, unseen-patient subset is the closest local proxy for the test set. Each subset is scored over the classes with at least one positive in it.}
 \begin{center}
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
 \textbf{Model} & \textbf{All} & \textbf{Frontal} & \textbf{Lateral} & \textbf{Frontal, seen} & \textbf{Frontal, unseen} \\
  & (17,270) & (11,973) & (5,234) & (8,401) & (3,572) \\
 \hline
-Greedy-3 ensemble & \textbf{0.4722} & \textbf{0.4968} & \textbf{0.4058} & \textbf{0.5025} & \textbf{0.4752} \\
+Greedy-3 v3 ensemble & 0.4722 & 0.4968 & 0.4058 & 0.5025 & 0.4752 \\
 \hline
 1024~px, SWA (seed 86) & 0.4645 & 0.4892 & 0.3954 & 0.4930 & 0.4719 \\
 \hline
@@ -572,16 +565,18 @@ Greedy-3 ensemble & \textbf{0.4722} & \textbf{0.4968} & \textbf{0.4058} & \textb
 
 Table~\ref{tab:subsets} scores eight models on each subset. The SWA rows use our final recipe; the other rows are best-epoch checkpoints from earlier sweeps. For the 1024~px SWA model minus the 512~px seed-1024 model, the patient-clustered bootstrap gives $+0.0196$ [$+0.0047$, $+0.0358$] on frontal, seen-patient images and $+0.0074$ [$-0.0200$, $+0.0269$] on frontal, unseen-patient images. Four observations follow.
 \begin{enumerate}
-\item \textbf{Lateral views lower the headline number.} On frontal images, the view the test set uses, the ensemble scores 0.4968; the full-fold 0.4722 includes laterals at 0.4058.
+\item \textbf{Lateral views lower the headline number.} On frontal images, the view the test set uses, the v3 ensemble scores 0.4968; the full-fold 0.4722 includes laterals at 0.4058.
 \item \textbf{The resolution gain is not established on unseen patients.} The 1024-versus-512~px gain is $+0.020$ with an interval that excludes zero on seen patients, but $+0.007$ with an interval that includes zero on unseen patients. The ordering of the resolutions holds only loosely there, and the 640~px model falls below the 512~px one.
 \item \textbf{The seen/unseen gap (0.5025 versus 0.4752) is not all memorisation.} Unseen patients have a different case mix: Normal prevalence 0.58 versus 0.35, 1.27 versus 1.57 labels per image, and 90\% versus 63\% frontal. Only a patient-disjoint re-split with matched case mix can separate the two effects.
 \item \textbf{The audit is consistent with the known offset} between our internal and leaderboard scores (Stage~1: 0.385 internal, 0.505 on the development leaderboard). The test set is frontal only, and every test image has at least one finding.
 \end{enumerate}
 
 \section{Discussion}
-\textbf{Why label priors do not help here.} ML-Decoder's query self-attention is itself a row-stochastic $30 \times 30$ mixing over labels. It is recomputed for every image, operates on 768-dimensional label embeddings, and is repeated over 8 heads in each of 2 blocks. The Markov layer adds one global matrix applied to probabilities. For a ranking metric, a global matrix can only move scores in the same direction for every image with similar predicted findings, which is what the post-hoc results show. The trainable layer was free to use or ignore the prior, and it stayed near the identity, with every gate below 0.062 in magnitude. We read this as the network finding little in a global prior that its decoder had not already captured. With a single seed and a four-epoch schedule, this is suggestive rather than conclusive.
+\textbf{Where the 0.47 comes from.} The 0.4722 that appears in Tables~\ref{tab:smoothing}, \ref{tab:gating} and~\ref{tab:subsets} is not a result of this paper. It is the score of the entropy-gated v3 model of our companion paper~\cite{b25}, a three-model ensemble without patient history, used here unchanged as the baseline; both label-graph priors score at or below it. The patient-history prior is measured against the same single model without it (Table~\ref{tab:phprior}); we do not compare its scores with the 0.4722 ensemble, which sees no history. The v3 pipeline's own rise from the 0.414 of the original entropy-gated implementation came from fixing that implementation and scaling the recipe, not from label priors. Approximately, the fixes and new recipe at 512~px give $+0.025$, 768~px input $+0.017$, stochastic depth with SWA $+0.002$ to $+0.005$, flip TTA $+0.005$ and the greedy ensemble $+0.007$; the steps differ in seed and are indicative only. No run switches off the entropy gate or the triplet term, so these figures do not show how much of the 0.47 the gate itself contributes.
 
-\textbf{What patient history adds.} A prior that conditions on the previous state does help when that state exists: H4 gains about $+0.04$ mAP on images with a prior study, and fusing it after the classifier is as good as training it into the network. The gain is not a label-graph effect, since the within-state couplings were never selected. It comes mostly from the previous report, and the metadata that were meant to refine it add nothing. The caveats are those of the setup: labels are extracted from reports, the validation fold shares patients with the training fold, the filtered-mode history of training images is in-sample, and there is one validation fold. The result applies to a deployment with prior reports, not to the test set.
+\textbf{Why label priors do not help here.} ML-Decoder's query self-attention is itself a row-stochastic $30 \times 30$ mixing over labels. It is recomputed for every image, operates on 768-dimensional label embeddings, and is repeated over 8 heads in each of 2 blocks. A label-graph prior instead applies one global matrix to the probabilities. For a ranking metric, a global matrix can only move scores in the same direction for every image with similar predicted findings, which is what the post-hoc results show. We read this as the decoder having already captured what a global co-occurrence prior could add.
+
+\textbf{What patient history adds.} A prior that conditions on the previous state does help when that state exists. Fed into the label queries, the prior from the previous report raises a single model from 0.460 to 0.481 (training-log SWA, seed 42), almost all of it on images with an earlier study; fused after a frozen classifier, H4 gains about $+0.04$ on frontal images with an earlier study, and the two fusion points do not differ significantly, so retraining is not needed. Unlike a label-graph prior, this prior is specific to the image's patient and carries information the current image does not contain: the findings recorded at the previous visit, many of which persist. The largest gains are on fractures, bronchiectasis, calcified densities and aortic atheromatosis ($+0.06$ to $+0.15$ AP on frontal images with an earlier state), while devices, already near ceiling, gain little. The gain is not a label-graph effect, since the within-state couplings were never selected. It comes mostly from the previous report, and the metadata that were meant to refine it add nothing. The caveats are those of the setup: labels are extracted from reports, the validation fold shares patients with the training fold, the filtered-mode history of training images is in-sample, and there is one validation fold. The result applies to a deployment with prior reports, not to the test set, whose patients have no history.
 
 \textbf{What the challenge winners did instead.} None of the top CXR-LT 2024 or 2026 Task~1 solutions used Markov, label-graph or patient-history modelling (Table~\ref{tab:winners}). The ingredient the winners share and we lack is chest-X-ray-domain pretraining. The challenge rules allow \emph{``models pretrained \ldots\ on external CXR datasets that do not overlap with the CXR-LT evaluation images''}, but forbid using \emph{``hidden test labels, manually relabel[ing] evaluation images, or \ldots\ external annotations overlapping with the CXR-LT evaluation sets''}~\cite{b14}. MIMIC-CXR pretraining is therefore legitimate. The public PadChest-GR labels~\cite{b10} are the evaluation annotations and must not be used, even for tuning.
 
@@ -614,13 +609,13 @@ Table~\ref{tab:subsets} scores eight models on each subset. The SWA rows use our
 \end{enumerate}
 
 \section{Conclusion}
-We tested whether Markov-chain priors help long-tailed multi-label chest X-ray classification on CXR-LT 2026 Task~1, along both available state sequences. Over the label graph, a fixed co-occurrence prior, the challenge winner's Normal-gating prior, and a trainable identity-initialised Markov layer all failed to improve a model whose ML-Decoder head already mixes labels per image. Over a patient's studies, a hidden Markov model has no history to condition on at test time, by the challenge's design and data-use terms. In a longitudinal simulation, a post-prediction patient HMM gains about $+0.04$ mAP on images with a prior study, matches a network fed the same prior, and owes most of the gain to the previous report (image-only history gives $+0.009$); the simplest calibrated chain is as good as the richest, and the leaderboard effect is 0. The investigation instead showed that our internal validation fold, which is not patient-disjoint and includes lateral views, is a weak proxy for the frontal, patient-disjoint test set, and that a resolution gain measured on it is not significant on unseen patients. We report these negative results so that others working on CXR-LT can skip label-graph Markov priors and evaluate on a patient-disjoint, frontal proxy from the start.
+We tested whether Markov-chain priors help long-tailed multi-label chest X-ray classification on CXR-LT 2026 Task~1, along both available state sequences, on top of the entropy-gated v3 model of our companion paper~\cite{b25}. Over the label graph, a fixed co-occurrence prior and the challenge winner's Normal-gating prior both failed to improve a model whose ML-Decoder head already mixes labels per image. Over a patient's studies, a Markov prior on the previous report helps when that report exists: fed into the network's label queries, it raises a single model from 0.460 to 0.481 internal-validation mAP, and fused after a frozen classifier it gives a similar gain without retraining (about $+0.04$ on frontal images with an earlier study). Most of the gain needs the previous report (image-only history gives $+0.009$), and the simplest calibrated chain is as good as the richest. Without history the prior gives nothing; CXR-LT test patients have no history, by the challenge's design and data-use terms, so its leaderboard effect is 0 and the result applies to deployments with prior reports. The investigation also showed that our internal validation fold, which is not patient-disjoint and includes lateral views, is a weak proxy for the frontal, patient-disjoint test set, and that a resolution gain measured on it is not significant on unseen patients. For CXR-LT, we recommend skipping label-graph Markov priors, using patient-history priors only where prior reports exist, and evaluating on a patient-disjoint, frontal proxy from the start.
 
 \appendix
 \section*{Reproducibility}
 \begin{itemize}
 \item \textbf{Post-hoc results} (Tables~\ref{tab:smoothing}, \ref{tab:gating} and~\ref{tab:subsets}, and the patient counts) are printed by \path{analysis/markov_check.py} from the cached flip-TTA probabilities in \path{analysis/out/probs_w01_flip/}. The rebuilt validation row order is stored in \path{analysis/out/val_key_order.npy}. The reverse gate, the single-model gating check and the patient-clustered bootstrap were run separately and are not part of that script.
-\item \textbf{Trainable layer:} \path{train/markov_layer.py} and \path{train/train_2_v4.py}. The variants are Slurm jobs 49063 (mk1), 49064 (mk2) and 49065 (mk1fix); the matched baseline is job 49000.
+\item \textbf{Patient-history prior (in-network):} \path{analysis/patient_prior.py} (the chain of Eq.~\eqref{eq:chain} and each image's prior vector, written to \path{analysis/out/patient_markov/priors.pt}), \path{train/prior_conditioning.py} and \path{train/train_2_v5.py}. The models are Slurm jobs 49375 (seed 42) and 49376 (seed 1024); the matched baselines are jobs 49000 and 48999. Evaluation with and without the prior: jobs 49405 and 49406; per-subset comparison: job 49442 (\path{analysis/markov_ab_compare.py}).
 \item \textbf{Post-prediction HMM} (Table~\ref{tab:hmm}): \path{analysis/markov_hmm.py} (model), \path{analysis/markov_hmm_check.py} (arms, cross-fitting, bootstrap) and \path{analysis/patient_meta.py} (metadata whitelist), run as Slurm job 49445 (output in \path{analysis/out/markov_hmm/}). The metadata analysis of Section~\ref{sec:metaeda} is \path{analysis/metadata_eda.py}. An earlier observed-mode run (job 49424) gives identical H0 and H1 and differs by at most 0.0014 mAP for the logistic-prior arms, because float differences between CPU nodes occasionally change a tied grid weight.
 \item \textbf{Patient grouping} must use the original PadChest metadata read as strings. The \path{PatientID} column of the filtered challenge CSV is stored as a rounded float, which merges distinct patients.
 \end{itemize}
@@ -649,6 +644,7 @@ The authors thank the organizers of the ISBI 2026 CXR-LT challenge for providing
 \bibitem{b22} Iulian Emil Tampu, Anders Eklund, and Neda Haj-Hosseini, ``Inflation of test accuracy due to data leakage in deep learning-based classification of OCT images,'' Scientific Data, vol. 9, 2022.
 \bibitem{b23} Tong Wu, Qingqiu Huang, Ziwei Liu, Yu Wang, and Dahua Lin, ``Distribution-balanced loss for multi-label classification in long-tailed datasets,'' in Computer Vision -- ECCV 2020, Lecture Notes in Computer Science, pp. 162--178, Springer, 2020.
 \bibitem{b24} Xavier Boyen and Daphne Koller, ``Tractable inference for complex stochastic processes,'' in Proceedings of the Fourteenth Conference on Uncertainty in Artificial Intelligence (UAI), 1998, pp. 33--42.
+\bibitem{b25} Companion study, ``Entropy-gated triplet cross-memory-bank learning for long-tailed multi-label chest X-ray classification,'' in preparation, 2026.
 \end{thebibliography}
 
 \end{document}

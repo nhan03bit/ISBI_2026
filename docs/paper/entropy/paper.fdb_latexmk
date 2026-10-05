@@ -1,5 +1,6 @@
 # Fdb version 4
-["pdflatex"] 1789045707.70376 "/home/psytp7/ISBI_2026/docs/paper.tex" "paper.pdf" "paper" 1789045708.06217 0
+["pdflatex"] 1790976629.01549 "paper.tex" "paper.pdf" "paper" 1790976629.43169 0
+  "../../pdf/Entropy.pdf" 1783770070.13461 1060950 2b1123e0c01746abfec887fa1852889d ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm" 1136768653 2172 fd0c924230362ff848a33632ed45dc23 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/adobe/times/ptmb8r.tfm" 1136768653 4524 6bce29db5bc272ba5f332261583fee9c ""
@@ -89,10 +90,8 @@
   "/home/psytp7/.TinyTeX/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1787982411 93249 e2a8f0f0f7daf8d7a430342c12dcaa2a ""
   "/home/psytp7/.TinyTeX/texmf-var/web2c/pdftex/pdflatex.fmt" 1787973838 2253715 4d2a70d9b5d754e1d0268e456bbd5b53 ""
   "/home/psytp7/.TinyTeX/texmf.cnf" 1787973813 637 edd806fb06a89761a6034e1968af9017 ""
-  "/home/psytp7/ISBI_2026/docs/paper.tex" 1789045705.60698 30702 92ffc97164d5c0fd5e7428364578162c ""
-  "Entropy.pdf" 1783770070.13461 1060950 2b1123e0c01746abfec887fa1852889d ""
-  "paper.aux" 1789045708.00093 4795 b3b0f473aad729bdffabebccae7a84e0 "pdflatex"
-  "paper.tex" 1789045705.60698 30702 92ffc97164d5c0fd5e7428364578162c ""
+  "paper.aux" 1790976629.36796 6348 0293861e67dd6a95ba8dc74eed3e5bfa "pdflatex"
+  "paper.tex" 1790976612.21833 41034 120268a523238f32ba650297e9e1d635 ""
   (generated)
   "paper.aux"
   "paper.log"

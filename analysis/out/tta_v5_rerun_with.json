@@ -1,0 +1,28 @@
+{
+  "val_mAP": 0.4797097146511078,
+  "val_mAUC": 0.9169117212295532,
+  "val_mF1": 0.4904484748840332,
+  "val_mECE": 0.1327526569366455,
+  "n_rows": 17270,
+  "checkpoints": [
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/prior/img768_qprior_seed42_rerun/Model_run/model_swa.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/prior/img768_qprior_seed1024_rerun/Model_run/model_swa.pth"
+  ],
+  "scales_per_checkpoint": [
+    [
+      768
+    ],
+    [
+      768
+    ]
+  ],
+  "n_models": 2,
+  "tta_flip": true,
+  "scales": [
+    768
+  ],
+  "logit_avg": false,
+  "prior_file": "/home/psytp7/ISBI_2026/analysis/out/patient_markov/priors.pt",
+  "prior_mode": "with",
+  "evaluated_at": "20261004_015136"
+}
