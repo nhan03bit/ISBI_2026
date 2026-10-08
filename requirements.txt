@@ -13,5 +13,6 @@ Pillow>=10.0
 positional-encodings>=6.0
 timm>=0.9
 torchmetrics>=1.2
-tqdm>=4.66o
+tqdm>=4.66
 webdataset>=0.2
+scikit-learn>=1.3
