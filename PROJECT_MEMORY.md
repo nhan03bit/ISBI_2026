@@ -1,6 +1,6 @@
 # Project memory and handoff
 
-Last updated: **2026-10-08, Europe/London**.
+Last updated: **2026-10-09, Europe/London**.
 
 ## Read this first
 
@@ -11,6 +11,8 @@ The user wants explanations that build from plain language to technical detail. 
 **Current task status:** Stage 3 Phase A is implemented in `train/train_3.py` and `train/stage3_data.py`, following the user's 2026-10-08 request to build the code. Natural versus minority-aware ASL fine-tuning is ready for university GPU preflight. Local synthetic CPU tests cover indexing, sampling, frozen backbone, export and exact resume. No real-data training or GPU jobs have run. See [run instructions](docs/research/stage3-running.md). Later memory/triplet/boosting phases remain unimplemented pending evidence.
 
 ## User requirements and boundaries
+
+- 2026-10-09: user requested one-line university execution with visible progress/results. `scripts/run_stage3.sh` submits CPU preflight -> GPU smoke + A1/A2 -> CPU comparison and opens a monitor. Only Phase A is automated; further phases remain evidence-dependent.
 
 - Latest authorization: the user explicitly requested creating `long-tailed` and pushing the code there. This supersedes the earlier no-push instruction for this branch publication.
 

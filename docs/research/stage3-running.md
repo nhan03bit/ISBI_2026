@@ -1,5 +1,45 @@
 # Running Stage 3 Phase A
 
+## One-command workflow
+
+After logging in, run:
+
+```bash
+cd /home/psytp7/ISBI_2026 && git switch long-tailed && git pull --ff-only && bash scripts/run_stage3.sh
+```
+
+This submits three dependent Slurm jobs and opens a terminal monitor:
+
+1. CPU: synthetic tests and full image/label preflight.
+2. GPU: five-update smoke test, then natural and minority arms sequentially.
+3. CPU: paired bootstrap comparison and `RESULTS.txt` summary.
+
+No training is run on the login node. A failed job prevents dependent jobs from running.
+Missing images stop preflight by default: inspect the saved manifest before explicitly
+rerunning with `--allow-missing`. Every new invocation creates a dated run directory;
+it does not silently resume or overwrite previous experiments.
+
+The monitor refreshes every ten seconds. It shows Slurm queue/accounting status, separate
+preflight/training/validation progress bars, and the latest available AP values. Bars reset
+when the phase changes; indexing/checkpoint loading has no percentage estimate. AP updates
+only at evaluation checkpoints, not every optimizer step. Ctrl+C closes only the monitor.
+
+Reopen a monitor without submitting new jobs:
+
+```bash
+bash scripts/run_stage3.sh --watch --run runs/stage3_YYYYMMDD_HHMMSS
+```
+
+Outputs live in that run directory: `logs/` for detailed logs, `natural/` and `minority/`
+for checkpoints/predictions/metrics, `comparison_full.json`, `comparison_unseen.json`,
+and `RESULTS.txt` for the final comparison. The displayed comparison is one-seed development
+evidence, not a claim of statistical robustness or independent-patient generalization.
+
+Paths can be overridden with `CKPT`, `TRAIN`, `VAL`, `META`, and `VENV_DIR`; partitions with
+`CPU_PARTITION` and `GPU_PARTITION`. The combined GPU job requests 72 hours because it runs
+both arms; this is a limit, not a runtime prediction. No automatic later-stage experiments
+or repeat-seed runs are submitted. For individual jobs/resume, use the commands below.
+
 Implemented: natural and minority-sampled decoder-only ASL, deterministic draw schedules,
 indexed uncompressed shards, exposure accounting, EMA, resume, prediction exports and paired
 patient bootstrap. No reserved queues, triplet/ranking objectives or boosting yet.

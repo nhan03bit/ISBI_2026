@@ -58,6 +58,13 @@ def main():
 
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
+    def progress(phase, done=0, total=0, **extra):
+        payload = dict(phase=phase, done=done, total=total, **extra)
+        temporary = out / 'progress.tmp'
+        temporary.write_text(json.dumps(payload))
+        os.replace(temporary, out / 'progress.json')
+
+    progress('indexing')
     config = vars(args).copy()
     for key in ('resume', 'preflight_only', 'stop_after'):
         config.pop(key)
@@ -96,6 +103,9 @@ def main():
         for dataset in (train_ds, val_ds):
             for i in range(len(dataset)):
                 dataset[i]
+                if i % 100 == 0 or i + 1 == len(dataset):
+                    progress('preflight train' if dataset.train else 'preflight validation', i + 1, len(dataset))
+        progress('preflight complete', 1, 1)
         print('Full shard/label/decode preflight passed', flush=True)
         return
     v3.seed_everything(args.seed)
@@ -139,6 +149,7 @@ def main():
                             generator=torch.Generator().manual_seed(args.seed))
 
     def evaluate(step):
+        progress('validation', 0, len(validation), update=step)
         raw = {k: v.detach().clone() for k, v in model.head.state_dict().items()}
         model.head.load_state_dict(ema)
         model.eval()
@@ -151,6 +162,8 @@ def main():
                     logits, _ = model(v3.preprocess_batch(x.to(device)))
                 scores.append(logits.float().sigmoid().cpu().numpy())
                 labels.append(y.numpy())
+                progress('validation', batch_id + 1,
+                         min(len(validation), args.val_limit_batches) if args.val_limit_batches else len(validation), update=step)
         scores, labels = np.concatenate(scores), np.concatenate(labels)
         eval_patients = val_patients[:len(labels)]
         ap = [float(average_precision_score(labels[:, c], scores[:, c])) if labels[:, c].sum() else None for c in range(30)]
@@ -190,6 +203,7 @@ def main():
         evaluate(0)
         save(0)
     optimizer.zero_grad(set_to_none=True)
+    done = start
     for j, (x, y) in enumerate(loader):
         step = start + j // args.accum_steps
         warmup = max(1, int(.05 * args.updates))
@@ -218,6 +232,7 @@ def main():
                 else:
                     ema[k].copy_(value)
         done = step + 1
+        progress('training', done, args.updates, loss_last_batch=loss.item() * args.accum_steps)
         print(f'update={done}/{args.updates} loss_last_batch={loss.item() * args.accum_steps:.6f}', flush=True)
         if done in {max(1, args.updates // 2), args.updates}:
             evaluate(done)
@@ -226,6 +241,7 @@ def main():
             save(done)
         if stop:
             break
+    progress('complete' if done == args.updates else 'stopped', done, args.updates)
 
 
 if __name__ == '__main__':
