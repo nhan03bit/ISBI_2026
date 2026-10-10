@@ -212,9 +212,11 @@ def sample_triplets_v13(
     temperature=0.05,
     head_class_ids=None,
     pos_min_shared=1,
+    anchor_rule="mean",
+    diagnostics=None,
 ):
     """
-    train_2_v3 triplet sampler. Same entropy-gated / hardest-mined structure as
+    train_2_v3 triplet sampler. Same entropy-gated / easy-mined structure as
     sample_triplets_v12, with one change: the positive label-overlap test
     ignores the most frequent ("head") classes, so a positive pair must share a
     genuine non-head finding rather than merely both being "Normal" / an
@@ -226,7 +228,12 @@ def sample_triplets_v13(
             positive-overlap computation. None -> behaves like v12 with
             pos_mask = (shared >= pos_min_shared).
         pos_min_shared: minimum shared non-head labels for a positive (default 1).
+        anchor_rule: 'mean' retains shipped softmax-entropy gating; 'all' disables
+            only that gate. Nearest positive / farthest negative mining is unchanged.
+        diagnostics: optional output dict of anchor, selected and valid counts.
     """
+    if anchor_rule not in ("all", "mean"):
+        raise ValueError("v13 anchor_rule must be all or mean")
     device = batch_embeddings.device
     B = batch_embeddings.size(0)
     logits = logits.to(device)
@@ -235,6 +242,11 @@ def sample_triplets_v13(
     mem_emb = memory.embeddings[:mem_count].to(device)
     mem_lbl = memory.labels[:mem_count].to(device)
 
+    # Keep the shipped softmax statistic; only the gate changes in this ablation.
+    entropy = calculate_entropy_from_logits(logits.detach(), mode="softmax")
+    gate = _anchor_gate(entropy, rule=anchor_rule)
+    if diagnostics is not None:
+        diagnostics.update(anchors=B, selected=int(gate.sum()), valid=0, active=0)
     if mem_count == 0:
         return None
 
@@ -248,13 +260,8 @@ def sample_triplets_v13(
     triplets = []
     dist = torch.cdist(batch_embeddings.float(), mem_emb.float(), p=2)
 
-    entropy = calculate_entropy_from_logits(logits)
-    if isinstance(entropy, (list, tuple)):
-        entropy = torch.stack(entropy)
-    entropy_thr = entropy.mean()
-
     for i in range(B):
-        if entropy[i] < entropy_thr:
+        if not gate[i]:
             continue
 
         anchor = batch_embeddings[i]
@@ -286,6 +293,8 @@ def sample_triplets_v13(
         return None
 
     anc, pos, neg = zip(*triplets)
+    if diagnostics is not None:
+        diagnostics['valid'] = len(triplets)
     return (torch.stack(anc), torch.stack(pos), torch.stack(neg))
 
 

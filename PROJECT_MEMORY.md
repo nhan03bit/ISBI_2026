@@ -1,8 +1,12 @@
 # Project memory and handoff
 
-Last updated: **2026-10-09, Europe/London**.
+Last updated: **2026-10-10, Europe/London**.
 
 ## Read this first
+
+**Latest priority (2026-10-10):** user requested a new branch and a clean entropy ablation for a focused four-page ISBI paper. Branch `entropy-ablation` is based on `long-tailed`. The new experiment uses Stage 2 v3, NOT minority-sampled Stage 3: classification only -> ungated FIFO triplet -> identical triplet with the shipped entropy gate. All arms start from the same pre-triplet Stage 1 checkpoint, with matched 768 resolution, schedule and seeds. See [entropy ablation protocol](docs/research/entropy-ablation.md). Markov/history is outside the main contribution. No GPU results exist for this ablation yet.
+
+Implementation validation: 11 local tests passed (8 training/data tests, 1 ablation-report test, 2 Stage 3 submission tests), plus Bash syntax and diff checks. The three-arm CPU integration test uses a tiny model and verifies fixed endpoints, identical initialization, memory activation and group AP. University full-model training remains untested. The ablation launcher and report are ready locally; no new-branch push or job submission has occurred.
 
 We are researching improvements to long-tailed, 30-label chest X-ray classification. The user's research leader has now specified a **Stage 3 focused on minority-related memories and class dominance**. This is the current priority, superseding the assistant's earlier broad emphasis on Markov/history extensions.
 
@@ -11,6 +15,8 @@ The user wants explanations that build from plain language to technical detail. 
 **Current task status:** Stage 3 Phase A is implemented in `train/train_3.py` and `train/stage3_data.py`, following the user's 2026-10-08 request to build the code. Natural versus minority-aware ASL fine-tuning is ready for university GPU preflight. Local synthetic CPU tests cover indexing, sampling, frozen backbone, export and exact resume. No real-data training or GPU jobs have run. See [run instructions](docs/research/stage3-running.md). Later memory/triplet/boosting phases remain unimplemented pending evidence.
 
 ## User requirements and boundaries
+
+- 2026-10-10: create `entropy-ablation` and implement the three-arm study; no new remote push or training submission requested in this turn. Existing `long-tailed` code was previously pushed. `scripts/run_entropy_ablation.sh` and `analysis/entropy_ablation_report.py` launch/report this separate study.
 
 - 2026-10-09: user requested one-line university execution with visible progress/results. `scripts/run_stage3.sh` submits CPU preflight -> GPU smoke + A1/A2 -> CPU comparison and opens a monitor. Only Phase A is automated; further phases remain evidence-dependent.
 

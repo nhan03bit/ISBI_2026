@@ -424,13 +424,16 @@ class DecodeAndTransform:
         self.epoch = epoch
 
     def __call__(self, sample):
-        return decode_and_transform(
+        result = decode_and_transform(
             sample,
             is_train=self.is_train,
             epoch=self.epoch,
             size=self.size,
             rrc_scale_min=self.rrc_scale_min,
         )
+        if result is None and getattr(self, 'strict_fail', False):
+            raise ValueError(f'Aborting matched run on decode failure: {sample.get("__key__")}')
+        return result
 
 # Original ISBI submission Stage-1 (internal val mAP 0.385) - the "Converged"
 # checkpoint behind Table 1 of the entropy paper. checkpoint3/stage1_full30 is
@@ -439,7 +442,7 @@ DEFAULT_STAGE1_CKPT = "checkpoint3/Model_20260119_062652/model_best.pth"
 
 
 def create_model(num_classes: int = 30, stage1_ckpt: str = DEFAULT_STAGE1_CKPT,
-                 drop_path_rate: float = 0.0):
+                 drop_path_rate: float = 0.0, strict_init: bool = False):
     model = ConvNeXt2(depths=[3, 3, 27, 3, 2],
                       dims=[128, 256, 512, 1024, 1024],
                       num_classes=num_classes,
@@ -449,7 +452,7 @@ def create_model(num_classes: int = 30, stage1_ckpt: str = DEFAULT_STAGE1_CKPT,
     if not os.path.isabs(ckpt_path):
         ckpt_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ckpt_path)
     checkpoint = torch.load(ckpt_path, map_location="cpu")
-    result = model.load_state_dict(checkpoint, strict=False)
+    result = model.load_state_dict(checkpoint, strict=strict_init)
     logger.info(f"Stage-1 init: {ckpt_path} "
                 f"(missing={len(result.missing_keys)} unexpected={len(result.unexpected_keys)})")
 
@@ -574,7 +577,7 @@ class Trainer:
         self.class_weights = class_weights
 
         self.model = create_model(cfg["num_classes"], cfg.get("stage1_ckpt", DEFAULT_STAGE1_CKPT),
-                                  cfg.get("drop_path_rate", 0.0)).to(self.device)
+                                  cfg.get("drop_path_rate", 0.0), cfg.get("strict_init", False)).to(self.device)
         # set_params(self.model)
 
         self.optim = self._build_optimizer()
@@ -607,7 +610,7 @@ class Trainer:
         self.crit = AsymmetricLoss(gamma_neg=self.cfg["gamma_neg"], gamma_pos=self.cfg["gamma_pos"],
                                    clip=0.05, reduction="mean", class_weights=self.class_weights)
         self.crit_triplet = nn.TripletMarginLoss(margin=self.cfg["margin"], p=2)
-        self.memory = CrossBatchMemoryV2(embedding_dim=self.cfg["embedding_dim"],memory_size=self.cfg["memory_size"], num_classes=30, device=self.device)
+        self.memory = CrossBatchMemoryV2(embedding_dim=self.cfg["embedding_dim"],memory_size=self.cfg["memory_size"], num_classes=self.cfg['num_classes'], device=self.device)
 
         # --- v3 additions ---
         # triplet_lambda: weight on L_tri (was hardcoded 0.1 in v2).
@@ -631,6 +634,7 @@ class Trainer:
 
         C = cfg["num_classes"]
         self.map = MultilabelAveragePrecision(num_labels=C, average="macro").to(self.device)
+        self.per_class_ap = MultilabelAveragePrecision(num_labels=C, average=None).to(self.device)
         self.auc = MultilabelAUROC(num_labels=C, average="macro").to(self.device)
         self.f1  = MultilabelF1Score(num_labels=C, average="macro", threshold=0.5).to(self.device)
         self.ece = BinaryCalibrationError(n_bins=15, norm="l1").to(self.device)
@@ -803,6 +807,7 @@ class Trainer:
         self.optim.zero_grad(set_to_none=True)
 
         trip_hits = 0
+        diagnostics_total = dict(anchors=0, selected=0, valid=0, active=0, triplet_loss_sum=0.0)
         pending_grad = False   # a backward has run since the last optimizer step
 
         limit = int(self.cfg.get("limit_train_batches", 0) or 0)
@@ -839,11 +844,13 @@ class Trainer:
                     embeddings = embeddings.mean(dim=1)
                 embeddings = F.normalize(embeddings, dim=1)
 
+                diagnostics = dict(anchors=len(y), selected=0, valid=0, active=0)
                 trips = utils_update.sample_triplets_v13(
                     embeddings, logits, y, self.memory,
                     margin=self.cfg["margin"],
                     head_class_ids=self.head_class_ids,
-                )
+                    anchor_rule=self.cfg.get("anchor_rule", "mean"), diagnostics=diagnostics,
+                ) if self.triplet_lambda > 0 else None
 
                 if trips is None or len(trips) == 0:
                     triplet_loss = embeddings.sum() * 0
@@ -854,6 +861,12 @@ class Trainer:
                     pos = F.normalize(pos, dim=-1)
                     neg = F.normalize(neg, dim=-1)
                     triplet_loss = self.crit_triplet(anch, pos, neg)
+                    diagnostics['active'] = int((F.triplet_margin_loss(
+                        anch, pos, neg, margin=self.cfg['margin'], reduction='none') > 0).sum())
+
+                for key in diagnostics:
+                    diagnostics_total[key] += diagnostics[key]
+                diagnostics_total['triplet_loss_sum'] += float(triplet_loss.detach())
 
                 cls_loss = self.crit(logits, y)
                 loss = cls_loss + self.triplet_lambda * triplet_loss
@@ -877,7 +890,8 @@ class Trainer:
                 pending_grad = False
 
             running += float(raw_loss.item())
-            self.memory.update(embeddings.detach(), y.detach())
+            if self.triplet_lambda > 0:
+                self.memory.update(embeddings.detach(), y.detach())
 
         # Flush a partial accumulation window (only if a backward is actually
         # pending - guarding on `step % accum_steps` alone crashes the GradScaler
@@ -898,6 +912,7 @@ class Trainer:
             logger.info(f"[Epoch {epoch} Step {step}] train_loss(avg)={running/step:.4f} last_loss={loss.item():.4f} moe_aux={moe_aux.item() if moe_aux is not None else 0.0:.4f}")
 
         logger.info(f"[Epoch {epoch}] triplet hit rate = {trip_hits}/{step} ({100.0 * trip_hits / max(1, step):.1f}%)")
+        self.history.setdefault('triplet_diagnostics', []).append(diagnostics_total)
 
         return running / max(1, step)
 
@@ -916,6 +931,8 @@ class Trainer:
     def _evaluate_impl(self, loader, epoch: int):
         self.model.eval()
         self.map.reset(); self.auc.reset(); self.f1.reset(); self.ece.reset()
+        self.per_class_ap.reset()
+        positive_counts = torch.zeros(self.cfg['num_classes'], device=self.device)
 
         running = 0.0
         limit = int(self.cfg.get("limit_val_batches", 0) or 0)
@@ -944,6 +961,8 @@ class Trainer:
             probs = torch.sigmoid(logits)
             y_int = (y > 0.5).int()
             self.map.update(probs, y_int)
+            self.per_class_ap.update(probs, y_int)
+            positive_counts += y_int.sum(0)
             self.auc.update(probs, y_int)
             self.f1.update(probs, y_int)
             self.ece.update(probs.reshape(-1), y_int.reshape(-1))
@@ -955,12 +974,22 @@ class Trainer:
             "mF1": float(self.f1.compute().item()),
             "mECE": float(self.ece.compute().item()),
         }
+        ap = self.per_class_ap.compute().cpu().tolist()
+        counts = positive_counts.cpu().tolist()
+        metrics['per_class_AP'] = [a if n > 0 else None for a, n in zip(ap, counts)]
+        metrics['positive_counts'] = counts
+        for group, ids in self.cfg.get('ap_groups', {}).items():
+            supported = [ap[i] for i in ids if counts[i] > 0]
+            metrics[group + '_AP'] = float(np.mean(supported)) if supported else None
         return val_loss, metrics
 
     def fit(self, train_loader, val_loader, train_mapper=None):
         os.makedirs(self.cfg["out_dir"], exist_ok=True)
 
         best_epoch = None
+        if self.cfg.get('fixed_budget'):
+            initial_loss, initial_metrics = self.evaluate(val_loader, epoch=0)
+            self.history['initial_metrics'] = dict(val_loss=initial_loss, **initial_metrics)
         for epoch in range(1, self.cfg["epochs"] + 1):
             if train_mapper is not None:
                 train_mapper.set_epoch(epoch)
@@ -977,6 +1006,9 @@ class Trainer:
             self.history["mAUC"].append(m["mAUC"])
             self.history["mF1"].append(m["mF1"])
             self.history["mECE"].append(m["mECE"])
+            self.history.setdefault('epoch_metrics', []).append(dict(epoch=epoch, **m))
+            logger.info('Epoch %s AP groups: %s', epoch,
+                        {k: m[k] for k in ('head_AP', 'medium_AP', 'tail_AP') if k in m})
 
             logger.info(
                 f"Epoch {epoch:02d}/{self.cfg['epochs']} | "
@@ -997,7 +1029,8 @@ class Trainer:
                 self.history["best_metric"] = float(self.es.best)
                 self._save_best(self.cfg["out_dir"])
 
-            if self.es.should_stop:
+            self._save_json(self.history, os.path.join(self.cfg['out_dir'], 'history.json'))
+            if self.es.should_stop and not self.cfg.get('fixed_budget'):
                 logger.info(
                     f"Early stopping triggered at epoch {epoch}. "
                     f"Best {self.monitor}={self.es.best:.4f} at epoch {best_epoch}."
@@ -1009,6 +1042,8 @@ class Trainer:
             f"Best {self.monitor}: {self.history['best_metric']}"
         )
 
+        if self.cfg.get('fixed_budget'):
+            torch.save(self._ema_state_dict(), os.path.join(self.cfg['out_dir'], 'model_final.pth'))
         if self.swa_last_k > 0:
             self._save_swa(self.cfg["out_dir"], val_loader)
 
@@ -1024,7 +1059,7 @@ def seed_everything(seed: int):
 
 def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: bool = True,
                     img_size: int = SIZE, shuffle_buf: int = SAMPLE_SHUFFLE_BUFSIZE,
-                    rrc_scale_min: float = 0.9):
+                    rrc_scale_min: float = 0.9, strict_decode: bool = False):
     train_shards = sorted(Path(train_dir).glob("shard_*.tar"))
     val_shards = sorted(Path(val_dir).glob("shard_*.tar"))
 
@@ -1042,6 +1077,7 @@ def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: 
 
     train_mapper = DecodeAndTransform(is_train=True, size=img_size, rrc_scale_min=rrc_scale_min)
     val_mapper = DecodeAndTransform(is_train=False, size=img_size)
+    train_mapper.strict_fail = val_mapper.strict_fail = strict_decode
     logger.info(f"img_size={img_size} | shuffle_buf={shuffle_buf} | rrc_scale_min={rrc_scale_min}")
 
     if strict_repro:
@@ -1089,6 +1125,10 @@ def parse_args():
     overwrite each other's checkpoints.
     """
     ap = argparse.ArgumentParser()
+    ap.add_argument('--anchor-rule', choices=['all', 'mean'], default='mean',
+                    help='v13 anchor gate: all disables entropy selection; mean preserves shipped gate')
+    ap.add_argument('--strict-init', action='store_true')
+    ap.add_argument('--fixed-budget', action='store_true', help='Disable early stopping; save final EMA; evaluate initialization')
     ap.add_argument("--accum-steps", type=int, default=6,
                     help="gradient accumulation steps; effective batch = batch_size * accum_steps. "
                          "v3 default 6 (x batch 8 = effective 48, the paper recipe).")
@@ -1222,6 +1262,9 @@ def main():
     ts = datetime.now().strftime("%Y%m%d_%H%M%S")
     cfg = {
         "num_classes": args.num_classes,
+        "anchor_rule": args.anchor_rule,
+        "strict_init": args.strict_init,
+        "fixed_budget": args.fixed_budget,
         # "ckpt_path": "MedViT_base_im1k.pth",
         "lr": args.lr,
         "embedding_dim": args.embedding_dim,
@@ -1252,8 +1295,8 @@ def main():
         "log_every": args.log_every,
         "margin": args.margin,
         "disc": args.disc,
-        "train_shards_dir": "/data/psytp7/wds_shards_train_raw",
-        "val_shards_dir": "/data/psytp7/wds_shards_val_raw",
+        "train_shards_dir": args.train_shards_dir,
+        "val_shards_dir": args.val_shards_dir,
         "seed": args.seed,
         "strict_repro": args.strict_repro,
         "stage1_ckpt": args.stage1_ckpt,
@@ -1312,6 +1355,28 @@ def main():
     N = labels_np.shape[0]
     lcounts = labels_np.sum(axis=0)
     class_freq = lcounts / N
+    head_ap = np.argsort(-lcounts, kind='stable')[:5].tolist()
+    tail_ap = np.flatnonzero((class_freq > 0) & (class_freq < .01)).tolist()
+    cfg['ap_groups'] = dict(head=head_ap, tail=tail_ap,
+                           medium=[i for i in range(len(order)) if i not in set(head_ap + tail_ap)])
+    cfg['label_order'] = order
+    cfg['training_counts'] = lcounts.tolist()
+    if cfg['fixed_budget']:
+        from stage3_data import sha256
+        checkpoint_path = Path(cfg['stage1_ckpt'])
+        if not checkpoint_path.is_absolute():
+            checkpoint_path = Path(__file__).parent / checkpoint_path
+        out_path = Path(cfg['out_dir'])
+        if out_path.exists() and any(out_path.iterdir()):
+            raise ValueError('Fixed-budget output already exists; choose a fresh directory')
+        out_path.mkdir(parents=True, exist_ok=True)
+        manifest = dict(config=cfg, checkpoint_sha256=sha256(checkpoint_path),
+                        training_csv_sha256=sha256(Path(__file__).resolve().parents[1] / 'data/CXRLT_2026_training_filtered.csv'),
+                        sources={p.name: sha256(p) for p in [Path(__file__), Path(utils_update.__file__)]})
+        manifest['shards'] = {split: [[str(p.resolve()), p.stat().st_size, p.stat().st_mtime_ns]
+                                     for p in sorted(Path(cfg[split + '_shards_dir']).glob('shard_*.tar'))]
+                              for split in ('train', 'val')}
+        manifest['label_info_sha256'] = sha256(Path(cfg['train_shards_dir']) / 'label_info.pt')
 
     print("Label counts:", lcounts)
     print("Class freq:", class_freq)
@@ -1356,6 +1421,7 @@ def main():
         img_size=cfg["img_size"],
         shuffle_buf=cfg["shuffle_buf"],
         rrc_scale_min=cfg["rrc_scale_min"],
+        strict_decode=cfg['fixed_budget'],
     )
 
     def seed_worker(worker_id):
@@ -1385,6 +1451,8 @@ def main():
     )
 
     #trainer = Trainer(cfg)
+    if cfg['fixed_budget']:
+        (out_path / 'manifest.json').write_text(json.dumps(manifest, indent=2))
     trainer = Trainer(cfg, class_weights)
     trainer.fit(train_loader, val_loader, train_mapper=train_mapper)
 
