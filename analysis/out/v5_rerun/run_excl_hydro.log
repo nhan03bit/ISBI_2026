@@ -1,0 +1,87 @@
+srun: Setting default QoS for your account: core.
+keys == val_key_order: True
+{'all': 17270, 'frontal': 11973, 'has_prior': 5759, 'no_prior': 11511, 'has_prior&frontal': 4061, 'patient_unseen': 3966, 'frontal&patient_unseen': 3572, 'patient_seen': 13304, 'frontal&patient_seen': 8401}
+orig recheck vs 10-01 dump max|d| o42w 0.0
+orig recheck vs 10-01 dump max|d| o1024z 0.0
+v3 s42 w01 vs ab max|d| 0.0
+
+full-val mAP (recomputed)
+  v5 orig WITH           0.4867
+  v5 orig ZERO           0.4693
+  v5 rerun WITH          0.4797
+  v5 rerun ZERO          0.4611
+  v5 4-model WITH        0.4847
+  v5 4-model ZERO        0.4667
+  v3 matched 2-seed      0.4659
+  v3 greedy-3            0.4722
+  single o42w     0.4839
+  single o1024w   0.4820
+  single o42z     0.4624
+  single o1024z   0.4663
+  single r42w     0.4760
+  single r1024w   0.4786
+  single r42z     0.4560
+  single r1024z   0.4622
+  single v3_42    0.4650
+  single v3_1024  0.4626
+
+mAP by subset
+arm                                  all           frontal         has_prior          no_prior  has_prior&fronta    patient_unseen  frontal&patient_      patient_seen  frontal&patient_
+v5 orig WITH                      0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+v5 orig ZERO                      0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+v5 rerun WITH                     0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+v5 rerun ZERO                     0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+v5 4-model WITH                   0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+v5 4-model ZERO                   0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+v3 matched 2-seed                 0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+v3 greedy-3                       0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000            0.0000
+sanity fastAP v5 rerun WITH 0.486407218163118 0.479709655046463
+sanity fastAP v3 matched 2-seed 0.4703084328372449 0.4659156799316406
+
+paired bootstrap B=300; patient-clustered (PC) and image-level (IM)
+v5 rerun WITH - v5 orig WITH | all | PC                                          -0.0010 [-0.0033,+0.0013]
+v5 rerun WITH - v5 orig WITH | has_prior&frontal | PC                            -0.0030 [-0.0086,+0.0027]
+v5 rerun WITH - v5 orig WITH | frontal&patient_unseen | PC                       +0.0059 [-0.0033,+0.0195]
+v5 rerun ZERO - v5 orig ZERO | all | PC                                          -0.0011 [-0.0038,+0.0019]
+v5 rerun ZERO - v5 orig ZERO | has_prior&frontal | PC                            -0.0018 [-0.0062,+0.0055]
+v5 rerun ZERO - v5 orig ZERO | frontal&patient_unseen | PC                       +0.0056 [-0.0039,+0.0195]
+v5 rerun WITH - v3 matched 2-seed | all | PC                                     +0.0161 [+0.0104,+0.0215]
+v5 rerun WITH - v3 matched 2-seed | has_prior&frontal | PC                       +0.0331 [+0.0153,+0.0483]
+v5 rerun WITH - v3 matched 2-seed | frontal&patient_unseen | PC                  -0.0046 [-0.0215,+0.0075]
+v5 rerun ZERO - v3 matched 2-seed | all | PC                                     -0.0031 [-0.0064,-0.0001]
+v5 rerun ZERO - v3 matched 2-seed | has_prior&frontal | PC                       +0.0003 [-0.0096,+0.0152]
+v5 rerun ZERO - v3 matched 2-seed | frontal&patient_unseen | PC                  -0.0060 [-0.0214,+0.0064]
+v5 orig WITH - v3 matched 2-seed | all | PC                                      +0.0171 [+0.0119,+0.0227]
+v5 orig WITH - v3 matched 2-seed | has_prior&frontal | PC                        +0.0360 [+0.0179,+0.0514]
+v5 orig WITH - v3 matched 2-seed | frontal&patient_unseen | PC                   -0.0105 [-0.0372,+0.0022]
+v5 orig ZERO - v3 matched 2-seed | all | PC                                      -0.0019 [-0.0056,+0.0010]
+v5 orig ZERO - v3 matched 2-seed | has_prior&frontal | PC                        +0.0021 [-0.0064,+0.0149]
+v5 orig ZERO - v3 matched 2-seed | frontal&patient_unseen | PC                   -0.0116 [-0.0366,+0.0008]
+v5 4-model ZERO - v3 matched 2-seed | all | PC                                   -0.0011 [-0.0041,+0.0014]
+v5 4-model ZERO - v3 matched 2-seed | has_prior&frontal | PC                     +0.0038 [-0.0054,+0.0187]
+v5 4-model ZERO - v3 matched 2-seed | frontal&patient_unseen | PC                -0.0070 [-0.0247,+0.0031]
+v5 4-model WITH - v3 matched 2-seed | all | PC                                   +0.0180 [+0.0125,+0.0235]
+v5 4-model WITH - v3 matched 2-seed | has_prior&frontal | PC                     +0.0359 [+0.0170,+0.0513]
+v5 4-model WITH - v3 matched 2-seed | frontal&patient_unseen | PC                -0.0061 [-0.0239,+0.0042]
+v5 4-model ZERO - v3 greedy-3 | all | PC                                         -0.0096 [-0.0129,-0.0055]
+v5 4-model ZERO - v3 greedy-3 | has_prior&frontal | PC                           -0.0103 [-0.0147,-0.0056]
+v5 4-model ZERO - v3 greedy-3 | frontal&patient_unseen | PC                      -0.0014 [-0.0099,+0.0074]
+v5 rerun ZERO - v3 greedy-3 | all | PC                                           -0.0116 [-0.0157,-0.0076]
+v5 rerun ZERO - v3 greedy-3 | has_prior&frontal | PC                             -0.0139 [-0.0191,-0.0085]
+v5 rerun ZERO - v3 greedy-3 | frontal&patient_unseen | PC                        -0.0004 [-0.0115,+0.0112]
+v5 orig ZERO - v3 greedy-3 | all | PC                                            -0.0105 [-0.0135,-0.0069]
+v5 orig ZERO - v3 greedy-3 | has_prior&frontal | PC                              -0.0121 [-0.0205,-0.0064]
+v5 orig ZERO - v3 greedy-3 | frontal&patient_unseen | PC                         -0.0060 [-0.0191,+0.0029]
+
+per-class dAP by group (full val)
+  v5 rerun WITH - v5 orig WITH                     head -0.0003 (1/3 up) | medium -0.0004 (9/20 up) | tail -0.0034 (2/7 up)
+  v5 rerun ZERO - v5 orig ZERO                     head -0.0003 (1/3 up) | medium -0.0005 (11/20 up) | tail -0.0037 (2/7 up)
+  v5 rerun WITH - v3 matched 2-seed                head +0.0072 (3/3 up) | medium +0.0188 (20/20 up) | tail +0.0117 (4/7 up)
+  v5 rerun ZERO - v3 matched 2-seed                head -0.0013 (0/3 up) | medium -0.0024 (5/20 up) | tail -0.0062 (2/7 up)
+  v5 orig WITH - v3 matched 2-seed                 head +0.0074 (3/3 up) | medium +0.0192 (20/20 up) | tail +0.0151 (4/7 up)
+  v5 orig ZERO - v3 matched 2-seed                 head -0.0010 (0/3 up) | medium -0.0019 (4/20 up) | tail -0.0025 (2/7 up)
+  v5 4-model ZERO - v3 matched 2-seed              head -0.0004 (1/3 up) | medium -0.0009 (8/20 up) | tail -0.0022 (2/7 up)
+  v5 4-model WITH - v3 matched 2-seed              head +0.0081 (3/3 up) | medium +0.0201 (20/20 up) | tail +0.0162 (5/7 up)
+  v5 4-model ZERO - v3 greedy-3                    head -0.0028 (0/3 up) | medium -0.0053 (3/20 up) | tail -0.0276 (0/7 up)
+  v5 rerun ZERO - v3 greedy-3                      head -0.0038 (0/3 up) | medium -0.0068 (2/20 up) | tail -0.0316 (0/7 up)
+  v5 orig ZERO - v3 greedy-3                       head -0.0035 (0/3 up) | medium -0.0063 (2/20 up) | tail -0.0279 (0/7 up)

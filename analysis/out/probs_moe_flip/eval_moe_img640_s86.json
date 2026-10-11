@@ -1,0 +1,28 @@
+{
+  "val_mAP": 0.4516383409500122,
+  "val_mAUC": 0.9082168936729431,
+  "val_mF1": 0.4631064832210541,
+  "val_mECE": 0.1316097378730774,
+  "n_rows": 17270,
+  "checkpoints": [
+    "/home/psytp7/ISBI_2026/train/checkpoint_MoE/moe_img640_seed86/Model_run/model_swa.pth",
+    "/home/psytp7/ISBI_2026/train/checkpoint_MoE/moe_img640_seed86/Model_run/model_best.pth"
+  ],
+  "scales_per_checkpoint": [
+    [
+      640
+    ],
+    [
+      640
+    ]
+  ],
+  "n_models": 2,
+  "tta_flip": true,
+  "scales": [
+    640
+  ],
+  "logit_avg": false,
+  "prior_file": null,
+  "prior_mode": "with",
+  "evaluated_at": "20261011_173617"
+}

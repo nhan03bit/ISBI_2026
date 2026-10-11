@@ -30,6 +30,8 @@ from torchvision.transforms.functional import normalize
 
 import evaluate_tta as base
 from prior_conditioning import PRIOR_DIM, is_prior_model, load_model_for_state_dict
+from convnext_moe import ConvNeXt2MoE, ConvNeXt2MoEPrior, is_moe_state_dict
+from markov_layer import CONVNEXT2_KW
 
 _PRIOR_LOOKUP = None  # {fname: r (31,)}, set in main before the loader forks its workers
 _base_decode_and_resize = base.decode_and_resize  # the original; base's name is rebound in run()
@@ -37,7 +39,16 @@ _base_decode_and_resize = base.decode_and_resize  # the original; base's name is
 
 def load_model(ckpt_path, device):
     sd = torch.load(ckpt_path, map_location="cpu")
-    model, res = load_model_for_state_dict(sd)
+    if is_moe_state_dict(sd):
+        # Matched-recipe MoE baseline (train/convnext_moe.py). strict=True: a silently dropped
+        # expert or router would score expert 0 alone.
+        n_experts = 1 + max(int(k.split(".extra_experts.")[1].split(".")[0])
+                            for k in sd if ".extra_experts." in k) + 1
+        cls = ConvNeXt2MoEPrior if any(k.startswith("prior_cond.") for k in sd) else ConvNeXt2MoE
+        model = cls(**CONVNEXT2_KW, num_classes=30, moe_n_experts=n_experts)
+        res = model.load_state_dict(sd, strict=True)
+    else:
+        model, res = load_model_for_state_dict(sd)
     kind = type(model).__name__
     base.logger.info(f"loaded {ckpt_path} as {kind} "
                      f"(missing={len(res.missing_keys)} unexpected={len(res.unexpected_keys)})")
@@ -114,10 +125,19 @@ def run(specs, val_dir, batch_size, num_workers, tta_flip, logit_avg, dump_dir, 
         dump_dir.mkdir(parents=True, exist_ok=True)
         lab = torch.cat(labels).numpy().astype(np.uint8)
         key_file = dump_dir / "keys.txt"
+        perm = None
         if key_file.exists():
             old = key_file.read_text().split("\n")
             if old != keys:
-                raise RuntimeError(f"row order differs from the existing {key_file}")
+                # The 2 val shards are split over the workers, so the row order depends on
+                # --batch-size (the reference dumps used 8). Same rows in another order is
+                # fine: permute everything into the keys.txt order. Anything else is an error.
+                if len(set(keys)) != len(keys) or set(old) != set(keys) or len(old) != len(keys):
+                    raise RuntimeError(f"row set differs from the existing {key_file}")
+                pos = {k: i for i, k in enumerate(keys)}
+                perm = np.array([pos[k] for k in old])
+                lab = lab[perm]
+                base.logger.info(f"reordered {len(keys)} rows into the {key_file} order")
             if not (np.load(dump_dir / "labels.npy") == lab).all():
                 raise RuntimeError("labels differ from the existing labels.npy")
         else:
@@ -129,7 +149,8 @@ def run(specs, val_dir, batch_size, num_workers, tta_flip, logit_avg, dump_dir, 
             name = "__".join(rp.parts[-4:-2] + (rp.stem,)).replace("/", "_")
             tag = f"_prior-{prior_mode}" if is_prior_model(model) else ""
             name = f"{name}@{'-'.join(map(str, scales))}{'_flip' if tta_flip else ''}{tag}.npy"
-            np.save(dump_dir / name, torch.cat(chunks).numpy().astype(np.float32))
+            arr = torch.cat(chunks).numpy().astype(np.float32)
+            np.save(dump_dir / name, arr if perm is None else arr[perm])
             manifest.append({"file": name, "checkpoint": str(rp), "scales": scales, "tta_flip": tta_flip,
                              "prior_mode": prior_mode if is_prior_model(model) else None})
         with open(dump_dir / f"manifest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:

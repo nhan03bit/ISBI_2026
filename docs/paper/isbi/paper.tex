@@ -10,6 +10,8 @@
 \usepackage{textcomp}
 \usepackage{xcolor}
 \usepackage{multirow}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc}
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 \begin{document}
@@ -55,7 +57,7 @@ In this paper, we propose a novel framework based on our submission to the ISBI 
 %~\cite{b3}
 , then a sparse Mixture-of-Experts (MoE) decoder fine-tuning stage --- reaching an mAP of 0.4599 and third place 
 %~\cite{b12}
-, yet two problems central to that task stayed open: the aggregate mAP never showed whether rare (tail) findings, whose small positive gradient is dominated by the common findings they co-occur with, actually improve; and the MoE stage works against label co-occurrence itself, since per-token top-$k$ routing sends the tokens of a multi-finding study to different experts while the load-balancing loss that prevents expert collapse discourages any expert from specialising in findings that always appear together, so co-occurring labels receive fragmented, contradictory updates --- at a standing cost of expert and router parameters at inference. In this work, we keep the Stage-1 backbone and replace the MoE stage with a novel strategy including training-only regularizer of a \emph{single shared} embedding space, namely an entropy-gated triplet objective over a cross-batch memory bank, whose anchors are chosen by predictive entropy so the metric-learning signal falls on the least-resolved --- predominantly rare and co-occurring --- samples to improve the batch triplet loss cross-memory bank, and whose bank supplies the same- and different-finding neighbours a mini-batch of eight cannot hold for a tail class. Added to Asymmetric Loss for a single fine-tuning epoch and discarded at inference, the stage matches the MoE Stage~2 on mAP and mAUC over five random seeds at no inference-time cost (at 512~px input, against 384~px for the MoE and Stage-1 rows); we disclose a small calibration (mECE) regression, and find the effect replicates from a less converged Stage-1 checkpoint at a magnitude that tracks Stage-1 maturity. We also disclose that the implementation behind these results differed from the method as first described in five respects (the triplet embedding, the order of the class weights, the anchor rule, the positive threshold and the mining rule), and we report a corrected implementation (v3). With a longer schedule and higher input resolution, v3 reaches an internal-validation mAP of 0.460 as a single model and 0.472 as a three-model ensemble with flip test-time augmentation. No ablation isolates the entropy gate's share of this gain. We then ask whether label co-occurrence can be modelled explicitly with Markov chains on top of v3. Label-to-label transition priors built from co-occurrence do not help: random-walk smoothing lowers mAP at every strength ($-0.0006$ to $-0.0053$), and cross-label terms inside a patient-level model are never selected, because the ML-Decoder head already mixes labels per image. Same-label transitions across a patient's studies do help when the previous report is available: fed into the label queries, they raise a single model from 0.460 to 0.481 (0.473 to 0.476 in a rerun), with the gain reaching medium and tail classes; with the history withheld, as on the test set, whose patients have no history, the gain is zero.
+, yet two problems central to that task stayed open: the aggregate mAP never showed whether rare (tail) findings, whose small positive gradient is dominated by the common findings they co-occur with, actually improve; and the MoE stage works against label co-occurrence itself, since per-token top-$k$ routing sends the tokens of a multi-finding study to different experts while the load-balancing loss that prevents expert collapse discourages any expert from specialising in findings that always appear together, so co-occurring labels receive fragmented, contradictory updates --- at a standing cost of expert and router parameters at inference. In this work, we keep the Stage-1 backbone and replace the MoE stage with a novel strategy including training-only regularizer of a \emph{single shared} embedding space, namely an entropy-gated triplet objective over a cross-batch memory bank, whose anchors are chosen by predictive entropy so the metric-learning signal falls on the least-resolved --- predominantly rare and co-occurring --- samples to improve the batch triplet loss cross-memory bank, and whose bank supplies the same- and different-finding neighbours a mini-batch of eight cannot hold for a tail class. Added to Asymmetric Loss for a single fine-tuning epoch and discarded at inference, the stage matches the MoE Stage~2 on mAP and mAUC over five random seeds at no inference-time cost (at 512~px input, against 384~px for the MoE and Stage-1 rows); we disclose a small calibration (mECE) regression, and find the effect replicates from a less converged Stage-1 checkpoint at a magnitude that tracks Stage-1 maturity. We also disclose that the implementation behind these results differed from the method as first described in five respects (the triplet embedding, the order of the class weights, the anchor rule, the positive threshold and the mining rule), and we report a corrected implementation (v3). With a longer schedule and higher input resolution, v3 reaches an internal-validation mAP of 0.460 as a single model and 0.472 as a three-model ensemble with flip test-time augmentation. No ablation isolates the entropy gate's share of this gain. We then ask whether label co-occurrence can be modelled explicitly with Markov chains on top of v3. Label-to-label transition priors built from co-occurrence do not help: random-walk smoothing lowers mAP at every strength ($-0.0006$ to $-0.0053$), and cross-label terms inside a patient-level model add nothing, because the ML-Decoder head already mixes labels per image. Same-label transitions across a patient's studies do help when the previous report is available: fed into the label queries, they raise single-model mAP by $+0.013$ to $+0.021$ over the same model without them (four trainings, mean 0.477 against 0.459), consistently on the head and medium classes; with the history withheld, as on the test set, whose patients have no history, the gain is zero.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -95,7 +97,7 @@ Our contributions are as follows.
 \section{Proposed Method}
 \label{sec:method}
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\linewidth,page=5]{Entropy.pdf}}
+\centerline{\includegraphics[width=\linewidth,page=5]{figures/Entropy.pdf}}
 \caption{Overview of the proposed Stage-2 fine-tuning pipeline. The Stage-1 ConvNeXt backbone and decoder are initialized from the frozen-free Stage-1 checkpoint and continue training with a Triplet Cross-Memory-Bank objective gated by Anchor-Based Entropy Selection, in place of the Mixture-of-Experts decoder used in our prior submission~\cite{b12}.}
 \label{fig}
 \end{figure}
@@ -107,7 +109,7 @@ As shown in Fig.~\ref{fig}, we retain the Stage-1 backbone from our prior work u
 Given a mini-batch size of 8, the number of usable positive and negative pairs available for metric learning within a single batch is small, and the hardest examples encountered in a batch are a poor approximation of the hardest examples in the dataset as a whole. Following the spirit of XBM~\cite{b6}, we maintain a fixed-size memory bank $\mathcal{M}$ of $|\mathcal{M}|{=}96$ slots, implemented as a first-in-first-out ring buffer over embeddings and their corresponding multi-hot label vectors. After every optimization step, the current batch's embeddings and labels overwrite the oldest entries in the bank. Because the bank persists across steps, it exposes each anchor to a pool of embeddings up to $12\times$ larger than the mini-batch, drawn from many recent, slowly-drifting versions of the encoder. The corrected implementation of Section~\ref{sec:v3} uses 2,048 slots.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\linewidth,page=6]{Entropy.pdf}}
+\centerline{\includegraphics[width=\linewidth,page=6]{figures/Entropy.pdf}}
 \caption{Triplet Cross-Memory-Bank pipeline: for each anchor embedding $e_i$ from the current mini-batch, pairwise distances to the memory bank $\mathcal{M}$ are computed, and the closest positive (minimum distance among memory entries sharing a label) and farthest negative (maximum distance among entries sharing no label) are retrieved to form the triplet used in $\mathcal{L}_{tri}$ (Eq.~\ref{eq:triplet}).}
 \label{fig:xbm}
 \end{figure}
@@ -126,7 +128,7 @@ and select as anchors the samples whose entropy is at or above the batch mean,
 With a batch size of 8, $\mathcal{A}$ typically contains about half the batch. Our original design used only the single maximum-entropy sample, and Fig.~\ref{fig:entropy} still depicts that variant, but every run reported here used the mean threshold of Eq.~\ref{eq:anchor}. The rationale is that a low-entropy prediction is one the current model is already confident about, and is therefore less informative to push around in embedding space; restricting the triplet computation to the more uncertain samples directs the metric-learning signal toward the region of input space where the classifier's decision boundary is currently least well resolved. Eq.~\ref{eq:entropy} applies a softmax over the 30 logits and so treats the labels as a single categorical distribution, although they are independent binary labels; we keep it because all reported runs used it.
 
 \begin{figure}[htbp]
-\centerline{\includegraphics[width=\linewidth,page=7]{Entropy.pdf}}
+\centerline{\includegraphics[width=\linewidth,page=7]{figures/Entropy.pdf}}
 \caption{Anchor-Based Entropy Selection: the classification logits of every sample in the mini-batch are converted to a Shannon entropy score (Eq.~\ref{eq:entropy}). The figure shows the original single-anchor (maximum-entropy) design; all reported runs select every sample at or above the batch-mean entropy (Eq.~\ref{eq:anchor}).}
 \label{fig:entropy}
 \end{figure}
@@ -244,25 +246,30 @@ Because $\mathcal{N}(i)$ requires a memory entry that shares no label with the a
 After the audit we fixed items 1 and 2 of Section~\ref{sec:corrections} and changed the recipe: learning rate $10^{-4}$, a 2,048-slot memory bank, positives that must share a label outside the five most frequent classes, weight EMA (decay 0.999, EMA weights evaluated), and an 8-epoch cosine schedule, stepped per optimizer update after a 5\% linear warm-up, with early stopping. The higher-resolution runs use batch size 4 with 12-step accumulation (effective batch 48), and the 768 and 1024~px runs stop after four of the eight scheduled epochs, add stochastic depth 0.1 and average the EMA weights of the last three epochs (SWA). The entropy gate, Eq.~\ref{eq:entropy}, the margin, $\lambda_{tri}{=}0.1$ and the Stage-1 checkpoint are unchanged. Table~\ref{tab3} lists the results; all are on the same internal validation fold (17,270 images).
 
 \begin{table}[htbp]
-\caption{Corrected implementation (v3), internal validation. Single models report the best epoch of the EMA weights or their SWA, without test-time augmentation unless stated. ``Flip'' averages the prediction with that of the horizontally flipped image. The greedy ensemble is a uniform average of three models chosen by forward selection on this validation fold, so it is optimistic; the fixed four-model average has no selection. -- = not computed.}
+\caption{Corrected implementation (v3), internal validation. Single models report the best epoch of the EMA weights or their SWA, without test-time augmentation unless stated. ``Flip'' averages the prediction with that of the horizontally flipped image. The greedy ensemble is a uniform average of three models chosen by forward selection on this validation fold, so it is optimistic; the fixed four-model average has no selection. The two Markov Prior rows average four models (two seeds, original run and rerun) with the patient-history Markov prior of Section~\ref{sec:markov} either supplied or zeroed; ``history withheld'' is the condition of the test set. The rows above them contain no Markov component. The Mixture-of-Experts row is the published value of our challenge submission~\cite{b12} (Table~\ref{tab1}), measured at 384~px with no seed repeats and not re-evaluated here, so its differences from the other rows include the change of input resolution. The row marked ``official test set'' is the final CXR-LT Task~1 test-set score of the same submission~\cite{b12} (Table~3 there; mECE not reported); it is on different images from every other row, which are internal validation, and must not be compared with them. -- = not computed or not reported.}
 \begin{center}
 \resizebox{\linewidth}{!}{%
 \begin{tabular}{|l|c|c|c|c|c|}
 \hline
 \textbf{Model} & \textbf{px} & \textbf{mAP} & \textbf{mAUC} & \textbf{mF1} & \textbf{mECE} \\
 \hline
+Mixture of Experts, Stage 2~\cite{b12} & 384 & 0.405 & 0.882 & 0.402 & 0.130 \\
+Mixture of Experts, Stage 2, \emph{official test set}~\cite{b12} & 384 & 0.4599 & 0.8827 & 0.4504 & -- \\
+\hline
 Original impl., Table~\ref{tab1} (5 seeds) & 512 & 0.414 & 0.889 & 0.407 & 0.143 \\
 \hline
-v3, best epoch (6 seeds) & 512 & 0.439 & 0.900 & 0.454 & 0.128 \\
+Triplet Memory, best epoch (6 seeds) & 512 & 0.439 & 0.900 & 0.454 & 0.128 \\
  & & $\pm$0.002 & $\pm$0.002 & $\pm$0.004 & $\pm$0.006 \\
-v3, SWA (seed 86) & 768 & 0.4566 & 0.9063 & 0.4676 & 0.1275 \\
-v3 + drop-path, SWA (seed 42) & 768 & 0.4600 & 0.9092 & 0.4685 & 0.1354 \\
-v3 + drop-path, SWA (seed 1024) & 768 & 0.4582 & 0.9104 & 0.4741 & 0.1354 \\
-v3 + drop-path, SWA (seed 86) & 1024 & 0.4619 & 0.9138 & 0.4679 & 0.1438 \\
+Triplet Memory, SWA (seed 86) & 768 & 0.4566 & 0.9063 & 0.4676 & 0.1275 \\
+Triplet Memory + drop-path, SWA (seed 42) & 768 & 0.4600 & 0.9092 & 0.4685 & 0.1354 \\
+Triplet Memory + drop-path, SWA (seed 1024) & 768 & 0.4582 & 0.9104 & 0.4741 & 0.1354 \\
+Triplet Memory + drop-path, SWA (seed 86) & 1024 & 0.4619 & 0.9138 & 0.4679 & 0.1438 \\
 \hline
-768~px seed-42 SWA, flip & 768 & 0.4650 & -- & -- & -- \\
-Fixed 4-model SWA average, flip & 768--1024 & 0.4699 & 0.9154 & 0.4819 & 0.1385 \\
-Greedy 3-model ensemble, flip & 640--1024 & \textbf{0.4722} & -- & -- & -- \\
+Triplet Memory 768~px seed-42 SWA, flip & 768 & 0.4650 & -- & -- & -- \\
+Triplet Memory, fixed 4-model SWA average, flip & 768--1024 & 0.4699 & 0.9154 & 0.4819 & 0.1385 \\
+Triplet Memory, greedy 3-model ensemble, flip & 640--1024 & 0.4722 & 0.9144 & 0.4769 & 0.1337 \\
+\hline
+Triplet Memory + Markov Prior & 768 & \textbf{0.4847} & 0.9177 & 0.5025 & 0.1330 \\
 \hline
 \end{tabular}%
 }
@@ -278,7 +285,35 @@ Greedy 3-model ensemble, flip & 640--1024 & \textbf{0.4722} & -- & -- & -- \\
 \label{sec:markov}
 Section~I named two difficulties: the long tail, and the co-occurrence of findings, since a rare finding is seldom seen alone and its gradient is entangled with that of the common findings it accompanies. The entropy-gated triplet stage treats co-occurrence only implicitly, through positives defined by label overlap (Eq.~\ref{eq:posmask}). This section asks whether modelling co-occurrence \emph{explicitly}, as the transition probabilities of a Markov chain, adds to the corrected v3 model of Section~\ref{sec:v3}. In the training labels, hydropneumothorax (38 training images) co-occurs most often with pleural effusion, and pneumothorax with support devices, so a chain could let confident evidence for a common finding raise the score of a rare finding that tends to accompany it.
 
-A Markov chain needs a sequence of states, and Task~1 offers two. \textbf{(A) The labels of one X-ray}: co-occurrence counts become label-to-label transition probabilities, the direct model of one image carrying several findings. \textbf{(B) A patient's studies over time}: the findings at one visit condition those at the next. Route (B) contains label-to-label terms as well (finding $k$ at one visit to finding $c$ at the next, and couplings between findings of the same visit), so it tests label-to-label and same-label transitions side by side. Every comparison below is against the same v3 model without the prior.
+A Markov chain needs a sequence of states, and Task~1 offers two. \textbf{(A) The labels of one X-ray}: co-occurrence counts become label-to-label transition probabilities, the direct model of one image carrying several findings. \textbf{(B) A patient's studies over time}: the findings at one visit condition those at the next. Route (B) contains label-to-label terms as well (finding $k$ at one visit to finding $c$ at the next, and couplings between findings of the same visit), so it tests label-to-label and same-label transitions side by side. Fig.~\ref{fig:pipeline} shows where each prior enters the v3 model. Every comparison below is against the same v3 model without the prior.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize, node distance=3mm,
+  box/.style={draw=blue!60!black, fill=blue!6, rounded corners=2pt, align=center, text width=3.5cm, inner sep=2.5pt},
+  newbox/.style={draw=orange!80!black, fill=orange!15, rounded corners=2pt, align=center, text width=1.95cm, inner sep=2.5pt, line width=0.9pt},
+  lossbox/.style={box, draw=violet!70!black, fill=violet!8},
+  databox/.style={draw=gray!70!black, fill=white, rounded corners=2pt, align=center, inner sep=2.5pt},
+  aux/.style={draw=gray!70!black, dashed, fill=gray!8, rounded corners=2pt, align=center, text width=1.75cm, inner sep=2pt, font=\scriptsize},
+  arr/.style={-{Stealth[length=1.8mm]}},
+  lab/.style={font=\scriptsize, right, inner sep=2pt}]
+\node[databox, text width=3.5cm] (x) {chest X-ray $x_t$};
+\node[box, below=of x] (bb) {\textbf{ConvNeXt backbone}\\5 stages, stride 64};
+\node[box, below=5mm of bb] (dec) {\textbf{ML-Decoder}, 30 label queries\\cross-attention $\rightarrow$ query self-attention\\$\rightarrow$ GroupFC};
+\node[lossbox, below=6mm of dec] (asl) {\textbf{Asymmetric loss}};
+\node[aux, right=3mm of dec] (tri) {triplet loss (memory bank); embeddings only};
+\node[newbox, left=3mm of dec] (pri) {\textbf{patient Markov prior} $r$\\$\rightarrow$ query offset};
+\node[databox, text width=1.95cm, font=\scriptsize, above=4mm of pri] (rep) {previous report $y_{t-1}$};
+\draw[arr] (x) -- (bb);
+\draw[arr] (bb) -- node[lab]{$S$ image tokens} (dec);
+\draw[arr] (dec) -- node[lab]{logits $u \in \mathbb{R}^{30}$} (asl);
+\draw[arr, dashed] (dec) -- (tri);
+\draw[arr] (rep) -- (pri);
+\draw[arr, line width=0.9pt] (pri) -- (dec);
+\end{tikzpicture}
+\caption{Where the Markov priors enter. The baseline (v3) is the model without the orange box. In the in-network variant (Section~\ref{sec:mk-patient}), the patient-history Markov prior $r$, computed from the previous report, offsets the ML-Decoder label queries. In the post-prediction variant (Section~\ref{sec:mk-patient}), the same chain is fused with the probabilities $\sigma(u)$ of a frozen model, together with metadata (Fig.~\ref{fig:hmm}). The label-graph priors of Section~\ref{sec:mk-labelgraph} act on $\sigma(u)$ at inference.}
+\label{fig:pipeline}
+\end{figure}
 
 \subsection{Route A: Label-to-Label Transitions}
 \label{sec:mk-labelgraph}
@@ -292,6 +327,39 @@ built from the training fold only. Given an image's predicted probabilities $p \
 q = (1 - \alpha)\, p + \alpha\, s\, \bigl((p/s)\, P\bigr).
 \label{eq:smoothing}
 \end{equation}
+Fig.~\ref{fig:cooc} shows part of $P$: each rare finding is linked to the common findings it accompanies, such as hydropneumothorax to pleural effusion (0.197) and pneumothorax to Support Devices (0.195), but the links back from the common findings are about a hundred times weaker.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\scriptsize,
+  lbl/.style={draw, rounded corners=2.2mm, align=center, inner sep=2.5pt, text width=1.55cm, minimum height=7.5mm},
+  head/.style={lbl, draw=violet!70!black, fill=violet!10},
+  med/.style={lbl, draw=blue!60!black, fill=blue!6},
+  tail/.style={lbl, draw=orange!80!black, fill=orange!15, line width=0.9pt},
+  e/.style={-{Stealth[length=1.6mm]}, draw=gray!40!black},
+  w/.style={font=\tiny, fill=white, inner sep=0.8pt}]
+\node[tail] (hp) at (0, 1.9) {Hydropneumo-\\thorax (38)};
+\node[tail] (px) at (0, 0) {Pneumothorax\\(420)};
+\node[tail] (pp) at (0, -1.9) {Pneumo-\\peritoneum (52)};
+\node[head] (pe) at (3.15, 1.9) {Pleural\\effusion (12,506)};
+\node[med] (sd) at (3.15, 0) {Support\\Devices (8,607)};
+\node[med] (cv) at (3.15, -1.9) {Central venous\\catheter (4,769)};
+\node[head] (no) at (6.25, 0.95) {Normal\\(41,507)};
+\node[head] (cm) at (6.25, -0.95) {Cardiomegaly\\(11,004)};
+\draw[e] (hp) -- node[w, pos=0.5]{0.197} (pe);
+\draw[e] (hp) -- node[w, pos=0.28]{0.106} (sd);
+\draw[e] (px) -- node[w, pos=0.5]{0.195} (sd);
+\draw[e] (px) -- node[w, pos=0.28]{0.122} (pe);
+\draw[e] (pp) -- node[w, pos=0.5]{0.310} (cv);
+\draw[e] (pp) -- node[w, pos=0.28]{0.225} (sd);
+\draw[e] (sd) to[bend left=22] node[w]{0.214} (cv);
+\draw[e] (cv) to[bend left=22] node[w]{0.345} (sd);
+\draw[e] (no) -- node[w, pos=0.45]{0.105} (sd);
+\draw[e] (no) -- node[w]{0.127} (cm);
+\end{tikzpicture}
+\caption{Route (A): part of the label-to-label Markov chain $P$ of Eq.~\eqref{eq:transition}, estimated on the training fold (103,305 images; training counts in brackets). Each arrow $i \to j$ is labelled with $P_{ij}$, the share of label $i$'s co-occurrences that involve $j$. For the three tail findings and for Normal, the two largest entries of the row are drawn, and for Support Devices and the catheter the largest one. Orange: tail ($<1\%$ prevalence), blue: medium, violet: head. One random-walk step (Eq.~\eqref{eq:smoothing}) moves predicted probability along the arrows, from $i$ to $j$, so out of the rare findings and into the common ones. The reverse entries are small, because a common finding's row is spread over many partners: $P$ from pleural effusion to hydropneumothorax is 0.0007, and from Support Devices to pneumothorax 0.0068. $P$ is also asymmetric (Support Devices $\to$ catheter 0.214, catheter $\to$ Support Devices 0.345). The Normal row is built from only the few images where Normal co-occurs with a finding (34 with cardiomegaly), yet must sum to one, so $P$ cannot express that Normal excludes every finding.}
+\label{fig:cooc}
+\end{figure}
 The opposite extreme of co-occurrence is exclusivity. The CXR-LT 2026 Task~1 winner~\cite{b15} suppresses every abnormal class by the predicted probability of Normal, $p_c \leftarrow p_c(1 - p_0)^{\alpha_{ng}}$ with $\alpha_{ng} = 0.5$; in our validation labels Normal co-occurs with a finding in only 26 of 17,270 images. Both priors are applied to the cached flip-TTA probabilities of the greedy three-model v3 ensemble (0.4722, Table~\ref{tab3}); nothing is retrained.
 
 \subsection{Route B: Transitions Across a Patient's Studies}
@@ -305,23 +373,65 @@ estimated with Laplace smoothing from the 24,180 consecutive-state pairs of the 
 
 \textbf{In-network.} The prior offsets the 30 ML-Decoder label queries before they attend to the image, $Q_c \leftarrow Q_c + r_c\, u_c + W r$, with $u$ and $W$ initialised at zero so training starts exactly from v3. Each training image's prior is zeroed with probability 0.3, so the network also learns to classify without it. Training uses the v3 recipe at 768~px (seeds 42 and 1024); training images take their earlier state from the training fold only, so no validation label reaches a training input.
 
-\textbf{Post-prediction.} Alternatively, the classifier is frozen and the chain becomes the transition of a hidden Markov model whose emission is the classifier output. With calibrated logits $\tau \operatorname{logit} p_c(x) + \delta_c$, the fused score is
+\textbf{Post-prediction.} Alternatively, the classifier is kept frozen and the chain becomes the transition of a hidden Markov model whose emission is the classifier output (Fig.~\ref{fig:hmm}). After a calibration fitted on held-out patients, with a temperature $\tau$ shared by all classes and a per-class intercept $\delta_c$, the posterior is converted into a likelihood ratio by dividing out the training prevalence:
 \begin{equation}
-z_c = \tau \operatorname{logit} p_c(x) + \delta_c + w_h \bigl[\operatorname{logit} q_c - \operatorname{logit} \bar\pi_c\bigr],
-\label{eq:fuse}
+\ell_c(x) = \tau \operatorname{logit} p_c(x) + \delta_c - \operatorname{logit} \bar\pi_c .
+\label{eq:emission}
 \end{equation}
-with $\tau$, $\delta$ and $w_h$ fitted on held-out patients. Arm H1 uses $q_c = \pi_c(y_{t-1})$. Arm H4 (pre-specified primary) replaces it with a logistic transition that adds the time gap, patient metadata and, the term that tests route (A) across visits, \emph{cross-label} edges $B_{ck}$ from finding $k$ at $t-1$ to finding $c$ at $t$:
-\begin{equation}
-\operatorname{logit} q_c = \alpha_c + \beta_c y_{t-1,c} + \textstyle\sum_{k \neq c} B_{ck}\, y_{t-1,k} + \dots
-\label{eq:trans}
-\end{equation}
-Arm H5 adds within-visit label couplings $J$, a pairwise Markov random field over the 30 findings of one study fitted by pseudo-likelihood, applied by damped mean field with a fitted weight $w_J$: the co-occurrence model of route (A) learned inside the patient model.
+The prior factorises over classes, each a logistic model. A state without an earlier state uses $\pi^{0}$; later states use the transition $\pi$:
+\begin{align}
+\operatorname{logit} \pi^{0}_c(m) &= \alpha^{0}_c + \gamma^{0\top}_c \phi(m), \label{eq:init}\\
+\operatorname{logit} \pi_c(y', m, \Delta) &= \alpha_c + \beta_c y'_c + \kappa_c y'_c g + \lambda_c g \nonumber\\
+&\quad + \textstyle\sum_{k \neq c} B_{ck}\, y'_k + \gamma_c^{\top} \phi(m), \label{eq:trans}
+\end{align}
+where $y'$ is the previous state, $g = \log(1 + \Delta)$ for a gap of $\Delta$ days, and $\phi(m)$ holds sex, a restricted cubic spline of age and the acuity of the study (AP or AP horizontal against PA or lateral). $B_{ck}$ is a \emph{cross-label} edge from finding $k$ at the previous state to finding $c$ at the current one: the label-to-label transition of route (A), carried across visits. For a target image $x$ on date $t$,
+\begin{align}
+z_c &= \tau \operatorname{logit} p_c(x) + \delta_c + w \bigl[\operatorname{logit} q_c - \operatorname{logit} \bar\pi_c\bigr], \label{eq:fuse}\\
+(q_c, w) &= \begin{cases}
+\bigl(\pi_c(y_{t-1}, m_t, \Delta_t),\ w_h\bigr) & \text{earlier state},\\
+\bigl(\pi^{0}_c(m_t),\ w_0\bigr) & \text{otherwise}.
+\end{cases} \label{eq:qw}
+\end{align}
+With $w = 1$ this is Bayes' rule. We instead fit $w_h$ and $w_0$ on held-out patients, because the ASL-trained probabilities are not calibrated posteriors and the image and the prior can carry the same evidence. The arms add terms in a fixed order. H1 uses the pooled chain of Eq.~\eqref{eq:chain} with the calibration and a fitted $w_h$, and leaves images without an earlier state unchanged. H4, the pre-specified primary arm, uses the full transition of Eq.~\eqref{eq:trans}, with gap, metadata and cross-label edges. Arm H5 adds within-visit label couplings $J$, a pairwise Markov random field over the 30 findings of one study fitted by pseudo-likelihood, applied by damped mean field with a fitted weight $w_J$: the co-occurrence model of route (A) learned inside the patient model. In Fig.~\ref{fig:hmm}, both co-occurrence terms sit inside the state nodes: $B_{ck}$ links finding $k$ in $y_{t-1}$ to finding $c$ in $y_t$, and $J$ links the findings within one $y_t$.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[font=\footnotesize,
+  st/.style={circle, draw=orange!80!black, fill=orange!15, line width=1.2pt, minimum size=8mm, inner sep=0pt},
+  img/.style={draw=blue!60!black, fill=blue!6, rounded corners=2pt, align=center, inner sep=2pt, minimum height=5.5mm, font=\scriptsize},
+  meta/.style={draw=gray!70!black, fill=white, rounded corners=4pt, align=center, inner sep=2pt, font=\scriptsize},
+  aux/.style={draw=gray!50, dashed, fill=gray!8, rounded corners=4pt, align=center, inner sep=2pt, font=\scriptsize, text=gray!30!black},
+  fuse/.style={draw=orange!80!black, fill=orange!15, rounded corners=2pt, align=center, inner sep=3pt, line width=0.9pt, font=\scriptsize},
+  arr/.style={-{Stealth[length=1.8mm]}},
+  lab/.style={font=\scriptsize, inner sep=1.5pt}]
+\node[st] (y0) {$y_{t-1}$};
+\node[st, right=26mm of y0] (y1) {$y_t$};
+\node[meta, above=5mm of y0] (m0) {$m_{t-1}$};
+\node[meta, above=5mm of y1] (m1) {$m_t$: sex, age,\\acuity, gap $\Delta_t$};
+\node[aux, left=4mm of y0] (rep) {previous\\report\\(observed)};
+\node[img, below=7mm of y0] (x0) {image $x_{t-1}$};
+\node[img, below=7mm of y1] (x1) {image $x_t$};
+\node[img, below=4mm of x1] (clf) {frozen ConvNeXt + ML-Decoder\\$p(y \mid x_t)$};
+\node[fuse, right=7mm of y1, text width=1.6cm] (fz) {fusion\\Eqs.~\eqref{eq:fuse}--\eqref{eq:qw}};
+\draw[arr, line width=1.2pt] (y0) -- node[lab, below]{$\pi(y_t \mid y_{t-1}, m_t, \Delta_t)$} (y1);
+\draw[arr] (m0) -- (y0);
+\draw[arr] (m1) -- (y1);
+\draw[arr] (y0) -- node[lab, left]{emission} (x0);
+\draw[arr] (y1) -- node[lab, right]{emission} (x1);
+\draw[arr, dashed, draw=gray!70] (rep) -- (y0);
+\draw[arr] (x1) -- (clf);
+\draw[arr] (clf.east) -| node[lab, pos=0.75, right]{$\ell(x_t)$} (fz.south);
+\draw[arr] (y1) -- node[lab, above]{$q$} (fz);
+\end{tikzpicture}
+\caption{The post-prediction patient HMM as a graphical model, with one state per patient and date. Orange circles are the hidden finding states $y_t \in \{0,1\}^{30}$, blue boxes the images and the frozen classifier, white boxes metadata. The transition prior $\pi$ (Eq.~\eqref{eq:trans}) depends on the previous state, the metadata of the current date and the gap $\Delta_t$; a state without an earlier state uses $\pi^{0}(m)$ (Eq.~\eqref{eq:init}). The classifier supplies only the emission (Eq.~\eqref{eq:emission}), and prior and emission are combined after the network. In the observed mode $y_{t-1}$ is read from the previous report (dashed); in the filtered mode it is inferred from $x_{1:t-1}$ by a forward pass over the patient's earlier images.}
+\label{fig:hmm}
+\end{figure}
 
 \textbf{Evaluation.} Route (B) can only be simulated on our internal folds: CXR-LT test patients are de-duplicated against training and their identifiers are withheld~\cite{b14}, and no development or test image is ever linked to the PadChest metadata. Validation images take their history from both folds, as in a hospital archive; 5,759 of the 17,270 have an earlier state, and the primary subset is the 4,061 of these that are frontal. Post-prediction weights are cross-fitted on two patient halves, AP is computed within each half and averaged, and differences use a paired patient-clustered bootstrap (300 resamples). The in-network models are also scored with every prior set to zero (\emph{withheld}), the only condition available on the test set.
 
 \subsection{Results}
 \label{sec:mk-results}
-\textbf{Label-to-label transitions do not help.} Every strength of random-walk smoothing lowers mAP (Table~\ref{tab:mk-graph}), and Normal-gating lowers it by up to $0.046$, with 28 of 30 classes worse at the winner's setting. The winner trained with a Distribution-Balanced loss~\cite{b23} that pushes abnormal scores up; our Asymmetric-Loss model has no such bias, so the gate only spreads the errors in $p_0$ into every other class's ranking.
+\textbf{Label-to-label transitions do not help.} Every strength of random-walk smoothing lowers mAP (Table~\ref{tab:mk-graph}). At $\alpha = 0.05$ the loss falls mainly on the head classes (mean $\Delta$AP $-0.0021$ over the ten most frequent classes, $-0.0001$ over the ten rarest): as Fig.~\ref{fig:cooc} shows, the step adds probability borrowed from their rare partners to the common findings, which blurs their per-image ranking, and returns almost none to the rare findings, so it cannot help the tail. Normal-gating lowers mAP by up to $0.046$, with 28 of 30 classes worse at the winner's setting. The winner trained with a Distribution-Balanced loss~\cite{b23} that pushes abnormal scores up; our Asymmetric-Loss model has no such bias, so the gate only spreads the errors in $p_0$ into every other class's ranking.
 
 \begin{table}[htbp]
 \caption{Label-graph priors (route A) applied post hoc to the greedy three-model v3 ensemble, flip TTA, $n = 17{,}270$. The first row is v3 without any Markov step.}
@@ -346,7 +456,7 @@ Normal-gating, $\alpha_{ng} = 1.0$ & 0.4264 & $-0.0459$ \\
 \end{center}
 \end{table}
 
-\textbf{Same-label transitions across visits do help when the previous report is available.} Fed into the label queries, the patient prior raises mAP by $+0.019$ at both seeds (Table~\ref{tab:mk-innet}; training-log SWA without TTA: 0.4600 to 0.4807 and 0.4582 to 0.4786). A rerun of both seeds with identical settings gives SWA 0.4731 and 0.4764, so the gain reproduces at a smaller size ($+0.013$ to $+0.018$); the two-seed flip ensemble scores 0.4867 (original) and 0.4797 (rerun) with the prior, against 0.4659 for the two v3 models. Almost all of the gain is on images with an earlier state: on the frontal ones it is $+0.0270$ (95\% CI $+0.0081$ to $+0.0497$) at seed 42 and $+0.0380$ ($+0.0265$ to $+0.0547$) at seed 1024, and it reaches all 3 head and all 20 medium classes (mean $\Delta$AP $+0.018$ and $+0.036$) and 5 of the 7 tail classes at seed 42. The largest per-class gains are on fracture, bronchiectasis, calcified densities and aortic atheromatosis ($+0.06$ to $+0.15$ AP); support devices, already near ceiling, gain little. Post-prediction fusion gives the same gain without retraining (Table~\ref{tab:mk-hmm}): H4 minus the in-network model is $+0.0021$ ($-0.0155$ to $+0.0197$) and $-0.0022$ ($-0.0204$ to $+0.0158$) on the primary subset.
+\textbf{Same-label transitions across visits do help when the previous report is available.} Fed into the label queries, the patient prior raises mAP by $+0.019$ at both seeds (Table~\ref{tab:mk-innet}; training-log SWA without TTA: 0.4600 to 0.4807 and 0.4582 to 0.4786). A rerun of both seeds with identical settings gives SWA 0.4731 and 0.4764 (four-run mean 0.4772, s.d.\ 0.0032), so the gain reproduces at a smaller size ($+0.013$ to $+0.018$). Against the matched two-seed v3 flip ensemble (0.4659), the two-seed prior ensemble gains $+0.0208$ ($+0.0132$ to $+0.0285$) in the original runs and $+0.0138$ ($+0.0042$ to $+0.0209$) in the rerun. The contribution of the prior itself (with minus withheld, same models) is stable, $+0.0175$ and $+0.0186$; the rerun's base model is lower, and most of that difference is one class, hydropneumothorax, whose 7 validation positives give an ensemble AP of 0.466 in the original runs and 0.285 in the rerun. Almost all of the gain is on images with an earlier state: on the frontal ones it is $+0.0270$ (95\% CI $+0.0081$ to $+0.0497$) at seed 42 and $+0.0380$ ($+0.0265$ to $+0.0547$) at seed 1024, and it reaches all 3 head and all 20 medium classes (mean $\Delta$AP $+0.018$ and $+0.036$) at seed 42, in both the original and the rerun models. The tail classes are not stable: their mean AP differs by about $0.03$ between the original and rerun models. The largest per-class gains are on fracture, bronchiectasis, calcified densities and aortic atheromatosis ($+0.06$ to $+0.15$ AP); support devices, already near ceiling, gain little. Post-prediction fusion gives the same gain without retraining (Table~\ref{tab:mk-hmm}): H4 minus the in-network model is $+0.0021$ ($-0.0155$ to $+0.0197$) and $-0.0022$ ($-0.0204$ to $+0.0158$) on the primary subset.
 
 \begin{table}[htbp]
 \caption{Patient-history prior fed into the label queries, against the identical v3 model without it; internal validation, SWA, flip TTA. Withheld: every prior set to zero, the test-set condition. Earlier: images with an earlier state (5,759); frontal earlier (4,061); none (11,511).}
@@ -370,7 +480,7 @@ Normal-gating, $\alpha_{ng} = 1.0$ & 0.4264 & $-0.0459$ \\
 \end{center}
 \end{table}
 
-\textbf{Inside the patient model, the label-to-label terms are not used.} The simplest chain is the best (Table~\ref{tab:mk-hmm}): H1 has the highest mAP on every subset with a prior (primary subset 0.5511 against 0.5411 for H4 at seed 42). Adding cross-label edges, gap and metadata (H4) improves the held-out transition prior itself (macro AUROC 0.66 to 0.81, log-loss 0.1513 to 0.1370) but not the fused prediction. The within-visit random field (H5) selected $w_J = 0$ in every fold, so H5 equals H4. The strongest couplings it learned are those between Normal and pleural effusion ($-1.51$), cardiomegaly ($-1.40$) and support devices ($-1.31$), and between support devices and central venous catheters ($+1.46$): co-occurrence that the classifier already captures. Patient metadata behave the same way: on their own they predict the findings (held-out macro AUROC 0.76), but stacked on the image logit they lower mAP by $0.003$ to $0.016$.
+\textbf{Inside the patient model, the label-to-label terms are not used.} The simplest chain is the best (Table~\ref{tab:mk-hmm}): H1 has the highest mAP on every subset with a prior (primary subset 0.5511 against 0.5411 for H4 at seed 42). Adding cross-label edges, gap and metadata (H4) improves the held-out transition prior itself (macro AUROC 0.66 to 0.81, log-loss 0.1513 to 0.1370) but not the fused prediction. The within-visit random field (H5) selected $w_J = 0$ in every fold, so H5 equals H4. The strongest couplings it learned are those between Normal and pleural effusion ($-1.51$), cardiomegaly ($-1.40$) and support devices ($-1.31$), and between support devices and central venous catheters ($+1.46$): co-occurrence that the classifier already captures. Patient metadata behave the same way (Section~\ref{sec:mk-meta}).
 
 \begin{table}[htbp]
 \caption{Post-prediction patient HMM: change in macro mAP relative to the frozen v3 768~px SWA model (E, flip TTA; the E row is absolute). Primary: frontal images with an earlier state ($n = 4{,}061$). Cross-fitted on patient halves, mean over three splits; 95\% CI from a patient-clustered bootstrap on the first split. $^\dagger$: no bootstrap (difference of three-split means). Internal simulation; leaderboard effect 0.}
@@ -398,20 +508,54 @@ Withheld & \shortstack{$-$0.0027\\{\scriptsize[$-$0.009,+0.005]}} & \shortstack{
 \end{center}
 \end{table}
 
-\textbf{The gain needs the previous report and does not reach the test set.} With the prior withheld, the in-network model is no better than v3 ($-0.0026$, $-0.0109$ to $+0.0075$, at seed 42; $+0.0037$ at seed 1024); the two-seed ensemble scores 0.4693 (rerun 0.4611) against 0.4659. When the previous state is inferred from the patient's earlier images instead of read from the report, the primary-subset gain of H4 falls from $+0.0375$ to $+0.0092$ ($-0.0013$ to $+0.0181$). A model that copies the previous report and genuine persistence of findings would both give this pattern, and report-derived labels cannot separate them.
+\textbf{The gain needs the previous report and does not reach the test set.} With the prior withheld, the in-network model is no better than v3 ($-0.0026$, $-0.0109$ to $+0.0075$, at seed 42; $+0.0037$ at seed 1024); the two-seed ensemble differs from v3 by $+0.0033$ ($-0.0033$ to $+0.0074$) in the original runs and $-0.0048$ ($-0.0129$ to $+0.0004$) in the rerun. On frontal images of patients unseen in training, the prior adds $+0.001$, with an interval that includes zero. When the previous state is inferred from the patient's earlier images instead of read from the report, the primary-subset gain of H4 falls from $+0.0375$ to $+0.0092$ ($-0.0013$ to $+0.0181$). A model that copies the previous report and genuine persistence of findings would both give this pattern, and report-derived labels cannot separate them.
+
+\subsection{Patient Metadata}
+\label{sec:mk-meta}
+Arm H4 conditions the transition on patient and study metadata (Fig.~\ref{fig:hmm}). To see what they carry, we related the whitelisted PadChest fields to the 30 labels on the training fold only (50,604 patients, 75,819 studies). Labels come from the challenge label lists, never from the PadChest report or label columns, and no development or test image is linked to the metadata. Many fields are associated with the labels (Fig.~\ref{fig:assoc}). The strongest are the acuity of the study (maximum Cram\'er's $V$ 0.528), the projection (0.504), age (0.447) and the time since the previous study (0.447); sex is weak (0.133). The devices are tied to the care setting: Support Devices and central venous catheters occur far more often in portable AP-horizontal studies (log odds ratio $+2.95$ and $+3.52$). Age drives the other findings (Fig.~\ref{fig:age}): Normal falls from about 70\% of studies below 40 years to about 10\% above 90, while cardiomegaly, aortic elongation, aortic atheromatosis and pleural effusion rise steeply. Persistence between consecutive studies also depends on acuity (Fig.~\ref{fig:persist}): Support Devices persist with probability 0.578 into a PA or lateral study against 0.834 into an AP-horizontal one, central venous catheters 0.269 against 0.812, and Normal 0.676 against 0.258.
+
+Metadata alone predict the labels well above chance. A per-class logistic model scored by patient-grouped five-fold cross-validation reaches a held-out macro AUROC of 0.760 and macro AP of 0.142 (mean prevalence 0.050), best for central venous catheter (0.93) and Support Devices (0.90) (Fig.~\ref{fig:auroc}). They add nothing to the image, however. Stacked on the image logit and cross-fitted on patient halves, patient, view and acquisition fields each lower mAP; all three together lower it by $0.0095$ (768~px seed-42 model) and $0.0123$ (greedy ensemble) on all validation images, and by up to $0.016$ on frontal ones, with 95\% intervals that exclude zero in 15 of 16 cells. Refitting only a per-class slope and intercept changes mAP by $0.0000$ and $-0.0003$, so this is not a calibration artefact. The image already shows the devices, the age-related aortic changes and the AP-supine geometry. Metadata could therefore only help through the transition between studies, where acuity and the gap change persistence, and Table~\ref{tab:mk-hmm} shows that even there they add nothing over the simple chain. Some associations may reflect reporting habits, since the labels are derived from reports.
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/assoc_heatmap.pdf}
+\caption{Association between metadata fields (columns) and the 30 labels (rows, ordered by training prevalence, most frequent at the top) on the training fold. Colour is Cram\'er's $V$ from white (0) to dark blue (0.53); values of 0.15 and above are printed. The study-level fields are acuity, projection, time gap, age, number of earlier studies, sex and year; the remaining columns are acquisition fields (scanner resolution, relative exposure, exposure time, tube current, image rows, manufacturer, modality).}
+\label{fig:assoc}
+\end{figure*}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=\textwidth]{figures/age_prevalence.pdf}
+\caption{Prevalence of six labels by age at study, for the six classes most associated with age. Each point is a 10-year age band of training studies; the vertical axis is the share of studies in the band with the finding. The scales differ between panels.}
+\label{fig:age}
+\end{figure*}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/persistence_by_acuity.pdf}
+\caption{Persistence of findings by the acuity of the later study: the probability that a finding is present at study $t$ given that it was present at study $t-1$ of the same patient (vertical axis), for 15 classes (horizontal axis). Colours give the acuity of study $t$: PA or lateral (blue), AP (orange), AP horizontal (green).}
+\label{fig:persist}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=\columnwidth]{figures/metadata_only_auroc.pdf}
+\caption{Held-out AUROC of a logistic model that uses metadata only, for each of the 30 classes, sorted from highest to lowest (patient-grouped five-fold cross-validation, training fold). The vertical line marks chance (0.5).}
+\label{fig:auroc}
+\end{figure}
 
 \subsection{Discussion}
 \label{sec:mk-limits}
 \textbf{Co-occurrence is already modelled.} The answer to the question of this section is negative for label-to-label transitions and positive for same-label transitions across visits. ML-Decoder's query self-attention is itself a row-stochastic $30 \times 30$ mixing over labels, recomputed for every image on 768-dimensional label embeddings, over 8 heads in each of 2 blocks. A co-occurrence chain applies one global matrix to the probabilities, so for a ranking metric it can only move the scores of every image with similar predicted findings in the same direction. The within-visit couplings that the patient model learned, and then gave zero weight, are the same label correlations. We read this as the decoder, trained jointly with the label-overlap triplet objective, having already captured what a global co-occurrence prior could add.
 
-\textbf{What patient history adds.} A same-label chain over the patient's studies carries information the current image does not contain: the findings recorded at the previous visit, many of which persist. On images with an earlier state, the post-prediction gain is larger for medium and tail classes ($+0.044$ and $+0.046$) than for head classes ($+0.013$) at seed 42. The prior thus reaches the tail findings that Section~I identified as entangled with common ones, but through their persistence over time, not through their co-occurrence within one image.
+\textbf{What patient history adds.} A same-label chain over the patient's studies carries information the current image does not contain: the findings recorded at the previous visit, many of which persist. On images with an earlier state, the post-prediction gain is larger for medium classes ($+0.044$) than for head classes ($+0.013$) at seed 42; the tail estimate ($+0.046$) rests on very few positives and the in-network tail gain did not reproduce. Where the prior helps, it does so through the persistence of findings over time, not through their co-occurrence within one image.
 
-\textbf{Limits.} (i) The test-set effect is zero by construction, because test patients have no history; the result applies to deployments with prior reports. (ii) The internal validation fold is not patient-disjoint: 77.0\% of its images share a patient with training, as do 98.6\% of the images with an earlier state, and 30\% are lateral. On frontal images of unseen patients, the 1024-over-512~px gain of Section~\ref{sec:v3} shrinks from $+0.020$ ($+0.005$ to $+0.036$) on seen patients to $+0.007$ ($-0.020$ to $+0.027$), and H4 changes mAP by $-0.0053$ ($-0.0151$ to $-0.0006$) at seed 42. (iii) The rerun shows run-to-run differences of up to 0.008 mAP in the in-network prior, larger than the $\pm0.002$ seed spread of v3 at 512~px. (iv) Labels are extracted from reports, and there is one validation fold.
+\textbf{Limits.} (i) The test-set effect is zero by construction, because test patients have no history; the result applies to deployments with prior reports. (ii) The internal validation fold is not patient-disjoint: 77.0\% of its images share a patient with training, as do 98.6\% of the images with an earlier state, and 30\% are lateral. On frontal images of unseen patients, the 1024-over-512~px gain of Section~\ref{sec:v3} shrinks from $+0.020$ ($+0.005$ to $+0.036$) on seen patients to $+0.007$ ($-0.020$ to $+0.027$), and H4 changes mAP by $-0.0053$ ($-0.0151$ to $-0.0006$) at seed 42. (iii) Two trainings with identical seed and settings differ by up to 0.008 mAP (ensemble, 95\% CI excluding 0), larger than the $\pm0.002$ seed spread of v3 at 512~px; the evaluation itself is deterministic. Classes with fewer than 10 validation positives move full-fold mAP by this much, so small differences should be read on the head and medium classes. (iv) Labels are extracted from reports, and there is one validation fold.
 
 \section{Conclusion}
 We presented an entropy-gated triplet cross-memory-bank fine-tuning stage for long-tailed, multi-label chest X-ray classification, extending our prior two-stage ConvNeXt framework without altering its deployed architecture. By using the model's own predictive Shannon entropy to select which samples to use as triplet anchors at each step, and taking the closest positive and farthest negative from a persistent cross-batch memory bank, a single epoch of fine-tuning improves mAP, mF1, and mAUC over the Stage-1 backbone in a same-checkpoint comparison (at 512 against 384~px), and reaches mAP and mAUC comparable to our previously reported Mixture-of-Experts Stage~2 in a single epoch instead of two, at no additional inference-time cost; calibration is slightly worse than either the Stage-1 backbone or the MoE stage, which we report plainly rather than obscure. Repeating the full protocol on an independently trained, less mature Stage-1 checkpoint reproduces the same qualitative pattern at a smaller magnitude, showing that the gain is not specific to one checkpoint while also showing that it is sensitive to Stage-1 convergence. An empirical analysis further shows that only about 13\% of training steps yielded a usable triplet in the original implementation. An audit found that this implementation differed from the method as described in its triplet embedding, class-weight order, anchor rule, positive threshold and mining rule, and that the comparison with Stage~1 and the MoE stage mixes 384 and 512~px input; we have corrected the description and report these differences. The corrected implementation (v3), with a larger memory bank, a longer schedule and higher resolution, reaches 0.460 internal-validation mAP as a single model and 0.472 as a three-model flip-TTA ensemble. These numbers come from a validation fold that shares patients with training, have not been scored on the leaderboard, and do not isolate the entropy gate; an ablation without the gate, a patient-disjoint validation split and per-class (head, medium, tail) results are the next steps.
 
-We also tested whether Markov chains can model label co-occurrence explicitly on top of v3. Label-to-label transition priors, applied after the classifier or learned inside a patient-level model, do not improve it, which we attribute to the per-image label mixing of the ML-Decoder head. Same-label transitions across a patient's studies raise internal-validation mAP from 0.460 to 0.481 for a single model (0.473 to 0.476 in a rerun) when the previous report is available, with gains in the medium and tail classes, and give nothing when it is withheld. Because CXR-LT test patients have no history, this result applies to deployments with prior reports, not to the leaderboard.
+We also tested whether Markov chains can model label co-occurrence explicitly on top of v3. Label-to-label transition priors, applied after the classifier or learned inside a patient-level model, do not improve it, which we attribute to the per-image label mixing of the ML-Decoder head. Same-label transitions across a patient's studies raise internal-validation mAP by $+0.013$ to $+0.021$ over the same model without them when the previous report is available, consistently on the head and medium classes, and give nothing when it is withheld. Because CXR-LT test patients have no history, this result applies to deployments with prior reports, not to the leaderboard.
 
 \section*{Acknowledgment}
 The authors thank the organizers of the ISBI 2026 CXR-LT challenge for providing the benchmark dataset and evaluation infrastructure that made this comparison possible.

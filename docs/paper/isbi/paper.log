@@ -1,9 +1,10 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.29)  5 OCT 2026 13:27
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.29)  9 OCT 2026 15:48
 entering extended mode
  restricted \write18 enabled.
+ file:line:error style messages enabled.
  %&-line parsing enabled.
-**paper.tex
-(./paper.tex
+**/home/psytp7/ISBI_2026/docs/paper/isbi/paper.tex
+(/home/psytp7/ISBI_2026/docs/paper/isbi/paper.tex
 LaTeX2e <2026-06-01>
 L3 programming layer <2026-08-10>
 (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/ieeetran/IEEEtran.cls
@@ -235,26 +236,213 @@ Package: multirow 2024/11/12 v2.9 Span multiple rows of a table
 \multirow@cntb=\count307
 \multirow@dima=\skip58
 \bigstrutjot=\dimen185
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/frontendlayer/tikz.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/basiclayer/pgf.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/utilities/pgfrcs.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfutil-common.tex
+\pgfutil@everybye=\toks24
+\pgfutil@tempdima=\dimen186
+\pgfutil@tempdimb=\dimen187
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfutil-latex.def
+\pgfutil@abb=\box57
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfrcs.code.tex (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/pgf.revision.tex)
+Package: pgfrcs 2026-08-01 v3.1.12 (3.1.12)
+))
+Package: pgf 2026-08-01 v3.1.12 (3.1.12)
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/basiclayer/pgfcore.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/systemlayer/pgfsys.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsys.code.tex
+Package: pgfsys 2026-08-01 v3.1.12 (3.1.12)
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex
+\pgfkeys@pathtoks=\toks25
+\pgfkeys@temptoks=\toks26
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfkeyslibraryfiltered.code.tex
+\pgfkeys@tmptoks=\toks27
+))
+\pgf@x=\dimen188
+\pgf@y=\dimen189
+\pgf@xa=\dimen190
+\pgf@ya=\dimen191
+\pgf@xb=\dimen192
+\pgf@yb=\dimen193
+\pgf@xc=\dimen194
+\pgf@yc=\dimen195
+\pgf@xd=\dimen196
+\pgf@yd=\dimen197
+\w@pgf@writea=\write3
+\r@pgf@reada=\read2
+\c@pgf@counta=\count308
+\c@pgf@countb=\count309
+\c@pgf@countc=\count310
+\c@pgf@countd=\count311
+\t@pgf@toka=\toks28
+\t@pgf@tokb=\toks29
+\t@pgf@tokc=\toks30
+\pgf@sys@id@count=\count312
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgf.cfg
+File: pgf.cfg 2026-08-01 v3.1.12 (3.1.12)
+)
+Driver file for pgf: pgfsys-pdftex.def
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-pdftex.def
+File: pgfsys-pdftex.def 2026-08-01 v3.1.12 (3.1.12)
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsys-common-pdf.def
+File: pgfsys-common-pdf.def 2026-08-01 v3.1.12 (3.1.12)
+))) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsyssoftpath.code.tex
+File: pgfsyssoftpath.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfsyssoftpath@smallbuffer@items=\count313
+\pgfsyssoftpath@bigbuffer@items=\count314
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/systemlayer/pgfsysprotocol.code.tex
+File: pgfsysprotocol.code.tex 2026-08-01 v3.1.12 (3.1.12)
+)) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcore.code.tex
+Package: pgfcore 2026-08-01 v3.1.12 (3.1.12)
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathutil.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathparser.code.tex
+\pgfmath@dimen=\dimen198
+\pgfmath@count=\count315
+\pgfmath@box=\box58
+\pgfmath@toks=\toks31
+\pgfmath@stack@operand=\toks32
+\pgfmath@stack@operation=\toks33
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.basic.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.trigonometric.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.random.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.comparison.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.base.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.round.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.misc.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfunctions.integerarithmetics.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathcalc.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmathfloat.code.tex
+\c@pgfmathroundto@lastzeros=\count316
+)) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfint.code.tex) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepoints.code.tex
+File: pgfcorepoints.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@picminx=\dimen199
+\pgf@picmaxx=\dimen256
+\pgf@picminy=\dimen257
+\pgf@picmaxy=\dimen258
+\pgf@pathminx=\dimen259
+\pgf@pathmaxx=\dimen260
+\pgf@pathminy=\dimen261
+\pgf@pathmaxy=\dimen262
+\pgf@xx=\dimen263
+\pgf@xy=\dimen264
+\pgf@yx=\dimen265
+\pgf@yy=\dimen266
+\pgf@zx=\dimen267
+\pgf@zy=\dimen268
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathconstruct.code.tex
+File: pgfcorepathconstruct.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@path@lastx=\dimen269
+\pgf@path@lasty=\dimen270
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathusage.code.tex
+File: pgfcorepathusage.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@shorten@end@additional=\dimen271
+\pgf@shorten@start@additional=\dimen272
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorescopes.code.tex
+File: pgfcorescopes.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfpic=\box59
+\pgf@hbox=\box60
+\pgf@layerbox@main=\box61
+\pgf@picture@serial@count=\count317
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoregraphicstate.code.tex
+File: pgfcoregraphicstate.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgflinewidth=\dimen273
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretransformations.code.tex
+File: pgfcoretransformations.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@pt@x=\dimen274
+\pgf@pt@y=\dimen275
+\pgf@pt@temp=\dimen276
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorequick.code.tex
+File: pgfcorequick.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreobjects.code.tex
+File: pgfcoreobjects.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepathprocessing.code.tex
+File: pgfcorepathprocessing.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorearrows.code.tex
+File: pgfcorearrows.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfarrowsep=\dimen277
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreshade.code.tex
+File: pgfcoreshade.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@max=\dimen278
+\pgf@sys@shading@range@num=\count318
+\pgf@shadingcount=\count319
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreimage.code.tex
+File: pgfcoreimage.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoreexternal.code.tex
+File: pgfcoreexternal.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfexternal@startupbox=\box62
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorelayers.code.tex
+File: pgfcorelayers.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcoretransparency.code.tex
+File: pgfcoretransparency.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorepatterns.code.tex
+File: pgfcorepatterns.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/basiclayer/pgfcorerdf.code.tex
+File: pgfcorerdf.code.tex 2026-08-01 v3.1.12 (3.1.12)
+))) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmoduleshapes.code.tex
+File: pgfmoduleshapes.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfnodeparttextbox=\box63
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmoduleplot.code.tex
+File: pgfmoduleplot.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version-0-65.sty
+Package: pgfcomp-version-0-65 2026-08-01 v3.1.12 (3.1.12)
+\pgf@nodesepstart=\dimen279
+\pgf@nodesepend=\dimen280
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/compatibility/pgfcomp-version-1-18.sty
+Package: pgfcomp-version-1-18 2026-08-01 v3.1.12 (3.1.12)
+)) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/utilities/pgffor.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/utilities/pgfkeys.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgfkeys.code.tex)) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/pgf/math/pgfmath.sty (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/math/pgfmath.code.tex)) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/utilities/pgffor.code.tex
+Package: pgffor 2026-08-01 v3.1.12 (3.1.12)
+\pgffor@iter=\dimen281
+\pgffor@skip=\dimen282
+\pgffor@stack=\toks34
+\pgffor@toks=\toks35
+)) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/tikz.code.tex
+Package: tikz 2026-08-01 v3.1.12 (3.1.12)
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryplothandlers.code.tex
+File: pgflibraryplothandlers.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgf@plot@mark@count=\count320
+\pgfplotmarksize=\dimen283
+)
+\tikz@lastx=\dimen284
+\tikz@lasty=\dimen285
+\tikz@lastxsaved=\dimen286
+\tikz@lastysaved=\dimen287
+\tikz@lastmovetox=\dimen288
+\tikz@lastmovetoy=\dimen289
+\tikzleveldistance=\dimen290
+\tikzsiblingdistance=\dimen291
+\tikz@figbox=\box64
+\tikz@figbox@bg=\box65
+\tikz@tempbox=\box66
+\tikz@tempbox@bg=\box67
+\tikztreelevel=\count321
+\tikznumberofchildren=\count322
+\tikznumberofcurrentchild=\count323
+\tikz@fig@count=\count324
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/modules/pgfmodulematrix.code.tex
+File: pgfmodulematrix.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfmatrixcurrentrow=\count325
+\pgfmatrixcurrentcolumn=\count326
+\pgf@matrix@numberofcolumns=\count327
+)
+\tikz@expandcount=\count328
+ (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarytopaths.code.tex
+File: tikzlibrarytopaths.code.tex 2026-08-01 v3.1.12 (3.1.12)
+))) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarypositioning.code.tex
+File: tikzlibrarypositioning.code.tex 2026-08-01 v3.1.12 (3.1.12)
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/libraries/pgflibraryarrows.meta.code.tex
+File: pgflibraryarrows.meta.code.tex 2026-08-01 v3.1.12 (3.1.12)
+\pgfarrowinset=\dimen292
+\pgfarrowlength=\dimen293
+\pgfarrowwidth=\dimen294
+\pgfarrowlinewidth=\dimen295
+) (/home/psytp7/.TinyTeX/texmf-dist/tex/generic/pgf/frontendlayer/tikz/libraries/tikzlibrarycalc.code.tex
+File: tikzlibrarycalc.code.tex 2026-08-01 v3.1.12 (3.1.12)
 ) (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/l3kernel/l3backend-pdftex.def
 File: l3backend-pdftex.def 2026-08-10 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count308
+\l__color_backend_stack_int=\count329
 ) (./paper.aux)
 \openout1 = `paper.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 15.
-LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 17.
+LaTeX Font Info:    ... okay on input line 17.
 
 -- Lines per column: 56 (exact).
 (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/epstopdf-pkg/epstopdf-base.sty
@@ -263,11 +451,11 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 48
  (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/latexconfig/epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Live
 ))
-LaTeX Font Info:    Trying to load font information for U+msa on input line 58.
+LaTeX Font Info:    Trying to load font information for U+msa on input line 60.
  (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 58.
+LaTeX Font Info:    Trying to load font information for U+msb on input line 60.
  (/home/psytp7/.TinyTeX/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
@@ -280,48 +468,75 @@ Underfull \vbox (badness 10000) has occurred while \output is active []
 Underfull \vbox (badness 1024) has occurred while \output is active []
 
 
-Underfull \hbox (badness 2343) in paragraph at lines 89--90
+Underfull \hbox (badness 2343) in paragraph at lines 91--92
 []\OT1/ptm/b/n/10 Deep met-ric learn-ing and hard ex-am-ple min-ing.
  []
 
 [2]
-<Entropy.pdf, id=18, page=5, 963.6pt x 542.025pt>
-File: Entropy.pdf Graphic file (type pdf)
-<use Entropy.pdf, page 5>
-Package pdftex.def Info: Entropy.pdf , page5 used on input line 98.
+<figures/Entropy.pdf, id=21, page=5, 963.6pt x 542.025pt>
+File: figures/Entropy.pdf Graphic file (type pdf)
+<use figures/Entropy.pdf, page 5>
+Package pdftex.def Info: figures/Entropy.pdf , page5 used on input line 100.
 (pdftex.def)             Requested size: 252.0pt x 141.75023pt.
-<Entropy.pdf, id=19, page=6, 963.6pt x 542.025pt>
-File: Entropy.pdf Graphic file (type pdf)
-<use Entropy.pdf, page 6>
-Package pdftex.def Info: Entropy.pdf , page6 used on input line 110.
+<figures/Entropy.pdf, id=22, page=6, 963.6pt x 542.025pt>
+File: figures/Entropy.pdf Graphic file (type pdf)
+<use figures/Entropy.pdf, page 6>
+Package pdftex.def Info: figures/Entropy.pdf , page6 used on input line 112.
 (pdftex.def)             Requested size: 252.0pt x 141.75023pt.
-<Entropy.pdf, id=20, page=7, 963.6pt x 542.025pt>
-File: Entropy.pdf Graphic file (type pdf)
-<use Entropy.pdf, page 7>
-Package pdftex.def Info: Entropy.pdf , page7 used on input line 129.
+<figures/Entropy.pdf, id=23, page=7, 963.6pt x 542.025pt>
+File: figures/Entropy.pdf Graphic file (type pdf)
+<use figures/Entropy.pdf, page 7>
+Package pdftex.def Info: figures/Entropy.pdf , page7 used on input line 131.
 (pdftex.def)             Requested size: 252.0pt x 141.75023pt.
- [3 <../../pdf/Entropy.pdf> <../../pdf/Entropy.pdf
-
-pdfTeX warning: pdflatex (file ../../pdf/Entropy.pdf): PDF inclusion: multiple pdfs with page group included in a single page
->] [4 <../../pdf/Entropy.pdf>] [5]
-Underfull \vbox (badness 3838) has occurred while \output is active []
-
- [6]
-Underfull \hbox (badness 10000) in paragraph at lines 303--305
+ [3 <./figures/Entropy.pdf> <./figures/Entropy.pdf>] [4 <./figures/Entropy.pdf>] [5] [6]
+Underfull \hbox (badness 10000) in paragraph at lines 371--373
 \OT1/ptm/m/n/10 estimated with Laplace smooth-ing from the 24,180
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 303--305
+Underfull \hbox (badness 10000) in paragraph at lines 371--373
 \OT1/ptm/m/n/10 consecutive-state pairs of the train-ing fold. For an
  []
 
 
-Underfull \hbox (badness 1867) in paragraph at lines 303--305
+Underfull \hbox (badness 1867) in paragraph at lines 371--373
 \OT1/ptm/m/n/10 im-age whose pa-tient has an ear-lier state, the prior is
  []
 
 [7] [8]
+<figures/assoc_heatmap.pdf, id=76, 892.33376pt x 839.135pt>
+File: figures/assoc_heatmap.pdf Graphic file (type pdf)
+<use figures/assoc_heatmap.pdf>
+Package pdftex.def Info: figures/assoc_heatmap.pdf  used on input line 521.
+(pdftex.def)             Requested size: 516.0pt x 485.23895pt.
+<figures/age_prevalence.pdf, id=77, 983.675pt x 457.71pt>
+File: figures/age_prevalence.pdf Graphic file (type pdf)
+<use figures/age_prevalence.pdf>
+Package pdftex.def Info: figures/age_prevalence.pdf  used on input line 528.
+(pdftex.def)             Requested size: 516.0pt x 240.1058pt.
+<figures/persistence_by_acuity.pdf, id=78, 803.0pt x 487.8225pt>
+File: figures/persistence_by_acuity.pdf Graphic file (type pdf)
+<use figures/persistence_by_acuity.pdf>
+Package pdftex.def Info: figures/persistence_by_acuity.pdf  used on input line 535.
+(pdftex.def)             Requested size: 252.0pt x 153.09174pt.
+<figures/metadata_only_auroc.pdf, id=79, 657.45625pt x 648.4225pt>
+File: figures/metadata_only_auroc.pdf Graphic file (type pdf)
+<use figures/metadata_only_auroc.pdf>
+Package pdftex.def Info: figures/metadata_only_auroc.pdf  used on input line 542.
+(pdftex.def)             Requested size: 252.0pt x 248.53033pt.
+
+Underfull \vbox (badness 1107) has occurred while \output is active []
+
+ [9]
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [10 <./figures/assoc_heatmap.pdf>] [11 <./figures/age_prevalence.pdf> <./figures/persistence_by_acuity.pdf
+
+pdfTeX warning: pdflatex (file ./figures/persistence_by_acuity.pdf): PDF inclusion: multiple pdfs with page group included in a single page
+> <./figures/metadata_only_auroc.pdf
+
+pdfTeX warning: pdflatex (file ./figures/metadata_only_auroc.pdf): PDF inclusion: multiple pdfs with page group included in a single page
+>] [12]
 
 ** Conference Paper **
 Before submitting the final camera ready copy, remember to:
@@ -333,25 +548,27 @@ Before submitting the final camera ready copy, remember to:
  uses only Type 1 fonts and that every step in the generation
  process uses the appropriate paper size.
 
-[9] (./paper.aux)
+[13
+
+] (./paper.aux)
  ***********
 LaTeX2e <2026-06-01>
 L3 programming layer <2026-08-10>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 4047 strings out of 469089
- 63706 string characters out of 5459054
- 505739 words of memory out of 5000000
- 33077 multiletter control sequences out of 15000+600000
- 671132 words of font info for 125 fonts, out of 8000000 for 9000
+ 14994 strings out of 469089
+ 306996 string characters out of 5459054
+ 723074 words of memory out of 5000000
+ 43810 multiletter control sequences out of 15000+600000
+ 672210 words of font info for 126 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 57i,15n,65p,2978b,348s stack positions out of 10000i,1000n,20000p,200000b,200000s
-</home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on paper.pdf (9 pages, 848425 bytes).
+ 92i,18n,94p,3061b,870s stack positions out of 10000i,1000n,20000p,200000b,200000s
+</home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
+Output written on paper.pdf (13 pages, 1095380 bytes).
 PDF statistics:
- 175 PDF objects out of 1000 (max. 8388607)
- 103 compressed objects within 2 object streams
+ 241 PDF objects out of 1000 (max. 8388607)
+ 145 compressed objects within 2 object streams
  0 named destinations out of 1000 (max. 500000)
- 16 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 48 words of extra memory for PDF output out of 10000 (max. 10000000)
 

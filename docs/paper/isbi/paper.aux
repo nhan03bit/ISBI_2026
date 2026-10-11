@@ -66,35 +66,57 @@
 \newlabel{tab2}{{II}{5}{}{table.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-B}}Triplet Utilization Rate}{5}{}\protected@file@percent }
 \newlabel{sec:util}{{\mbox  {V-B}}{5}{}{subsection.5.2}{}}
+\citation{b12}
+\citation{b12}
+\citation{b12}
+\citation{b12}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {V-C}}Corrected Implementation and Scaled Recipe (v3)}{6}{}\protected@file@percent }
 \newlabel{sec:v3}{{\mbox  {V-C}}{6}{}{subsection.5.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Corrected implementation (v3), internal validation. Single models report the best epoch of the EMA weights or their SWA, without test-time augmentation unless stated. ``Flip'' averages the prediction with that of the horizontally flipped image. The greedy ensemble is a uniform average of three models chosen by forward selection on this validation fold, so it is optimistic; the fixed four-model average has no selection. -- = not computed.}}{6}{}\protected@file@percent }
+\@writefile{lot}{\contentsline {table}{\numberline {III}{\ignorespaces Corrected implementation (v3), internal validation. Single models report the best epoch of the EMA weights or their SWA, without test-time augmentation unless stated. ``Flip'' averages the prediction with that of the horizontally flipped image. The greedy ensemble is a uniform average of three models chosen by forward selection on this validation fold, so it is optimistic; the fixed four-model average has no selection. The two Markov Prior rows average four models (two seeds, original run and rerun) with the patient-history Markov prior of Section~\ref {sec:markov} either supplied or zeroed; ``history withheld'' is the condition of the test set. The rows above them contain no Markov component. The Mixture-of-Experts row is the published value of our challenge submission~\cite  {b12} (Table~\ref {tab1}), measured at 384~px with no seed repeats and not re-evaluated here, so its differences from the other rows include the change of input resolution. The row marked ``official test set'' is the final CXR-LT Task~1 test-set score of the same submission~\cite  {b12} (Table~3 there; mECE not reported); it is on different images from every other row, which are internal validation, and must not be compared with them. -- = not computed or not reported.}}{6}{}\protected@file@percent }
 \newlabel{tab3}{{III}{6}{}{table.3}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {VI}Markov Priors for Label Co-occurrence}{6}{}\protected@file@percent }
 \newlabel{sec:markov}{{VI}{6}{}{section.6}{}}
 \citation{b15}
-\citation{b14}
-\citation{b23}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Where the Markov priors enter. The baseline (v3) is the model without the orange box. In the in-network variant (Section~\ref {sec:mk-patient}), the patient-history Markov prior $r$, computed from the previous report, offsets the ML-Decoder label queries. In the post-prediction variant (Section~\ref {sec:mk-patient}), the same chain is fused with the probabilities $\sigma (u)$ of a frozen model, together with metadata (Fig.~\ref {fig:hmm}). The label-graph priors of Section~\ref {sec:mk-labelgraph} act on $\sigma (u)$ at inference.}}{7}{}\protected@file@percent }
+\newlabel{fig:pipeline}{{4}{7}{}{figure.4}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-A}}Route A: Label-to-Label Transitions}{7}{}\protected@file@percent }
 \newlabel{sec:mk-labelgraph}{{\mbox  {VI-A}}{7}{}{subsection.6.1}{}}
 \newlabel{eq:transition}{{8}{7}{}{equation.8}{}}
 \newlabel{eq:smoothing}{{9}{7}{}{equation.9}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-B}}Route B: Transitions Across a Patient's Studies}{7}{}\protected@file@percent }
 \newlabel{sec:mk-patient}{{\mbox  {VI-B}}{7}{}{subsection.6.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces Route (A): part of the label-to-label Markov chain $P$ of Eq.~\eqref  {eq:transition}, estimated on the training fold (103,305 images; training counts in brackets). Each arrow $i \to j$ is labelled with $P_{ij}$, the share of label $i$'s co-occurrences that involve $j$. For the three tail findings and for Normal, the two largest entries of the row are drawn, and for Support Devices and the catheter the largest one. Orange: tail ($<1\%$ prevalence), blue: medium, violet: head. One random-walk step (Eq.~\eqref  {eq:smoothing}) moves predicted probability along the arrows, from $i$ to $j$, so out of the rare findings and into the common ones. The reverse entries are small, because a common finding's row is spread over many partners: $P$ from pleural effusion to hydropneumothorax is 0.0007, and from Support Devices to pneumothorax 0.0068. $P$ is also asymmetric (Support Devices $\to $ catheter 0.214, catheter $\to $ Support Devices 0.345). The Normal row is built from only the few images where Normal co-occurs with a finding (34 with cardiomegaly), yet must sum to one, so $P$ cannot express that Normal excludes every finding.}}{7}{}\protected@file@percent }
+\newlabel{fig:cooc}{{5}{7}{}{figure.5}{}}
 \newlabel{eq:chain}{{10}{7}{}{equation.10}{}}
-\newlabel{eq:fuse}{{11}{7}{}{equation.11}{}}
-\newlabel{eq:trans}{{12}{7}{}{equation.12}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Results}{7}{}\protected@file@percent }
-\newlabel{sec:mk-results}{{\mbox  {VI-C}}{7}{}{subsection.6.3}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Label-graph priors (route A) applied post hoc to the greedy three-model v3 ensemble, flip TTA, $n = 17{,}270$. The first row is v3 without any Markov step.}}{7}{}\protected@file@percent }
-\newlabel{tab:mk-graph}{{IV}{7}{}{table.4}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Patient-history prior fed into the label queries, against the identical v3 model without it; internal validation, SWA, flip TTA. Withheld: every prior set to zero, the test-set condition. Earlier: images with an earlier state (5,759); frontal earlier (4,061); none (11,511).}}{8}{}\protected@file@percent }
-\newlabel{tab:mk-innet}{{V}{8}{}{table.5}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Post-prediction patient HMM: change in macro mAP relative to the frozen v3 768~px SWA model (E, flip TTA; the E row is absolute). Primary: frontal images with an earlier state ($n = 4{,}061$). Cross-fitted on patient halves, mean over three splits; 95\% CI from a patient-clustered bootstrap on the first split. $^\dagger $: no bootstrap (difference of three-split means). Internal simulation; leaderboard effect 0.}}{8}{}\protected@file@percent }
-\newlabel{tab:mk-hmm}{{VI}{8}{}{table.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Discussion}{8}{}\protected@file@percent }
-\newlabel{sec:mk-limits}{{\mbox  {VI-D}}{8}{}{subsection.6.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{8}{}\protected@file@percent }
+\newlabel{eq:emission}{{11}{7}{}{equation.11}{}}
+\citation{b14}
+\citation{b23}
+\newlabel{eq:init}{{12}{8}{}{equation.12}{}}
+\newlabel{eq:trans}{{13}{8}{}{equation.13}{}}
+\newlabel{eq:fuse}{{14}{8}{}{equation.14}{}}
+\newlabel{eq:qw}{{15}{8}{}{equation.15}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces The post-prediction patient HMM as a graphical model, with one state per patient and date. Orange circles are the hidden finding states $y_t \in \{0,1\}^{30}$, blue boxes the images and the frozen classifier, white boxes metadata. The transition prior $\pi $ (Eq.~\eqref  {eq:trans}) depends on the previous state, the metadata of the current date and the gap $\Delta _t$; a state without an earlier state uses $\pi ^{0}(m)$ (Eq.~\eqref  {eq:init}). The classifier supplies only the emission (Eq.~\eqref  {eq:emission}), and prior and emission are combined after the network. In the observed mode $y_{t-1}$ is read from the previous report (dashed); in the filtered mode it is inferred from $x_{1:t-1}$ by a forward pass over the patient's earlier images.}}{8}{}\protected@file@percent }
+\newlabel{fig:hmm}{{6}{8}{}{figure.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-C}}Results}{8}{}\protected@file@percent }
+\newlabel{sec:mk-results}{{\mbox  {VI-C}}{8}{}{subsection.6.3}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {IV}{\ignorespaces Label-graph priors (route A) applied post hoc to the greedy three-model v3 ensemble, flip TTA, $n = 17{,}270$. The first row is v3 without any Markov step.}}{8}{}\protected@file@percent }
+\newlabel{tab:mk-graph}{{IV}{8}{}{table.4}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {V}{\ignorespaces Patient-history prior fed into the label queries, against the identical v3 model without it; internal validation, SWA, flip TTA. Withheld: every prior set to zero, the test-set condition. Earlier: images with an earlier state (5,759); frontal earlier (4,061); none (11,511).}}{9}{}\protected@file@percent }
+\newlabel{tab:mk-innet}{{V}{9}{}{table.5}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {VI}{\ignorespaces Post-prediction patient HMM: change in macro mAP relative to the frozen v3 768~px SWA model (E, flip TTA; the E row is absolute). Primary: frontal images with an earlier state ($n = 4{,}061$). Cross-fitted on patient halves, mean over three splits; 95\% CI from a patient-clustered bootstrap on the first split. $^\dagger $: no bootstrap (difference of three-split means). Internal simulation; leaderboard effect 0.}}{9}{}\protected@file@percent }
+\newlabel{tab:mk-hmm}{{VI}{9}{}{table.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-D}}Patient Metadata}{9}{}\protected@file@percent }
+\newlabel{sec:mk-meta}{{\mbox  {VI-D}}{9}{}{subsection.6.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {7}{\ignorespaces Association between metadata fields (columns) and the 30 labels (rows, ordered by training prevalence, most frequent at the top) on the training fold. Colour is Cram\'er's $V$ from white (0) to dark blue (0.53); values of 0.15 and above are printed. The study-level fields are acuity, projection, time gap, age, number of earlier studies, sex and year; the remaining columns are acquisition fields (scanner resolution, relative exposure, exposure time, tube current, image rows, manufacturer, modality).}}{10}{}\protected@file@percent }
+\newlabel{fig:assoc}{{7}{10}{}{figure.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {\mbox  {VI-E}}Discussion}{10}{}\protected@file@percent }
+\newlabel{sec:mk-limits}{{\mbox  {VI-E}}{10}{}{subsection.6.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {8}{\ignorespaces Prevalence of six labels by age at study, for the six classes most associated with age. Each point is a 10-year age band of training studies; the vertical axis is the share of studies in the band with the finding. The scales differ between panels.}}{11}{}\protected@file@percent }
+\newlabel{fig:age}{{8}{11}{}{figure.8}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {9}{\ignorespaces Persistence of findings by the acuity of the later study: the probability that a finding is present at study $t$ given that it was present at study $t-1$ of the same patient (vertical axis), for 15 classes (horizontal axis). Colours give the acuity of study $t$: PA or lateral (blue), AP (orange), AP horizontal (green).}}{11}{}\protected@file@percent }
+\newlabel{fig:persist}{{9}{11}{}{figure.9}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {10}{\ignorespaces Held-out AUROC of a logistic model that uses metadata only, for each of the 30 classes, sorted from highest to lowest (patient-grouped five-fold cross-validation, training fold). The vertical line marks chance (0.5).}}{11}{}\protected@file@percent }
+\newlabel{fig:auroc}{{10}{11}{}{figure.10}{}}
 \bibcite{b1}{1}
 \bibcite{b2}{2}
 \bibcite{b3}{3}
@@ -111,5 +133,6 @@
 \bibcite{b14}{14}
 \bibcite{b15}{15}
 \bibcite{b23}{16}
-\@writefile{toc}{\contentsline {section}{References}{9}{}\protected@file@percent }
-\gdef \@abspage@last{9}
+\@writefile{toc}{\contentsline {section}{\numberline {VII}Conclusion}{12}{}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{References}{12}{}\protected@file@percent }
+\gdef \@abspage@last{13}

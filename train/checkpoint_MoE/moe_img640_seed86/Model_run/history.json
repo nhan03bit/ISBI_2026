@@ -1,0 +1,80 @@
+{
+  "stage1_ckpt": "checkpoint3/Model_20260119_062652/model_best.pth",
+  "train_loss": [
+    0.04862397260448467,
+    0.04592448426531376,
+    0.04161909202063472,
+    0.03603873814171643,
+    0.02990142339563908
+  ],
+  "val_loss": [
+    0.03971772053660708,
+    0.03957993286929675,
+    0.041362104604380986,
+    0.04481321305809316,
+    0.05043168804208641
+  ],
+  "lr": [
+    9.846827563868486e-05,
+    8.945329963957709e-05,
+    7.379292411786397e-05,
+    5.412493736924018e-05,
+    3.376215811720744e-05
+  ],
+  "mAP": [
+    0.43653425574302673,
+    0.44579941034317017,
+    0.4437679648399353,
+    0.4333003759384155,
+    0.4174158275127411
+  ],
+  "mAUC": [
+    0.9051569104194641,
+    0.9065324664115906,
+    0.9003748893737793,
+    0.8884528279304504,
+    0.875749945640564
+  ],
+  "mF1": [
+    0.4301206171512604,
+    0.4518210291862488,
+    0.4588993191719055,
+    0.4526023268699646,
+    0.44673430919647217
+  ],
+  "mECE": [
+    0.14415089786052704,
+    0.13334250450134277,
+    0.11700844764709473,
+    0.0963001400232315,
+    0.07454761862754822
+  ],
+  "best_epoch": 2,
+  "best_metric": 0.44579941034317017,
+  "moe_aux": [
+    2.0284781320271503,
+    2.0198245844574916,
+    2.0174840224988095,
+    2.0154365406847754,
+    2.013675059729513
+  ],
+  "moe_load": [
+    "moe load: expert share min 0.232 max 0.265 (uniform 0.250); most loaded router head.decoder_layers.0.moe_ffn_ca.router max share 0.265",
+    "moe load: expert share min 0.245 max 0.255 (uniform 0.250); most loaded router head.decoder_layers.0.moe_ffn_ca.router max share 0.255",
+    "moe load: expert share min 0.244 max 0.254 (uniform 0.250); most loaded router head.decoder_layers.1.moe_ffn_ca.router max share 0.254",
+    "moe load: expert share min 0.240 max 0.258 (uniform 0.250); most loaded router head.decoder_layers.1.moe_ffn_ca.router max share 0.258",
+    "moe load: expert share min 0.240 max 0.254 (uniform 0.250); most loaded router head.decoder_layers.1.moe_ffn_ca.router max share 0.254"
+  ],
+  "swa_epochs": [
+    1,
+    2,
+    3
+  ],
+  "swa_metrics": {
+    "val_loss": 0.04008039651090561,
+    "mAP": 0.4483490586280823,
+    "mAUC": 0.9067507982254028,
+    "mF1": 0.4620245099067688,
+    "mECE": 0.1305558681488037
+  }
+}

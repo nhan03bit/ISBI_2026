@@ -625,9 +625,18 @@ class Trainer:
         # --swa-last-k: per-epoch (monitor, epoch, cpu_ema_state) for post-fit SWA.
         self.swa_last_k = int(self.cfg.get("swa_last_k", 0) or 0)
         self._swa_pool = []
+        # --anchor-rule: which batch samples may be triplet anchors (utils_update._anchor_gate).
+        # "mean" is the entropy gate of every run before 2026-10-08; "all" (no gate) and "random"
+        # (same anchor count, random choice) are the no-entropy controls of the entropy ablation.
+        # "random" draws from a private CPU generator, so the global RNG stream (dropout masks,
+        # shuffles) stays identical to an entropy-gated run with the same seed.
+        self.anchor_rule = str(self.cfg.get("anchor_rule", "mean"))
+        self.anchor_gen = (torch.Generator().manual_seed(int(self.cfg["seed"]) + 1)
+                           if self.anchor_rule == "random" else None)
         logger.info(f"v3: triplet_lambda={self.triplet_lambda} metric_embed={self.metric_embed} "
                     f"head_class_ids={self.head_class_ids.tolist() if self.head_class_ids is not None else None} "
-                    f"ema_decay={self.ema_decay} memory_size={self.cfg['memory_size']}")
+                    f"ema_decay={self.ema_decay} memory_size={self.cfg['memory_size']} "
+                    f"anchor_rule={self.anchor_rule}")
 
         C = cfg["num_classes"]
         self.map = MultilabelAveragePrecision(num_labels=C, average="macro").to(self.device)
@@ -803,6 +812,7 @@ class Trainer:
         self.optim.zero_grad(set_to_none=True)
 
         trip_hits = 0
+        trip_stats = {"anchors": 0, "triplets": 0}   # gated anchors / mined triplets, summed over steps
         pending_grad = False   # a backward has run since the last optimizer step
 
         limit = int(self.cfg.get("limit_train_batches", 0) or 0)
@@ -843,6 +853,9 @@ class Trainer:
                     embeddings, logits, y, self.memory,
                     margin=self.cfg["margin"],
                     head_class_ids=self.head_class_ids,
+                    anchor_rule=self.anchor_rule,
+                    generator=self.anchor_gen,
+                    stats=trip_stats,
                 )
 
                 if trips is None or len(trips) == 0:
@@ -898,6 +911,14 @@ class Trainer:
             logger.info(f"[Epoch {epoch} Step {step}] train_loss(avg)={running/step:.4f} last_loss={loss.item():.4f} moe_aux={moe_aux.item() if moe_aux is not None else 0.0:.4f}")
 
         logger.info(f"[Epoch {epoch}] triplet hit rate = {trip_hits}/{step} ({100.0 * trip_hits / max(1, step):.1f}%)")
+        logger.info(f"[Epoch {epoch}] anchors/step = {trip_stats['anchors'] / step:.3f} "
+                    f"triplets/step = {trip_stats['triplets'] / step:.3f} "
+                    f"(batch {self.cfg['batch_size']}, anchor_rule={self.anchor_rule})")
+        self.history.setdefault("triplet_stats", []).append({
+            "epoch": epoch, "steps": step, "hit_steps": trip_hits,
+            "anchors": trip_stats["anchors"], "triplets": trip_stats["triplets"],
+            "anchor_rule": self.anchor_rule,
+        })
 
         return running / max(1, step)
 
@@ -1154,6 +1175,12 @@ def parse_args():
                     help="number of most-frequent classes excluded from the positive "
                          "label-overlap test in sample_triplets_v13. 0 disables the "
                          "exclusion.")
+    ap.add_argument("--anchor-rule", default="mean", choices=["mean", "all", "random"],
+                    help="which batch samples may be triplet anchors. 'mean' (default, every run "
+                         "before 2026-10-08): the entropy gate, softmax entropy >= batch mean. "
+                         "'all': no entropy gate, every sample is an anchor. 'random': "
+                         "entropy-agnostic control, the same number of anchors as 'mean' would "
+                         "pick, chosen at random from a private generator (seed+1).")
     ap.add_argument("--ema-decay", type=float, default=0.999,
                     help="weight-EMA decay; the EMA weights are what is evaluated and saved.")
     ap.add_argument("--limit-train-batches", type=int, default=0,
@@ -1260,6 +1287,7 @@ def main():
         "triplet_lambda": args.triplet_lambda,
         "metric_embed": args.metric_embed,
         "head_classes": args.head_classes,
+        "anchor_rule": args.anchor_rule,
         "ema_decay": args.ema_decay,
         "head_class_ids": [],  # filled in below once class counts are known
         "limit_train_batches": args.limit_train_batches,
@@ -1271,7 +1299,9 @@ def main():
     # assignment completes.
     cfg["out_dir"] = args.out_dir or (
         f"./checkpoint_Triplet_3/{cfg['metric_embed']}_mem{cfg['memory_size']}_"
-        f"lr{cfg['lr']:g}_lam{cfg['triplet_lambda']:g}/seed_{cfg['seed']}/Model_{ts}"
+        f"lr{cfg['lr']:g}_lam{cfg['triplet_lambda']:g}"
+        f"{'' if cfg['anchor_rule'] == 'mean' else '_anchor' + cfg['anchor_rule']}"
+        f"/seed_{cfg['seed']}/Model_{ts}"
     )
 
     SEED = cfg["seed"]

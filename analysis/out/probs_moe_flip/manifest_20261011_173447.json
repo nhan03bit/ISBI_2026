@@ -1,0 +1,11 @@
+[
+  {
+    "file": "checkpoint_MoE__moe_img768_seed42__model_swa@768_flip.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_MoE/moe_img768_seed42/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "prior_mode": null
+  }
+]

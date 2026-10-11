@@ -1,0 +1,71 @@
+{
+  "stage1_ckpt": "checkpoint3/Model_20260119_062652/model_best.pth",
+  "train_loss": [
+    0.05081304268899868,
+    0.048137365762654004,
+    0.04540012301910682,
+    0.041742669328181915
+  ],
+  "val_loss": [
+    0.03991110300111323,
+    0.038968070497321566,
+    0.039370913750832036,
+    0.040785942641224614
+  ],
+  "lr": [
+    9.846827563868486e-05,
+    8.945329963957709e-05,
+    7.379292411786397e-05,
+    5.412493736924018e-05
+  ],
+  "mAP": [
+    0.4362403154373169,
+    0.4579363167285919,
+    0.45610150694847107,
+    0.4495942294597626
+  ],
+  "mAUC": [
+    0.9068225622177124,
+    0.911139190196991,
+    0.9092801809310913,
+    0.9034464955329895
+  ],
+  "mF1": [
+    0.4331988990306854,
+    0.46467843651771545,
+    0.4655580520629883,
+    0.46439874172210693
+  ],
+  "mECE": [
+    0.15214230120182037,
+    0.14422065019607544,
+    0.13279348611831665,
+    0.11848469078540802
+  ],
+  "best_epoch": 2,
+  "best_metric": 0.4579363167285919,
+  "moe_aux": [
+    2.0294025866615915,
+    2.016848550224888,
+    2.01392120371041,
+    2.0117852241706826
+  ],
+  "moe_load": [
+    "moe load: expert share min 0.234 max 0.267 (uniform 0.250); most loaded router head.decoder_layers.0.moe_ffn_ca.router max share 0.267",
+    "moe load: expert share min 0.242 max 0.256 (uniform 0.250); most loaded router head.decoder_layers.0.moe_ffn_ca.router max share 0.256",
+    "moe load: expert share min 0.244 max 0.254 (uniform 0.250); most loaded router head.decoder_layers.1.moe_ffn_ca.router max share 0.254",
+    "moe load: expert share min 0.246 max 0.253 (uniform 0.250); most loaded router head.decoder_layers.1.moe_ffn_ca.router max share 0.253"
+  ],
+  "swa_epochs": [
+    2,
+    3,
+    4
+  ],
+  "swa_metrics": {
+    "val_loss": 0.03973370855052448,
+    "mAP": 0.4584779739379883,
+    "mAUC": 0.9103410840034485,
+    "mF1": 0.470034122467041,
+    "mECE": 0.13178840279579163
+  }
+}

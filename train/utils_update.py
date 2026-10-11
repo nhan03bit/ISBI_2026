@@ -81,8 +81,13 @@ def calculate_entropy_from_logits(logits, dim=1, mode="softmax"):
     raise ValueError(f"unknown entropy mode {mode!r}")
 
 
-def _anchor_gate(entropy, rule="mean"):
-    """Return a boolean [B] mask of which batch samples may be triplet anchors."""
+def _anchor_gate(entropy, rule="mean", generator=None):
+    """Return a boolean [B] mask of which batch samples may be triplet anchors.
+
+    generator: optional CPU torch.Generator for rule="random". With it, the random anchors are
+    drawn without touching the global (CUDA) RNG, so dropout / drop-path masks stay identical to
+    an entropy-gated run with the same seed. None keeps the old behaviour (global RNG on device).
+    """
     B = entropy.numel()
     if rule == "all":
         return torch.ones(B, dtype=torch.bool, device=entropy.device)
@@ -92,7 +97,10 @@ def _anchor_gate(entropy, rule="mean"):
         return entropy >= entropy.mean()
     if rule == "random":                    # ablation: entropy-agnostic control
         k = max(1, int((entropy >= entropy.mean()).sum().item()))
-        perm = torch.randperm(B, device=entropy.device)[:k]
+        if generator is not None:
+            perm = torch.randperm(B, generator=generator)[:k].to(entropy.device)
+        else:
+            perm = torch.randperm(B, device=entropy.device)[:k]
         m = torch.zeros(B, dtype=torch.bool, device=entropy.device)
         m[perm] = True
         return m
@@ -212,6 +220,9 @@ def sample_triplets_v13(
     temperature=0.05,
     head_class_ids=None,
     pos_min_shared=1,
+    anchor_rule="mean",
+    generator=None,
+    stats=None,
 ):
     """
     train_2_v3 triplet sampler. Same entropy-gated / hardest-mined structure as
@@ -226,6 +237,14 @@ def sample_triplets_v13(
             positive-overlap computation. None -> behaves like v12 with
             pos_mask = (shared >= pos_min_shared).
         pos_min_shared: minimum shared non-head labels for a positive (default 1).
+        anchor_rule: which batch samples may be anchors (_anchor_gate).
+            "mean" (default, every run before 2026-10-08): softmax entropy >= batch mean.
+            "all": no entropy gate, every sample is an anchor.
+            "random": entropy-agnostic control, the same number of anchors as "mean"
+            would select, chosen uniformly at random (from `generator` if given).
+        generator: CPU torch.Generator for anchor_rule="random".
+        stats: optional dict; "anchors" (gated samples) and "triplets" (mined
+            triplets) are added to it, for logging.
     """
     device = batch_embeddings.device
     B = batch_embeddings.size(0)
@@ -251,10 +270,13 @@ def sample_triplets_v13(
     entropy = calculate_entropy_from_logits(logits)
     if isinstance(entropy, (list, tuple)):
         entropy = torch.stack(entropy)
-    entropy_thr = entropy.mean()
+    # "mean" gives exactly the old hard-coded rule (skip entropy[i] < entropy.mean()).
+    gate = _anchor_gate(entropy, rule=anchor_rule, generator=generator)
+    if stats is not None:
+        stats["anchors"] = stats.get("anchors", 0) + int(gate.sum().item())
 
     for i in range(B):
-        if entropy[i] < entropy_thr:
+        if not gate[i]:
             continue
 
         anchor = batch_embeddings[i]
@@ -282,6 +304,8 @@ def sample_triplets_v13(
         hardest_neg = mem_emb[neg_idx[torch.argmax(neg_d)]]
         triplets.append((anchor, hardest_pos, hardest_neg))
 
+    if stats is not None:
+        stats["triplets"] = stats.get("triplets", 0) + len(triplets)
     if len(triplets) == 0:
         return None
 

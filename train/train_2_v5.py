@@ -42,6 +42,7 @@ from torchmetrics.classification import BinaryCalibrationError
 from convnext import ConvNeXt2, model_urls
 from markov_layer import ConvNeXt2Markov, cooccurrence_transition
 from prior_conditioning import PRIOR_DIM, STATE_PREFIX as PRIOR_PREFIX, ConvNeXt2Prior
+from convnext_moe import ConvNeXt2MoE, ConvNeXt2MoEPrior, init_experts_from_base, is_moe_key
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -465,10 +466,19 @@ DEFAULT_STAGE1_CKPT = "checkpoint3/Model_20260119_062652/model_best.pth"
 
 def create_model(num_classes: int = 30, stage1_ckpt: str = DEFAULT_STAGE1_CKPT,
                  drop_path_rate: float = 0.0, markov_steps: int = 0, markov_init=None,
-                 markov_learn_transition: bool = True, prior_input: bool = False):
+                 markov_learn_transition: bool = True, prior_input: bool = False,
+                 arch: str = "convnext2", moe_n_experts: int = 4, expert_noise: float = 0.01,
+                 expert_seed: int = 42):
     kw = dict(depths=[3, 3, 27, 3, 2], dims=[128, 256, 512, 1024, 1024],
               num_classes=num_classes, drop_path_rate=drop_path_rate)
-    if prior_input:
+    if arch == "moe":
+        # Matched-recipe MoE baseline (train/convnext_moe.py): MoE in stages 3-4 and in the
+        # decoder FFN after cross-attention; expert 0 = the Stage-1 layer, so only extra-expert
+        # and router keys (plus prior_cond.* with --prior-file) are missing from Stage 1.
+        if markov_steps > 0:
+            raise ValueError("--arch moe does not support --markov-steps")
+        model = (ConvNeXt2MoEPrior if prior_input else ConvNeXt2MoE)(**kw, moe_n_experts=moe_n_experts)
+    elif prior_input:
         if markov_steps > 0:
             raise ValueError("--prior-file and --markov-steps are separate arms; use one of them")
         # v5: patient-prior label-query conditioning (train/prior_conditioning.py). Zero-init, so
@@ -489,11 +499,17 @@ def create_model(num_classes: int = 30, stage1_ckpt: str = DEFAULT_STAGE1_CKPT,
     result = model.load_state_dict(checkpoint, strict=False)
     logger.info(f"Stage-1 init: {ckpt_path} "
                 f"(missing={len(result.missing_keys)} unexpected={len(result.unexpected_keys)})")
-    if prior_input:
-        stray = [k for k in result.missing_keys if not k.startswith(PRIOR_PREFIX)]
+    if prior_input or arch == "moe":
+        stray = [k for k in result.missing_keys
+                 if not (k.startswith(PRIOR_PREFIX) or (arch == "moe" and is_moe_key(k)))]
         if stray or result.unexpected_keys:
             raise RuntimeError(f"Stage-1 load: unexpected missing {stray} / unexpected "
-                               f"{result.unexpected_keys} (only {PRIOR_PREFIX}* may be missing)")
+                               f"{result.unexpected_keys} (only {PRIOR_PREFIX}* and MoE "
+                               f"expert/router keys may be missing)")
+    if arch == "moe":
+        n = init_experts_from_base(model, expert_noise, expert_seed)
+        logger.info(f"MoE: {moe_n_experts} experts, top-2; {n} extra experts initialised from "
+                    f"expert 0 + noise {expert_noise} x std (seed {expert_seed})")
 
     print(f"Model created with {sum(p.numel() for p in model.parameters()):,} parameters.")
 
@@ -629,7 +645,13 @@ class Trainer:
                         f"lr_mult={cfg.get('prior_lr_mult', 10.0)} (zero offset at init)")
         self.model = create_model(cfg["num_classes"], cfg.get("stage1_ckpt", DEFAULT_STAGE1_CKPT),
                                   cfg.get("drop_path_rate", 0.0), markov_steps, markov_init,
-                                  learn_transition, self.use_prior).to(self.device)
+                                  learn_transition, self.use_prior,
+                                  arch=cfg.get("arch", "convnext2"),
+                                  moe_n_experts=cfg.get("moe_n_experts", 4),
+                                  expert_noise=cfg.get("expert_noise", 0.01),
+                                  expert_seed=cfg.get("seed", 42)).to(self.device)
+        self.is_moe = cfg.get("arch", "convnext2") == "moe"
+        self.moe_aux_weight = float(cfg.get("moe_aux_weight", 5e-3))
         self._prior_seen = [0, 0]  # (images with has_prior, images) in the current train epoch
         # set_params(self.model)
 
@@ -662,8 +684,18 @@ class Trainer:
                     f"accum={cfg['accum_steps']})")
         self.crit = AsymmetricLoss(gamma_neg=self.cfg["gamma_neg"], gamma_pos=self.cfg["gamma_pos"],
                                    clip=0.05, reduction="mean", class_weights=self.class_weights)
-        self.crit_triplet = nn.TripletMarginLoss(margin=self.cfg["margin"], p=2)
-        self.memory = CrossBatchMemoryV2(embedding_dim=self.cfg["embedding_dim"],memory_size=self.cfg["memory_size"], num_classes=30, device=self.device)
+        # --no-triplet: no triplet loss, no cross-batch memory bank, no metric embedding
+        # (ASL-only control and the MoE baseline). Nothing triplet-related is built.
+        self.no_triplet = bool(self.cfg.get("no_triplet", False))
+        if self.no_triplet:
+            self.crit_triplet = None
+            self.memory = None
+            logger.info("no-triplet: triplet loss, memory bank and metric embedding disabled "
+                        f"| arch={self.cfg.get('arch', 'convnext2')} "
+                        f"moe_aux_weight={self.moe_aux_weight if self.is_moe else 0.0}")
+        else:
+            self.crit_triplet = nn.TripletMarginLoss(margin=self.cfg["margin"], p=2)
+            self.memory = CrossBatchMemoryV2(embedding_dim=self.cfg["embedding_dim"],memory_size=self.cfg["memory_size"], num_classes=30, device=self.device)
 
         # --- v3 additions ---
         # triplet_lambda: weight on L_tri (was hardcoded 0.1 in v2).
@@ -681,9 +713,10 @@ class Trainer:
         # --swa-last-k: per-epoch (monitor, epoch, cpu_ema_state) for post-fit SWA.
         self.swa_last_k = int(self.cfg.get("swa_last_k", 0) or 0)
         self._swa_pool = []
-        logger.info(f"v3: triplet_lambda={self.triplet_lambda} metric_embed={self.metric_embed} "
-                    f"head_class_ids={self.head_class_ids.tolist() if self.head_class_ids is not None else None} "
-                    f"ema_decay={self.ema_decay} memory_size={self.cfg['memory_size']}")
+        if not self.no_triplet:
+            logger.info(f"v3: triplet_lambda={self.triplet_lambda} metric_embed={self.metric_embed} "
+                        f"head_class_ids={self.head_class_ids.tolist() if self.head_class_ids is not None else None} "
+                        f"ema_decay={self.ema_decay} memory_size={self.cfg['memory_size']}")
 
         C = cfg["num_classes"]
         self.map = MultilabelAveragePrecision(num_labels=C, average="macro").to(self.device)
@@ -881,6 +914,9 @@ class Trainer:
         step = 0
 
         self._prior_seen = [0, 0]
+        aux_sum, aux_n = 0.0, 0
+        if self.is_moe:
+            self.model.start_load_tracking()
         pbar = tqdm(loader, desc=f"Train {epoch}/{self.cfg['epochs']}", leave=False)
         for _, (x, y, r) in enumerate(pbar):
             if limit and step >= limit:
@@ -904,39 +940,48 @@ class Trainer:
 
                 logits, embeddings = out
 
-                if self.metric_embed == "query":
-                    # decoded per-class query embeddings (B, Q, D) -> (B, D)
-                    h = getattr(self.model.head, "last_h", None)
-                    if h is None:
-                        raise RuntimeError("metric_embed='query' but Decoder.last_h is missing; "
-                                           "check train/ml_decoder.py.")
-                    embeddings = h.mean(dim=1)
-                else:  # "legacy": v2 behaviour
-                    embeddings = embeddings.mean(dim=1)
-                embeddings = F.normalize(embeddings, dim=1)
-
-                trips = utils_update.sample_triplets_v13(
-                    embeddings, logits, y, self.memory,
-                    margin=self.cfg["margin"],
-                    head_class_ids=self.head_class_ids,
-                )
-
-                if trips is None or len(trips) == 0:
-                    triplet_loss = embeddings.sum() * 0
+                if self.no_triplet:
+                    # ASL only (+ MoE load-balancing aux); no embedding, mining or memory bank.
+                    loss = self.crit(logits, y)
+                    if self.is_moe:
+                        moe_aux = self.model.last_aux_loss
+                        loss = loss + self.moe_aux_weight * moe_aux
+                        aux_sum += float(moe_aux.detach().item())
+                        aux_n += 1
                 else:
-                    trip_hits += 1
-                    anch, pos, neg = trips
-                    anch = F.normalize(anch, dim=-1)
-                    pos = F.normalize(pos, dim=-1)
-                    neg = F.normalize(neg, dim=-1)
-                    triplet_loss = self.crit_triplet(anch, pos, neg)
+                    if self.metric_embed == "query":
+                        # decoded per-class query embeddings (B, Q, D) -> (B, D)
+                        h = getattr(self.model.head, "last_h", None)
+                        if h is None:
+                            raise RuntimeError("metric_embed='query' but Decoder.last_h is missing; "
+                                               "check train/ml_decoder.py.")
+                        embeddings = h.mean(dim=1)
+                    else:  # "legacy": v2 behaviour
+                        embeddings = embeddings.mean(dim=1)
+                    embeddings = F.normalize(embeddings, dim=1)
 
-                cls_loss = self.crit(logits, y)
-                loss = cls_loss + self.triplet_lambda * triplet_loss
+                    trips = utils_update.sample_triplets_v13(
+                        embeddings, logits, y, self.memory,
+                        margin=self.cfg["margin"],
+                        head_class_ids=self.head_class_ids,
+                    )
 
-                moe_aux = getattr(self.model, "last_aux_loss", None)
-                if moe_aux is not None:
-                    loss = loss + 0.005 * moe_aux
+                    if trips is None or len(trips) == 0:
+                        triplet_loss = embeddings.sum() * 0
+                    else:
+                        trip_hits += 1
+                        anch, pos, neg = trips
+                        anch = F.normalize(anch, dim=-1)
+                        pos = F.normalize(pos, dim=-1)
+                        neg = F.normalize(neg, dim=-1)
+                        triplet_loss = self.crit_triplet(anch, pos, neg)
+
+                    cls_loss = self.crit(logits, y)
+                    loss = cls_loss + self.triplet_lambda * triplet_loss
+
+                    moe_aux = getattr(self.model, "last_aux_loss", None)
+                    if moe_aux is not None:
+                        loss = loss + 0.005 * moe_aux
 
             raw_loss = loss.detach()
             loss = loss / accum_steps
@@ -953,7 +998,8 @@ class Trainer:
                 pending_grad = False
 
             running += float(raw_loss.item())
-            self.memory.update(embeddings.detach(), y.detach())
+            if self.memory is not None:
+                self.memory.update(embeddings.detach(), y.detach())
 
         # Flush a partial accumulation window (only if a backward is actually
         # pending - guarding on `step % accum_steps` alone crashes the GradScaler
@@ -973,7 +1019,17 @@ class Trainer:
         if step % self.cfg["log_every"] == 0:
             logger.info(f"[Epoch {epoch} Step {step}] train_loss(avg)={running/step:.4f} last_loss={loss.item():.4f} moe_aux={moe_aux.item() if moe_aux is not None else 0.0:.4f}")
 
-        logger.info(f"[Epoch {epoch}] triplet hit rate = {trip_hits}/{step} ({100.0 * trip_hits / max(1, step):.1f}%)")
+        if self.no_triplet:
+            logger.info(f"[Epoch {epoch}] no-triplet: ASL-only steps = {step}")
+        else:
+            logger.info(f"[Epoch {epoch}] triplet hit rate = {trip_hits}/{step} ({100.0 * trip_hits / max(1, step):.1f}%)")
+        if self.is_moe:
+            self.model.stop_load_tracking()
+            mean_aux = aux_sum / max(1, aux_n)
+            load = self.model.load_summary()
+            logger.info(f"[Epoch {epoch}] moe aux (mean) = {mean_aux:.4f} | {load}")
+            self.history.setdefault("moe_aux", []).append(mean_aux)
+            self.history.setdefault("moe_load", []).append(load)
 
         return running / max(1, step)
 
@@ -1271,6 +1327,19 @@ def parse_args():
                          "key and epoch), so the model cannot lean on the prior alone.")
     ap.add_argument("--prior-lr-mult", type=float, default=10.0,
                     help="LR multiplier for the prior conditioner's parameters (they start from 0).")
+    ap.add_argument("--arch", default="convnext2", choices=["convnext2", "moe"],
+                    help="convnext2 = ConvNeXt2 (Triplet Memory / ASL control); moe = ConvNeXt2MoE "
+                         "(train/convnext_moe.py), the matched-recipe Mixture-of-Experts baseline. "
+                         "--arch moe requires --no-triplet.")
+    ap.add_argument("--moe-n-experts", type=int, default=4,
+                    help="experts per MoE layer (top-2 routing); 4 as in train_moe.py.")
+    ap.add_argument("--moe-aux-weight", type=float, default=5e-3,
+                    help="weight on the MoE load-balancing aux loss (--arch moe, --no-triplet).")
+    ap.add_argument("--expert-noise", type=float, default=0.01,
+                    help="extra experts = expert 0 + N(0, (noise*std)^2) at init (seeded by --seed).")
+    ap.add_argument("--no-triplet", action="store_true",
+                    help="no triplet loss, no cross-batch memory bank, no metric embedding: "
+                         "Stage 2 is ASL-only (+ MoE aux with --arch moe).")
     ap.add_argument("--rrc-scale-min", type=float, default=0.9,
                     help="lower bound of the train RandomResizedCrop area scale. "
                          "Default 0.9 (all runs before 2026-09-26). Lower = stronger "
@@ -1376,12 +1445,21 @@ def main():
         "head_class_ids": [],  # filled in below once class counts are known
         "limit_train_batches": args.limit_train_batches,
         "limit_val_batches": args.limit_val_batches,
+        "arch": args.arch,
+        "moe_n_experts": args.moe_n_experts,
+        "moe_aux_weight": args.moe_aux_weight,
+        "expert_noise": args.expert_noise,
+        "no_triplet": args.no_triplet,
     }
+    if cfg["arch"] == "moe" and not cfg["no_triplet"]:
+        raise SystemExit("--arch moe requires --no-triplet (the MoE baseline has no Triplet Memory)")
 
     # Set after the literal: an f-string reading cfg[...] inside the dict that
     # defines cfg raises NameError, since the name is not bound until the
     # assignment completes.
     cfg["out_dir"] = args.out_dir or (
+        f"./checkpoint_MoE/{cfg['arch']}_notriplet_lr{cfg['lr']:g}/seed_{cfg['seed']}/Model_{ts}"
+        if cfg["no_triplet"] else
         f"./checkpoint_Triplet_3/{cfg['metric_embed']}_mem{cfg['memory_size']}_"
         f"lr{cfg['lr']:g}_lam{cfg['triplet_lambda']:g}/seed_{cfg['seed']}/Model_{ts}"
     )

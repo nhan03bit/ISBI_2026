@@ -85,4 +85,6 @@ def load_model_for_state_dict(sd: dict, num_classes: int = 30):
 
 
 def is_prior_model(model: nn.Module) -> bool:
-    return isinstance(model, ConvNeXt2Prior)
+    # ConvNeXt2Prior, or any model carrying a prior conditioner (convnext_moe.ConvNeXt2MoEPrior).
+    return isinstance(model, ConvNeXt2Prior) or isinstance(getattr(model, "prior_cond", None),
+                                                           PriorQueryConditioner)
