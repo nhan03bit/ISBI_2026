@@ -80,6 +80,12 @@ The launcher submits one single-GPU job per arm/seed, using the existing `.venv`
 64 GB RAM and historical colossus exclusion. It prints job IDs and a unique run directory.
 `TIME`, `GPU_PARTITION`, `EXCLUDE`, `TRAIN`, `VAL`, `CKPT` and `VENV_DIR` are overridable.
 Checkpoint/data existence and Slurm allocation remain to be verified on the university cluster.
+Before any GPU job starts, a CPU Slurm job decodes every train/validation shard image with
+the same OpenCV decoder. It writes `audit.json` listing unreadable keys. Each GPU arm uses
+that same audited exclusion list and verifies the shard inventory. Any additional decode
+failure still stops the run. This explicitly records any change in the evaluated population.
+The previous 2026-10-11 full runs 51756–51758 failed at validation key `00002311` because
+strict decoding caught the unreadable image; they produced no training result.
 Do not launch both screening and repeated runs unnecessarily: seed 42 would be repeated.
 
 Progress is the existing Stage 2 tqdm train/eval bar in each Slurm log. Inspect `jobs.tsv`,

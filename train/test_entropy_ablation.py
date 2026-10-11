@@ -1,4 +1,5 @@
 import copy
+import io
 import json
 import tempfile
 import unittest
@@ -11,6 +12,32 @@ from utils_update import CrossBatchMemoryV2, sample_triplets_v13
 
 
 class EntropyAblationTests(unittest.TestCase):
+    def test_audited_exclusion_precedes_strict_decode(self):
+        import cv2
+        import numpy as np
+        import webdataset as wds
+        import train_2_v3 as v3
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            valid, encoded = cv2.imencode('.png', np.full((8, 8, 3), 100, np.uint8))
+            self.assertTrue(valid)
+            for split in ('train', 'val'):
+                directory = root / split
+                directory.mkdir()
+                with open(directory / 'shard_0000.tar', 'wb') as file, wds.TarWriter(file) as writer:
+                    for key, image in [('good', encoded.tobytes()), ('bad', b'invalid')]:
+                        label = io.BytesIO()
+                        torch.save(torch.zeros(30), label)
+                        writer.write(dict(__key__=key, img=image, cls=label.getvalue()))
+            _, val, _ = v3.make_webdataset(root / 'train', root / 'val', img_size=8,
+                                            strict_decode=True,
+                                            excluded_keys={'train': {'bad'}, 'val': {'bad'}})
+            self.assertEqual(len(list(val)), 1)
+            _, bad_val, _ = v3.make_webdataset(root / 'train', root / 'val', img_size=8,
+                                                strict_decode=True)
+            with self.assertRaises(ValueError):
+                list(bad_val)
+
     def test_only_gate_changes_partners_and_default(self):
         bank = CrossBatchMemoryV2(2, 8, 3, device='cpu')
         bank.update(torch.tensor([[1., 0.], [0., 1.], [-1., 0.]]),

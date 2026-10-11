@@ -1,10 +1,12 @@
 # Project memory and handoff
 
-Last updated: **2026-10-10, Europe/London**.
+Last updated: **2026-10-11, Europe/London**.
 
 ## Read this first
 
 **Latest priority (2026-10-10):** user requested a new branch and a clean entropy ablation for a focused four-page ISBI paper. Branch `entropy-ablation` is based on `long-tailed`. The new experiment uses Stage 2 v3, NOT minority-sampled Stage 3: classification only -> ungated FIFO triplet -> identical triplet with the shipped entropy gate. All arms start from the same pre-triplet Stage 1 checkpoint, with matched 768 resolution, schedule and seeds. See [entropy ablation protocol](docs/research/entropy-ablation.md). Markov/history is outside the main contribution. No GPU results exist for this ablation yet.
+
+**2026-10-11 cluster finding:** smoke run `entropy_ablation_20261011_171549` completed three arms but evaluated only 8 images and had no supported tail positives; no performance conclusion. Full seed-42 run `entropy_ablation_20261011_205751` (jobs 51756–51758) failed during initial full validation after unreadable image key `00002311` (`cv2.imdecode` returned `None`). No training updates or usable results. The launcher now submits a CPU audit job first, records all unreadable train/validation keys in `audit.json`, and makes GPU arms depend on that audit and exclude exactly those keys. Shard inventory and audit hash enter each manifest; any remaining decode error still fails. Focused audit/loader tests passed locally. Use a fresh run directory after fetching the fix; never reuse the failed one.
 
 Implementation validation: 11 local tests passed (8 training/data tests, 1 ablation-report test, 2 Stage 3 submission tests), plus Bash syntax and diff checks. The three-arm CPU integration test uses a tiny model and verifies fixed endpoints, identical initialization, memory activation and group AP. University full-model training remains untested. The ablation launcher and report are ready locally; no new-branch push or job submission has occurred.
 

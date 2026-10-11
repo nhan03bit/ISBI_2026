@@ -1059,7 +1059,8 @@ def seed_everything(seed: int):
 
 def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: bool = True,
                     img_size: int = SIZE, shuffle_buf: int = SAMPLE_SHUFFLE_BUFSIZE,
-                    rrc_scale_min: float = 0.9, strict_decode: bool = False):
+                    rrc_scale_min: float = 0.9, strict_decode: bool = False,
+                    excluded_keys=None):
     train_shards = sorted(Path(train_dir).glob("shard_*.tar"))
     val_shards = sorted(Path(val_dir).glob("shard_*.tar"))
 
@@ -1078,6 +1079,7 @@ def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: 
     train_mapper = DecodeAndTransform(is_train=True, size=img_size, rrc_scale_min=rrc_scale_min)
     val_mapper = DecodeAndTransform(is_train=False, size=img_size)
     train_mapper.strict_fail = val_mapper.strict_fail = strict_decode
+    excluded_keys = excluded_keys or {'train': set(), 'val': set()}
     logger.info(f"img_size={img_size} | shuffle_buf={shuffle_buf} | rrc_scale_min={rrc_scale_min}")
 
     if strict_repro:
@@ -1098,6 +1100,7 @@ def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: 
         train_ds = (
             wds.WebDataset(uri_train, shardshuffle=False)
             .shuffle(shuffle_buf)
+            .select(lambda x: x['__key__'] not in excluded_keys['train'])
             .map(train_mapper)
             .select(lambda x: x is not None)
         )
@@ -1105,12 +1108,14 @@ def make_webdataset(train_dir: str, val_dir: str, seed: int = 42, strict_repro: 
         train_ds = (
             wds.WebDataset(uri_train, shardshuffle=True)
             .shuffle(shuffle_buf)
+            .select(lambda x: x['__key__'] not in excluded_keys['train'])
             .map(train_mapper)
             .select(lambda x: x is not None)
         )
 
     val_ds = (
         wds.WebDataset(uri_val, shardshuffle=False)
+        .select(lambda x: x['__key__'] not in excluded_keys['val'])
         .map(val_mapper)
         .select(lambda x: x is not None)
     )
@@ -1129,6 +1134,7 @@ def parse_args():
                     help='v13 anchor gate: all disables entropy selection; mean preserves shipped gate')
     ap.add_argument('--strict-init', action='store_true')
     ap.add_argument('--fixed-budget', action='store_true', help='Disable early stopping; save final EMA; evaluate initialization')
+    ap.add_argument('--exclusions', default=None, help='JSON produced by audit_entropy_shards.py; matched unreadable-image exclusions')
     ap.add_argument("--accum-steps", type=int, default=6,
                     help="gradient accumulation steps; effective batch = batch_size * accum_steps. "
                          "v3 default 6 (x batch 8 = effective 48, the paper recipe).")
@@ -1265,6 +1271,7 @@ def main():
         "anchor_rule": args.anchor_rule,
         "strict_init": args.strict_init,
         "fixed_budget": args.fixed_budget,
+        "exclusions": args.exclusions,
         # "ckpt_path": "MedViT_base_im1k.pth",
         "lr": args.lr,
         "embedding_dim": args.embedding_dim,
@@ -1413,6 +1420,20 @@ def main():
     g_torch = torch.Generator()
     g_torch.manual_seed(SEED)
 
+    exclusions = {'train': set(), 'val': set()}
+    if args.exclusions:
+        audit = json.loads(Path(args.exclusions).read_text())
+        for split in ('train', 'val'):
+            paths = sorted(Path(cfg[split + '_shards_dir']).glob('shard_*.tar'))
+            current = [[str(p.resolve()), p.stat().st_size, p.stat().st_mtime_ns] for p in paths]
+            if audit['inventory'][split] != current:
+                raise ValueError(f'{split} shards changed since decode audit')
+            exclusions[split] = set(audit['bad_keys'][split])
+            if len(exclusions[split]) != len(audit['bad_keys'][split]):
+                raise ValueError('Duplicate excluded key')
+        if cfg['fixed_budget']:
+            manifest['audit_sha256'] = sha256(args.exclusions)
+            manifest['excluded_keys'] = {k: sorted(v) for k, v in exclusions.items()}
     train_ds, val_ds, train_mapper = make_webdataset(
         cfg["train_shards_dir"],
         cfg["val_shards_dir"],
@@ -1422,6 +1443,7 @@ def main():
         shuffle_buf=cfg["shuffle_buf"],
         rrc_scale_min=cfg["rrc_scale_min"],
         strict_decode=cfg['fixed_budget'],
+        excluded_keys=exclusions,
     )
 
     def seed_worker(worker_id):

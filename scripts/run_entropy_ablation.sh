@@ -4,8 +4,15 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 ROOT="$PWD"
 
+if [ "${1:-}" = "--audit" ]; then
+    source "${VENV_DIR:-$ROOT/.venv}/bin/activate"
+    exec python analysis/audit_entropy_shards.py \
+        --train "${TRAIN:-/data/psytp7/wds_shards_train_raw}" \
+        --val "${VAL:-/data/psytp7/wds_shards_val_raw}" --out "$2"
+fi
+
 if [ "${1:-}" = "--worker" ]; then
-    ARM="$2"; OUTPUT="$3"; SEED="$4"; CHECKPOINT="$5"
+    ARM="$2"; OUTPUT="$3"; SEED="$4"; CHECKPOINT="$5"; AUDIT="$6"
     source "${VENV_DIR:-$ROOT/.venv}/bin/activate"
     export PYTHONUNBUFFERED=1
     nvidia-smi
@@ -32,6 +39,7 @@ if [ "${1:-}" = "--worker" ]; then
         --gamma-neg 2 --gamma-pos 0 --num-workers 8 --val-num-workers 2 --shuffle-buf 400 \
         --train-shards-dir "${TRAIN:-/data/psytp7/wds_shards_train_raw}" \
         --val-shards-dir "${VAL:-/data/psytp7/wds_shards_val_raw}" \
+        --exclusions "$AUDIT" \
         "${EXTRA[@]}" "${SMOKE_ARGS[@]}"
 fi
 
@@ -41,10 +49,16 @@ CHECKPOINT="$(realpath "$CHECKPOINT")"
 RUN="$ROOT/runs/entropy_ablation_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$RUN/logs"
 echo "Run directory: $RUN"
+printf -v AUDIT_WRAP '%q ' bash "$ROOT/scripts/run_entropy_ablation.sh" --audit "$RUN/audit.json"
+AUDIT_JOB=$(sbatch --parsable --job-name=entropy_decode_audit \
+    --partition="${CPU_PARTITION:-cpu}" --cpus-per-task=4 --mem=16G \
+    --time=4:00:00 --output="$RUN/logs/audit_%j.out" --chdir="$ROOT" --wrap="$AUDIT_WRAP")
+echo "Decode audit: job $AUDIT_JOB; GPU jobs start after it succeeds"
 for SEED in ${SEEDS:-42}; do
     for ARM in baseline triplet entropy; do
-        printf -v WRAP '%q ' bash "$ROOT/scripts/run_entropy_ablation.sh" --worker "$ARM" "$RUN/seed_$SEED/$ARM" "$SEED" "$CHECKPOINT"
+        printf -v WRAP '%q ' bash "$ROOT/scripts/run_entropy_ablation.sh" --worker "$ARM" "$RUN/seed_$SEED/$ARM" "$SEED" "$CHECKPOINT" "$RUN/audit.json"
         JOB=$(sbatch --parsable --job-name="entropy_${ARM}_s${SEED}" \
+            --dependency="afterok:$AUDIT_JOB" \
             --partition="${GPU_PARTITION:-amp48}" --gpus=1 --cpus-per-task=8 --mem=64G \
             --time="${TIME:-36:00:00}" --exclude="${EXCLUDE:-colossus}" \
             --output="$RUN/logs/${ARM}_s${SEED}_%j.out" --chdir="$ROOT" --wrap="$WRAP")
@@ -52,4 +66,5 @@ for SEED in ${SEEDS:-42}; do
     done
 done
 echo "Monitor: squeue -u \$USER; tail -f $RUN/logs/*.out"
+echo "Audit exclusions: $RUN/audit.json"
 echo "After all jobs complete: .venv/bin/python analysis/entropy_ablation_report.py $RUN"
