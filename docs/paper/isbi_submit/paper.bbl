@@ -10,20 +10,6 @@ Aurelia Bustos, Antonio Pertusa, Jose-Maria Salinas, and Maria de~la Iglesia-Vay
 \newblock ``{PadChest}: A large chest x-ray image dataset with multi-label annotated reports,''
 \newblock {\em Medical Image Analysis}, vol. 66, pp. 101797, 2020.
 
-\bibitem{ridnik2021asl}
-Tal Ridnik, Emanuel Ben-Baruch, Nadav Zamir, Asaf Noy, Itamar Friedman, Matan Protter, and Lihi Zelnik-Manor,
-\newblock ``Asymmetric loss for multi-label classification,''
-\newblock in {\em Proc. IEEE/CVF Int. Conf. Computer Vision (ICCV)}, 2021, pp. 82--91.
-
-\bibitem{wu2020dbloss}
-Tong Wu, Qingqiu Huang, Ziwei Liu, Yu~Wang, and Dahua Lin,
-\newblock ``Distribution-balanced loss for multi-label classification in long-tailed datasets,''
-\newblock in {\em Proc. European Conf. Computer Vision (ECCV)}, 2020, pp. 162--178.
-
-\bibitem{pham2026efficient}
-Huy~Le Pham, Khoa~Ha Anh, Nguyen-Thanh-Thao Vo, Ky~Trung Nguyen, Chau Ly~Thi Huyen, Hien~Q. Ta, and Thang~Doan Van,
-\newblock ``An efficient framework for long-tailed and multi-label classification on chest {X}-rays,'' IEEE Int. Symp. Biomedical Imaging (ISBI), CXR-LT 2026 Challenge, Task~1, 2026.
-
 \bibitem{liu2022convnext}
 Zhuang Liu, Hanzi Mao, Chao-Yuan Wu, Christoph Feichtenhofer, Trevor Darrell, and Saining Xie,
 \newblock ``A {ConvNet} for the 2020s,''
@@ -34,15 +20,24 @@ Tal Ridnik, Gilad Sharir, Avi Ben-Cohen, Emanuel Ben-Baruch, and Asaf Noy,
 \newblock ``{ML-Decoder}: Scalable and versatile classification head,''
 \newblock {\em arXiv preprint arXiv:2111.12933}, 2021.
 
-\bibitem{schroff2015facenet}
-Florian Schroff, Dmitry Kalenichenko, and James Philbin,
-\newblock ``{FaceNet}: A unified embedding for face recognition and clustering,''
-\newblock in {\em Proc. IEEE Conf. Computer Vision and Pattern Recognition (CVPR)}, 2015, pp. 815--823.
+\bibitem{ridnik2021asl}
+Tal Ridnik, Emanuel Ben-Baruch, Nadav Zamir, Asaf Noy, Itamar Friedman, Matan Protter, and Lihi Zelnik-Manor,
+\newblock ``Asymmetric loss for multi-label classification,''
+\newblock in {\em Proc. IEEE/CVF Int. Conf. Computer Vision (ICCV)}, 2021, pp. 82--91.
 
-\bibitem{hermans2017defense}
-Alexander Hermans, Lucas Beyer, and Bastian Leibe,
-\newblock ``In defense of the triplet loss for person re-identification,''
-\newblock {\em arXiv preprint arXiv:1703.07737}, 2017.
+\bibitem{dosovitskiy2021vit}
+Alexey Dosovitskiy, Lucas Beyer, Alexander Kolesnikov, Dirk Weissenborn, Xiaohua Zhai, Thomas Unterthiner, Mostafa Dehghani, Matthias Minderer, Georg Heigold, Sylvain Gelly, Jakob Uszkoreit, and Neil Houlsby,
+\newblock ``An image is worth 16x16 words: Transformers for image recognition at scale,''
+\newblock in {\em Int. Conf. Learning Representations (ICLR)}, 2021.
+
+\bibitem{pham2026efficient}
+Huy~Le Pham, Khoa~Ha Anh, Nguyen-Thanh-Thao Vo, Ky~Trung Nguyen, Chau Ly~Thi Huyen, Hien~Q. Ta, and Thang~Doan Van,
+\newblock ``An efficient framework for long-tailed and multi-label classification on chest {X}-rays,'' IEEE Int. Symp. Biomedical Imaging (ISBI), CXR-LT 2026 Challenge, Task~1, 2026.
+
+\bibitem{carion2020detr}
+Nicolas Carion, Francisco Massa, Gabriel Synnaeve, Nicolas Usunier, Alexander Kirillov, and Sergey Zagoruyko,
+\newblock ``End-to-end object detection with transformers,''
+\newblock in {\em Computer Vision -- ECCV 2020}. 2020, vol. 12346 of {\em Lecture Notes in Computer Science}, pp. 213--229, Springer.
 
 \bibitem{wang2020xbm}
 Xun Wang, Haozhi Zhang, Weilin Huang, and Matthew~R. Scott,
@@ -54,9 +49,9 @@ Burr Settles,
 \newblock ``Active learning literature survey,''
 \newblock Computer Sciences Technical Report 1648, University of Wisconsin--Madison, 2009.
 
-\bibitem{lin2025cxrlt}
-Mingquan Lin, Gregory Holste, Song Wang, et~al.,
-\newblock ``{CXR-LT} 2024: A {MICCAI} challenge on long-tailed, multi-label, and zero-shot disease classification from chest {X}-ray,''
-\newblock {\em Medical Image Analysis}, vol. 106, pp. 103739, 2025.
+\bibitem{hermans2017defense}
+Alexander Hermans, Lucas Beyer, and Bastian Leibe,
+\newblock ``In defense of the triplet loss for person re-identification,''
+\newblock {\em arXiv preprint arXiv:1703.07737}, 2017.
 
 \end{thebibliography}

@@ -1,29 +1,28 @@
 \relax 
 \citation{dong2026cxrlt}
 \citation{bustos2020padchest}
+\citation{liu2022convnext}
+\citation{ridnik2021mldecoder}
 \citation{ridnik2021asl}
-\citation{wu2020dbloss}
+\citation{dosovitskiy2021vit}
 \citation{pham2026efficient}
 \citation{liu2022convnext}
 \citation{ridnik2021mldecoder}
-\citation{schroff2015facenet}
-\citation{hermans2017defense}
-\citation{wang2020xbm}
-\citation{settles2009active}
-\citation{liu2022convnext}
-\citation{ridnik2021mldecoder}
+\citation{carion2020detr}
 \citation{pham2026efficient}
 \@writefile{toc}{\contentsline {section}{\numberline {1} Introduction}{1}{}\protected@file@percent }
 \newlabel{sec:intro}{{1}{1}{}{section.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Two-stage training: Stage~1 with ASL only; Stage~2 adds the entropy-gated triplet loss with a cross-batch memory bank (Sec.~\ref {sec:method}).}}{1}{}\protected@file@percent }
+\newlabel{fig:method}{{1}{1}{}{figure.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Triplet cross-memory-bank pipeline (Eqs.~(\ref {eq:posneg})--(\ref {eq:triplet})). In the drawing, the ``hardest'' pairs are the easiest in the usual terminology (Sec.~\ref {sec:mining}), and the ``momentum'' update is the plain first-in-first-out queue of Sec.~\ref {sec:bank}.}}{1}{}\protected@file@percent }
+\newlabel{fig:xbm}{{2}{1}{}{figure.2}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {2} Method}{1}{}\protected@file@percent }
 \newlabel{sec:method}{{2}{1}{}{section.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1} Model}{1}{}\protected@file@percent }
 \citation{wang2020xbm}
+\citation{settles2009active}
 \citation{hermans2017defense}
-\citation{dong2026cxrlt}
-\citation{lin2025cxrlt}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces Two-stage training. Stage~1 trains the ConvNeXt (stages 1--5) and the ML-Decoder end-to-end with ASL. Stage~2 copies these weights (dashed lines) and fine-tunes all of them; the decoder is kept, and ASL is joined by a triplet loss against a cross-batch memory bank with entropy-gated anchors (Eqs.~(\ref {eq:entropy})--(\ref {eq:triplet})), giving $\mathcal  {L}_{\mathrm  {ASL}}+\lambda \,\mathcal  {L}_{\mathrm  {tri}}$. The bank, gate and triplet term are used only during training.}}{2}{}\protected@file@percent }
-\newlabel{fig:method}{{1}{2}{}{figure.1}{}}
+\citation{pham2026efficient}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2} Cross-batch memory bank}{2}{}\protected@file@percent }
 \newlabel{sec:bank}{{2.2}{2}{}{subsection.2.2}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3} Entropy-gated anchors}{2}{}\protected@file@percent }
@@ -33,40 +32,40 @@
 \newlabel{sec:mining}{{2.4}{2}{}{subsection.2.4}{}}
 \newlabel{eq:posneg}{{3}{2}{}{equation.3}{}}
 \newlabel{eq:triplet}{{4}{2}{}{equation.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3} Experimental Setup}{2}{}\protected@file@percent }
-\newlabel{sec:setup}{{3}{2}{}{section.3}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces Triplet cross-memory-bank pipeline: for each anchor embedding $e_i$, $i\in \mathcal  {A}$, of the current mini-batch, distances to the memory bank $\mathcal  {M}$ are computed, and the closest positive (minimum distance among entries sharing a finding other than the five most frequent) and the farthest negative (maximum distance among entries sharing no finding) are retrieved to form the triplet in $\mathcal  {L}_{\mathrm  {tri}}$ (Eqs.~(\ref {eq:posneg})--(\ref {eq:triplet})). The figure calls these the hardest positive and negative; in the usual mining terminology they are the easiest pairs (Sec.~\ref {sec:mining}). The bank is the first-in-first-out queue of Sec.~\ref {sec:bank}, and on $\ell _2$-normalised embeddings the Euclidean distance we use ranks entries as cosine distance does.}}{3}{}\protected@file@percent }
-\newlabel{fig:xbm}{{2}{3}{}{figure.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4} Results}{3}{}\protected@file@percent }
-\newlabel{sec:results}{{4}{3}{}{section.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.5} Patient-history Markov prior}{2}{}\protected@file@percent }
+\newlabel{sec:markov}{{2.5}{2}{}{subsection.2.5}{}}
+\newlabel{eq:qprior}{{5}{2}{}{equation.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3} Results}{2}{}\protected@file@percent }
+\newlabel{sec:results}{{3}{2}{}{section.3}{}}
 \citation{dong2026cxrlt}
 \citation{bustos2020padchest}
 \bibstyle{IEEEbib}
 \bibdata{refs}
 \bibcite{dong2026cxrlt}{1}
 \bibcite{bustos2020padchest}{2}
-\bibcite{ridnik2021asl}{3}
-\bibcite{wu2020dbloss}{4}
-\bibcite{pham2026efficient}{5}
-\bibcite{liu2022convnext}{6}
-\bibcite{ridnik2021mldecoder}{7}
-\bibcite{schroff2015facenet}{8}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Stage-2 ablation at 512~px, internal validation (17{,}270 images): mean $\pm $ s.d. over six seeds. Head, medium and tail are the mean AP over 3, 20 and 7 findings. mECE: lower is better.}}{4}{}\protected@file@percent }
-\newlabel{tab:ablation}{{1}{4}{}{table.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Matched-recipe comparison with a mixture of experts (MoE), internal validation; \emph  {Entropy gate} is the triplet loss with entropy-gated anchors. Flip test-time augmentation, weight-averaged models. Averages are of probabilities (seeds 42 and 1024 at 768~px; 768 (both seeds), 896 and 1024~px); the last block is the mean of the four single models. mECE: lower is better.}}{4}{}\protected@file@percent }
-\newlabel{tab:moe}{{2}{4}{}{table.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5} Discussion and Limitations}{4}{}\protected@file@percent }
-\newlabel{sec:discussion}{{5}{4}{}{section.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6} Conclusion}{4}{}\protected@file@percent }
-\newlabel{sec:conclusion}{{6}{4}{}{section.6}{}}
-\newlabel{end-of-technical}{{6}{4}{}{section.6}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7} Compliance with Ethical Standards}{4}{}\protected@file@percent }
-\newlabel{sec:ethics}{{7}{4}{}{section.7}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {8} Acknowledgments}{4}{}\protected@file@percent }
-\newlabel{sec:acknowledgments}{{8}{4}{}{section.8}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {9} References}{4}{}\protected@file@percent }
-\bibcite{hermans2017defense}{9}
-\bibcite{wang2020xbm}{10}
-\bibcite{settles2009active}{11}
-\bibcite{lin2025cxrlt}{12}
-\gdef \@abspage@last{5}
+\bibcite{liu2022convnext}{3}
+\bibcite{ridnik2021mldecoder}{4}
+\bibcite{ridnik2021asl}{5}
+\bibcite{dosovitskiy2021vit}{6}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Unified test on the internal validation split (17{,}270 images): 768~px, five seeds, mean $\pm $ s.d. All systems share the Stage-1 checkpoint, the schedule (four of eight cosine epochs, drop-path 0.1), SWA weights and flip test-time augmentation. Markov prior: history available, or withheld as on the challenge test set. Head, medium, tail: mean AP over 3, 20, 7 findings. mECE: lower is better. Empty cells await the runs.}}{3}{}\protected@file@percent }
+\newlabel{tab:ablation}{{1}{3}{}{table.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Where the Markov prior enters (orange): the patient-history prior $r$ offsets the ML-Decoder label queries.}}{3}{}\protected@file@percent }
+\newlabel{fig:markov}{{3}{3}{}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Post-prediction patient HMM: hidden finding states $y_t$, images and the frozen classifier as emissions, metadata and time gap $\Delta _t$ in the transition prior.}}{3}{}\protected@file@percent }
+\newlabel{fig:hmm}{{4}{3}{}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4} Discussion and Limitations}{3}{}\protected@file@percent }
+\newlabel{sec:discussion}{{4}{3}{}{section.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5} Conclusion}{3}{}\protected@file@percent }
+\newlabel{sec:conclusion}{{5}{3}{}{section.5}{}}
+\newlabel{end-of-technical}{{5}{3}{}{section.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6} Compliance with Ethical Standards}{3}{}\protected@file@percent }
+\newlabel{sec:ethics}{{6}{3}{}{section.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {7} Acknowledgments}{3}{}\protected@file@percent }
+\newlabel{sec:acknowledgments}{{7}{3}{}{section.7}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {8} References}{3}{}\protected@file@percent }
+\bibcite{pham2026efficient}{7}
+\bibcite{carion2020detr}{8}
+\bibcite{wang2020xbm}{9}
+\bibcite{settles2009active}{10}
+\bibcite{hermans2017defense}{11}
+\gdef \@abspage@last{4}

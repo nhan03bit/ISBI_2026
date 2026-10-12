@@ -8,7 +8,7 @@ ISBI 2027 rules checked: technical content on pages 1-4; an optional page 5 may 
 references, "Compliance with Ethical Standards" and the acknowledgments; US Letter; fonts embedded.
 
   build    latexmk succeeds; no undefined reference/citation; no overfull box wider than 1pt
-  results  generated/entropy_ablation_table.tex exists (written by analysis/entropy_ablation.py
+  results  generated/unified_table.tex exists (written by analysis/unified_benchmark.py
            only when no run is missing), so the table holds real numbers
   TBD      no \\TBD left in the source
   AUTHOR   each \\AUTHOR{...} (a statement the authors must confirm) is listed; a failure
@@ -57,8 +57,8 @@ def main():
     authors += [m.group(1)[:90] for m in re.finditer(r"^%\s*CONFIRM:\s*(.*)", TEX.read_text(), re.M)]
     for a in authors:
         (warn if args.allow_author else fail).append(f"AUTHOR: unconfirmed statement: {a}...")
-    if not (HERE / "generated" / "entropy_ablation_table.tex").exists():
-        fail.append("results: generated/entropy_ablation_table.tex missing (run analysis/entropy_ablation.py)")
+    if not (HERE / "generated" / "unified_table.tex").exists():
+        fail.append("results: generated/unified_table.tex missing (run analysis/unified_benchmark.py once all unified runs exist)")
 
     log = (HERE / "paper.log").read_text(errors="replace")
     for m in re.finditer(r"LaTeX Warning: (Reference|Citation) `([^']*)' .*undefined", log):

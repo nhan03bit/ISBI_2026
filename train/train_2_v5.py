@@ -700,6 +700,11 @@ class Trainer:
         # --- v3 additions ---
         # triplet_lambda: weight on L_tri (was hardcoded 0.1 in v2).
         self.triplet_lambda = float(self.cfg.get("triplet_lambda", 0.1))
+        # --anchor-rule / --mining (2026-10-12; defaults reproduce every earlier run bit for bit)
+        self.anchor_rule = str(self.cfg.get("anchor_rule", "mean"))
+        self.mining = str(self.cfg.get("mining", "easy"))
+        self.anchor_gen = (torch.Generator().manual_seed(int(self.cfg["seed"]) + 1)
+                           if self.anchor_rule == "random" else None)
         # metric_embed: "query" -> mean-pooled decoded per-class query embeddings
         #   (ml_decoder Decoder.last_h, the paper's intended triplet embedding);
         # "legacy" -> v2 behaviour (post-ReLU GAP of the projected feature map).
@@ -716,7 +721,8 @@ class Trainer:
         if not self.no_triplet:
             logger.info(f"v3: triplet_lambda={self.triplet_lambda} metric_embed={self.metric_embed} "
                         f"head_class_ids={self.head_class_ids.tolist() if self.head_class_ids is not None else None} "
-                        f"ema_decay={self.ema_decay} memory_size={self.cfg['memory_size']}")
+                        f"ema_decay={self.ema_decay} memory_size={self.cfg['memory_size']} "
+                        f"anchor_rule={self.anchor_rule} mining={self.mining}")
 
         C = cfg["num_classes"]
         self.map = MultilabelAveragePrecision(num_labels=C, average="macro").to(self.device)
@@ -908,6 +914,7 @@ class Trainer:
         self.optim.zero_grad(set_to_none=True)
 
         trip_hits = 0
+        trip_stats = {"anchors": 0, "triplets": 0}   # gated anchors / mined triplets, summed over steps
         pending_grad = False   # a backward has run since the last optimizer step
 
         limit = int(self.cfg.get("limit_train_batches", 0) or 0)
@@ -964,6 +971,10 @@ class Trainer:
                         embeddings, logits, y, self.memory,
                         margin=self.cfg["margin"],
                         head_class_ids=self.head_class_ids,
+                        anchor_rule=self.anchor_rule,
+                        generator=self.anchor_gen,
+                        stats=trip_stats,
+                        mining=self.mining,
                     )
 
                     if trips is None or len(trips) == 0:
@@ -1023,6 +1034,13 @@ class Trainer:
             logger.info(f"[Epoch {epoch}] no-triplet: ASL-only steps = {step}")
         else:
             logger.info(f"[Epoch {epoch}] triplet hit rate = {trip_hits}/{step} ({100.0 * trip_hits / max(1, step):.1f}%)")
+            logger.info(f"[Epoch {epoch}] anchors/step = {trip_stats['anchors'] / step:.3f} "
+                        f"triplets/step = {trip_stats['triplets'] / step:.3f} "
+                        f"(batch {self.cfg['batch_size']}, anchor_rule={self.anchor_rule}, mining={self.mining})")
+            self.history.setdefault("triplet_stats", []).append({
+                "epoch": epoch, "steps": step, "hit_steps": trip_hits,
+                "anchors": trip_stats["anchors"], "triplets": trip_stats["triplets"],
+                "anchor_rule": self.anchor_rule, "mining": self.mining})
         if self.is_moe:
             self.model.stop_load_tracking()
             mean_aux = aux_sum / max(1, aux_n)
@@ -1340,6 +1358,13 @@ def parse_args():
     ap.add_argument("--no-triplet", action="store_true",
                     help="no triplet loss, no cross-batch memory bank, no metric embedding: "
                          "Stage 2 is ASL-only (+ MoE aux with --arch moe).")
+    ap.add_argument("--anchor-rule", default="mean", choices=["mean", "all", "random"],
+                    help="which batch samples may be triplet anchors (utils_update._anchor_gate): 'mean' = "
+                         "softmax entropy >= batch mean (default, every earlier v5 run), 'all' = every sample, "
+                         "'random' = as many random anchors as the gate would pick.")
+    ap.add_argument("--mining", default="easy", choices=["easy", "hard", "semihard"],
+                    help="pair mining in sample_triplets_v13: 'easy' (default, every earlier run) = closest "
+                         "positive + farthest negative; 'hard' = farthest positive + closest negative.")
     ap.add_argument("--rrc-scale-min", type=float, default=0.9,
                     help="lower bound of the train RandomResizedCrop area scale. "
                          "Default 0.9 (all runs before 2026-09-26). Lower = stronger "
@@ -1450,6 +1475,8 @@ def main():
         "moe_aux_weight": args.moe_aux_weight,
         "expert_noise": args.expert_noise,
         "no_triplet": args.no_triplet,
+        "anchor_rule": args.anchor_rule,
+        "mining": args.mining,
     }
     if cfg["arch"] == "moe" and not cfg["no_triplet"]:
         raise SystemExit("--arch moe requires --no-triplet (the MoE baseline has no Triplet Memory)")

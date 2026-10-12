@@ -223,6 +223,7 @@ def sample_triplets_v13(
     anchor_rule="mean",
     generator=None,
     stats=None,
+    mining="easy",
 ):
     """
     train_2_v3 triplet sampler. Same entropy-gated / hardest-mined structure as
@@ -245,6 +246,8 @@ def sample_triplets_v13(
         generator: CPU torch.Generator for anchor_rule="random".
         stats: optional dict; "anchors" (gated samples) and "triplets" (mined
             triplets) are added to it, for logging.
+        mining: "easy" (default, every run before 2026-10-12: closest positive, farthest
+            negative) | "hard" (farthest positive, closest negative) | "semihard"; see _mine_pair.
     """
     device = batch_embeddings.device
     B = batch_embeddings.size(0)
@@ -300,8 +303,10 @@ def sample_triplets_v13(
         if pos_d.numel() == 0 or neg_d.numel() == 0:
             continue
 
-        hardest_pos = mem_emb[pos_idx[torch.argmin(pos_d)]]
-        hardest_neg = mem_emb[neg_idx[torch.argmax(neg_d)]]
+        # "easy" reproduces the old argmin(pos_d) / argmax(neg_d) choice exactly (names kept for diff size)
+        p_local, n_local = _mine_pair(pos_d, neg_d, margin, mining)
+        hardest_pos = mem_emb[pos_idx[p_local]]
+        hardest_neg = mem_emb[neg_idx[n_local]]
         triplets.append((anchor, hardest_pos, hardest_neg))
 
     if stats is not None:

@@ -205,11 +205,15 @@ MACRO_ARM = {"asl": "Asl", "nogate": "Nogate", "randgate": "Randgate", "gate": "
              "gate_rerun": "Rerun"}
 MACRO_MET = {"mAP": "MAP", "mAUC": "MAUC", "mF1": "MFone", "mECE": "MECE", "head": "Head",
              "medium": "Medium", "tail": "Tail"}
+SEED_WORD = {42: "FortyTwo", 86: "EightySix", 123: "OneTwoThree", 456: "FourFiveSix",
+             789: "SevenEightNine", 1024: "TenTwentyFour"}   # macro names cannot contain digits
 
 
 def fmt(x, nd=4, sign=False):
     if x is None or (isinstance(x, float) and np.isnan(x)):
         return "--"
+    if sign and round(x, nd) == 0:      # no "-0.0000" for a difference that rounds to zero
+        return f"{0.0:.{nd}f}"
     return f"{x:+.{nd}f}" if sign else f"{x:.{nd}f}"
 
 
@@ -221,9 +225,49 @@ def write_latex(res: dict, paths: list[Path]) -> None:
         for met, mm in MACRO_MET.items():
             mac.append(f"\\newcommand{{\\Abl{a}{mm}}}{{{fmt(d[met]['mean'])}}}")
             mac.append(f"\\newcommand{{\\Abl{a}{mm}sd}}{{{fmt(d[met]['sd'])}}}")
+        # gated anchors and mined triplets per optimisation step (batch of 8), mean over the epochs
+        # trained and over seeds; first / last = the first and the final epoch trained
+        for k, nm in (("anchors_per_step", "Anchors"), ("triplets_per_step", "Triplets"),
+                      ("anchors_first_epoch", "AnchorsFirst"), ("anchors_last_epoch", "AnchorsLast")):
+            s = d.get(k)
+            if s and s.get("n"):
+                mac.append(f"\\newcommand{{\\Abl{a}{nm}}}{{{fmt(s['mean'], 1)}}}")
+        # share of gated anchors that yield a mined triplet (a valid positive and negative exist)
+        sa, st = d.get("anchors_per_step"), d.get("triplets_per_step")
+        if sa and st and sa.get("n") and st.get("n"):
+            mac.append(f"\\newcommand{{\\Abl{a}Yield}}{{{100 * st['mean'] / sa['mean']:.0f}}}")
+    # same-seed run-to-run variation of the entropy arm: rerun on today's code minus the original
+    for s, v in res.get("repro", {}).items():
+        w = SEED_WORD[int(s)]
+        mac += [f"\\newcommand{{\\AblRepro{mm}{w}}}{{{fmt(v[met], sign=True)}}}"
+                for met, mm in MACRO_MET.items()]
+    sub_n = res.get("subsets", {}).get("n")
+    if sub_n:
+        mac += [f"\\newcommand{{\\AblNFrontal}}{{{sub_n['frontal']:,}}}".replace(",", "{,}"),
+                f"\\newcommand{{\\AblNUnseen}}{{{sub_n['frontal_unseen']:,}}}".replace(",", "{,}")]
+    # how many of the seed-level 95% intervals (contrasts x metrics) exclude zero
+    n_int = sum(1 for c in res["contrasts"].values() for s in c["paired"].values() if "ci" in s)
+    n_ex = sum(1 for c in res["contrasts"].values() for s in c["paired"].values()
+               if "ci" in s and (s["ci"][0] > 0 or s["ci"][1] < 0))
+    mac += [f"\\newcommand{{\\AblNIntervals}}{{{n_int}}}", f"\\newcommand{{\\AblNExcludeZero}}{{{n_ex}}}"]
     for key, c in res["contrasts"].items():
         x, y = key.split(" - ")
         tag = MACRO_ARM[x] + "Minus" + MACRO_ARM[y]
+        # smallest paired mAP difference a two-sided 5% paired t-test detects with 80% power at the
+        # observed s.d. of the paired differences (normal-theory, df = n - 1)
+        pm = c["paired"].get("mAP", {})
+        if pm.get("sd") and pm["n"] > 1:
+            mde = (stats.t.ppf(0.975, pm["n"] - 1) + stats.t.ppf(0.80, pm["n"] - 1)) * pm["sd"] / np.sqrt(pm["n"])
+            mac.append(f"\\newcommand{{\\Abl{tag}MAPmde}}{{{mde:.4f}}}")
+        # secondary subsets: frontal views; frontal views of patients absent from the training set
+        for k, nm in (("frontal", "Front"), ("frontal_unseen", "Unseen")):
+            s = c.get("subsets", {}).get(k)
+            if s:
+                mac += [f"\\newcommand{{\\Abl{tag}{nm}}}{{{fmt(s['mean'], sign=True)}}}",
+                        f"\\newcommand{{\\Abl{tag}{nm}lo}}{{{fmt(s['ci'][0], sign=True)}}}",
+                        f"\\newcommand{{\\Abl{tag}{nm}hi}}{{{fmt(s['ci'][1], sign=True)}}}",
+                        f"\\newcommand{{\\Abl{tag}{nm}p}}{{{fmt(s['p_signflip'], 3)}}}",
+                        f"\\newcommand{{\\Abl{tag}{nm}wins}}{{{s['wins']}/{s['n']}}}"]
         for met, mm in MACRO_MET.items():
             s = c["paired"].get(met)
             if not s:
@@ -247,10 +291,15 @@ def write_latex(res: dict, paths: list[Path]) -> None:
             continue
         cells = [f"{fmt(d[m]['mean'], 3)}{{\\scriptsize$\\pm${fmt(d[m]['sd'], 3)}}}" for m in METRICS]
         rows.append(f"{ARM_LABEL[arm]} & {d['mAP']['n']} & " + " & ".join(cells) + " \\\\")
+    # The last row is written WITHOUT its closing "\\": a "\\" at the very end of an \input file makes
+    # the tabular fail ("Misplaced \noalign" at \bottomrule). paper.tex writes "\input{...} \\".
+    table_txt = "\n".join(rows).rstrip()
+    if table_txt.endswith("\\\\"):
+        table_txt = table_txt[:-2].rstrip()
     for p in paths:
         p.mkdir(parents=True, exist_ok=True)
         (p / "entropy_ablation_macros.tex").write_text("\n".join(mac) + "\n")
-        (p / "entropy_ablation_table.tex").write_text("\n".join(rows) + "\n")
+        (p / "entropy_ablation_table.tex").write_text(table_txt + "\n")
 
 
 # ---- main ---------------------------------------------------------------------------------------
@@ -322,6 +371,10 @@ def main() -> None:
         tri = [np.mean(d[s]["triplets_per_step"]) for s in sorted(d) if d[s]["triplets_per_step"]]
         res["arms"][arm]["anchors_per_step"] = summarize(anc)
         res["arms"][arm]["triplets_per_step"] = summarize(tri)
+        res["arms"][arm]["anchors_first_epoch"] = summarize(
+            [d[s]["anchors_per_step"][0] for s in sorted(d) if d[s]["anchors_per_step"]])
+        res["arms"][arm]["anchors_last_epoch"] = summarize(
+            [d[s]["anchors_per_step"][-1] for s in sorted(d) if d[s]["anchors_per_step"]])
         res["arms"][arm]["best_epoch"] = summarize([d[s]["best_epoch"] for s in sorted(d)])
 
     # ---- paired-by-seed contrasts + bootstrap of the seed-averaged ensembles -----------------
@@ -383,9 +436,11 @@ def main() -> None:
         for s in sorted(set(runs["gate_rerun"]) & set(runs["gate"])):
             res["repro"][str(s)] = {met: runs["gate_rerun"][s][met] - runs["gate"][s][met]
                                     for met in METRICS}
-        res["arms"]["gate_rerun"] = {met: summarize([runs["gate_rerun"][s][met]
-                                                     for s in sorted(runs["gate_rerun"])])
-                                     for met in METRICS}
+        # update, not replace: keeps the anchors/triplets-per-step summaries, which only the
+        # reruns have (the original entropy-arm logs predate the "anchors/step" log line)
+        res["arms"]["gate_rerun"].update({met: summarize([runs["gate_rerun"][s][met]
+                                                          for s in sorted(runs["gate_rerun"])])
+                                          for met in METRICS})
 
     # ---- secondary: frontal and frontal & unseen-patient subsets -----------------------------
     masks = subset_masks(L, classes)

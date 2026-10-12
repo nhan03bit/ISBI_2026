@@ -10,91 +10,94 @@
 \usepackage{spconf,amsmath,amssymb,graphicx}
 \usepackage{booktabs}
 \usepackage{xcolor}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc}
 % compact bullet list (the template's enumitem is not installed here)
 \newenvironment{tightlist}{\begin{list}{\textbullet}{\setlength{\itemsep}{0pt}\setlength{\parsep}{0pt}%
   \setlength{\topsep}{2pt}\setlength{\leftmargin}{12pt}\setlength{\labelwidth}{7pt}\setlength{\labelsep}{4pt}}}%
   {\end{list}}
 
+\renewcommand{\topfraction}{0.95}\renewcommand{\textfraction}{0.05}\setcounter{topnumber}{3}
 \newcommand{\TBD}[1][]{\textcolor{red}{\textbf{[TBD#1]}}}
 \newcommand{\AUTHOR}[1]{\textcolor{blue}{#1}}
-\newif\ifmoeres \IfFileExists{generated/moe_baseline_table.tex}{\moerestrue}{\moeresfalse}
-\newif\ifablres  % true once analysis/entropy_ablation.py has written the complete results
-\IfFileExists{generated/entropy_ablation_table.tex}{\ablrestrue}{\ablresfalse}
 \IfFileExists{generated/entropy_ablation_macros.tex}{\input{generated/entropy_ablation_macros.tex}}{}
+\input{generated/markov_macros.tex}
 \IfFileExists{generated/moe_baseline_macros.tex}{\input{generated/moe_baseline_macros.tex}}{}
 
 \title{Entropy-Gated Triplet Cross-Memory-Bank Learning for Long-Tailed Multi-Label Chest X-Ray Classification}
 
 % CONFIRM: author order and affiliations (taken from docs/paper/isbi/paper.tex); delete this line once confirmed
-\name{Nguyen Trung Ky$^{\dagger}$ \quad Ned Pham$^{\star}$ \quad Huy Pham$^{\dagger}$  \\ Vladimir Fediunin$^{\star}$ Grigorii Lukianov $^{\star\ddagger}$ Christian Wagner$^{\star}$ \quad Shreyank Narayana Gowda$^{\star}$ \quad }
+\name{\begin{tabular}[t]{c}Nguyen Trung Ky$^{\dagger}$ \quad Thien Nhan Pham$^{\star}$ \quad Huy Le Pham$^{\dagger}$ \\ Vladimir Fediunin$^{\star}$ \quad Grigorii Lukianov$^{\ddagger}$ \quad Christian Wagner$^{\star}$ \quad Shreyank Narayana Gowda$^{\star}$\end{tabular}}
 \address{$^{\star}$ International University -- VNU, Ho Chi Minh City, Viet Nam\\
 $^{\dagger}$ The University of Nottingham, Nottingham, United Kingdom\\
-$^{\ddagger}$ University of Bath, Claverton Down, Bath BA2 7AY, United Kingdom}
+$^{\ddagger}$ University of Bath, Claverton Down, Bath, United Kingdom}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Long-tailed, multi-label chest X-ray classification is hard because rare findings receive little gradient signal and seldom appear without the common findings they co-occur with. We study a training-only regulariser for fine-tuning a ConvNeXt/ML-Decoder classifier: a triplet loss against a cross-batch memory bank whose anchors are the images with above-average predictive entropy. It adds no parameters at inference. To attribute any gain to the entropy gate, we run a like-for-like ablation on CXR-LT 2026 Task~1 with the Stage-1 checkpoint, input resolution, schedule, augmentation and six seeds held fixed: Asymmetric Loss alone; the triplet/memory-bank objective with every image as an anchor, or with a random subset of the gate's size; and the same objective with the entropy gate. \TBD[: two sentences with the primary result (C\,$-$\,B mAP with 95\% CI), the triplet/bank effect (B\,$-$\,A) and the head/medium/tail pattern, worded by the pre-registered outcome]
+ConvNeXt with a query-based decoder is a simple, efficient chest X-ray classifier. Our previous CXR-LT 2026 entry improved it with a sparse mixture of experts (MoE) that adds parameters at inference and was reported with aggregate metrics only, so its effect on rare findings was not shown. We study training-time alternatives that leave the backbone unchanged: a triplet loss against a cross-batch memory bank with anchors chosen by predictive entropy, and a small patient-history Markov prior. Under one recipe, five seeds and seven metrics we compare the MoE, the entropy-gated triplet memory and the same with the Markov prior. \TBD[: results]
 \end{abstract}
 
 \begin{keywords}
-Chest X-ray, long-tailed classification, multi-label classification, deep metric learning, triplet loss, cross-batch memory, predictive entropy
+Chest X-ray, long-tailed classification, triplet loss, cross-batch memory, predictive entropy
 \end{keywords}
+
+
 
 \section{Introduction}
 \label{sec:intro}
-Findings on chest radiographs follow a long-tailed distribution. In the CXR-LT 2026 Task~1 data~\cite{dong2026cxrlt}, built on PadChest~\cite{bustos2020padchest}, three of the 30 findings are each present in more than 10\% of our training images, while seven are present in fewer than 1\%, the rarest in 38 of 103{,}303. Rare findings are also seldom seen alone, so their small positive gradient is entangled with that of the common findings they co-occur with. Imbalance-aware classification losses such as Asymmetric Loss (ASL)~\cite{ridnik2021asl} or distribution-balanced loss~\cite{wu2020dbloss} reweight or reshape the per-label loss terms, but do not act on the shared representation directly.
+Findings on chest radiographs are long-tailed and co-occur: in the CXR-LT 2026 Task~1 data~\cite{dong2026cxrlt}, built on PadChest~\cite{bustos2020padchest}, three of the 30 findings occur in over 10\% of our training images and seven in under 1\%. A ConvNeXt~\cite{liu2022convnext} with a query-based ML-Decoder head~\cite{ridnik2021mldecoder} trained with Asymmetric Loss (ASL)~\cite{ridnik2021asl} is a simple, efficient alternative to large transformers~\cite{dosovitskiy2021vit}.
 
-In our CXR-LT 2026 entry~\cite{pham2026efficient}, a ConvNeXt~\cite{liu2022convnext} with an ML-Decoder head~\cite{ridnik2021mldecoder} trained with ASL was fine-tuned in a second stage that turned its top stages and decoder feed-forward layers into a sparse mixture of experts, at the cost of expert and router parameters at inference. Here we instead regularise the single shared embedding space during fine-tuning with a training-only objective: a triplet loss~\cite{schroff2015facenet,hermans2017defense} computed against a cross-batch memory bank~\cite{wang2020xbm}, which supplies positives and negatives for rare findings that a mini-batch of eight images rarely contains. Anchors are restricted to the images whose predictive entropy is at or above the batch mean, the uncertainty criterion of active learning~\cite{settles2009active}, so that the metric-learning signal is spent on the images the current model resolves least well.
+Our previous entry~\cite{pham2026efficient} improved this model with a sparse MoE in the top stages and the decoder (third place, 0.4599 test mAP). Two problems remain: the experts and router add parameters at inference, and only aggregate metrics were reported, without a matched baseline or head, medium and tail results, so it is unknown whether the MoE helps rare findings or beats the plain model.
 
-Whether such a gate helps cannot be read from the accuracy of the full model, because the gate, the triplet loss and the memory bank are confounded with each other and with the fine-tuning itself. Our contributions are:
-\begin{tightlist}
-\item an entropy-gated anchor rule for multi-label triplet learning with a memory bank, with positives defined on shared non-dominant findings; it adds no parameters and is discarded at inference;
-\item a like-for-like ablation with checkpoint, resolution, schedule, augmentation and six seeds held fixed: ASL alone; triplet loss and bank with every image as an anchor, or with a random subset of the gate's size; and with the entropy gate;
-\item head, medium and tail AP for every arm, with seed-level and image-level uncertainty.
-\end{tightlist}
+Here we ask whether the same ConvNeXt can instead be improved without extra inference-time parameters, by giving rare, co-occurring findings a stronger training signal and by using a patient's earlier studies. Therefore, in this paper we introduce new techniques to better fine-tune and improve ConvNeXt, a simple yet efficient model.
+
+\newpage
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.97\linewidth]{figures/framework.png}
+\caption{Two-stage training: Stage~1 with ASL only; Stage~2 adds the entropy-gated triplet loss with a cross-batch memory bank (Sec.~\ref{sec:method}).}
+\label{fig:method}
+\end{figure}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.97\linewidth]{figures/xbm.pdf}
+\caption{Triplet cross-memory-bank pipeline (Eqs.~(\ref{eq:posneg})--(\ref{eq:triplet})). In the drawing, the ``hardest'' pairs are the easiest in the usual terminology (Sec.~\ref{sec:mining}), and the ``momentum'' update is the plain first-in-first-out queue of Sec.~\ref{sec:bank}.}
+\label{fig:xbm}
+\end{figure}
 
 \section{Method}
 \label{sec:method}
 
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{figures/framework.pdf}
-\caption{Two-stage training. Stage~1 trains the ConvNeXt (stages 1--5) and the ML-Decoder end-to-end with ASL. Stage~2 copies these weights (dashed lines) and fine-tunes all of them; the decoder is kept, and ASL is joined by a triplet loss against a cross-batch memory bank with entropy-gated anchors (Eqs.~(\ref{eq:entropy})--(\ref{eq:triplet})), giving $\mathcal{L}_{\mathrm{ASL}}+\lambda\,\mathcal{L}_{\mathrm{tri}}$. The bank, gate and triplet term are used only during training.}
-\label{fig:method}
-\end{figure}
+
 
 \subsection{Model}
-The classifier is a ConvNeXt-B~\cite{liu2022convnext} with an added fifth stage of two blocks (total stride 64), followed by an ML-Decoder head~\cite{ridnik2021mldecoder}: the final feature map receives a 2D positional encoding and is projected to 768 channels, 30 fixed (non-trainable) label queries pass through two decoder layers, each with cross-attention to the feature map followed by self-attention among the queries, and a group-wise linear layer gives one logit $z_{ic}$ per finding (Fig.~\ref{fig:method}). Stage~1 trains this model end-to-end with ASL at $384$~px~\cite{pham2026efficient}; Stage~2, the subject of this paper, fine-tunes all of its trainable weights. For metric learning we average the 30 decoded query embeddings of image $i$ and $\ell_2$-normalise the result, giving $e_i\in\mathbb{R}^{768}$.
+The classifier is a ConvNeXt-B~\cite{liu2022convnext} with an added fifth stage of two blocks (total stride 64), followed by an ML-Decoder head~\cite{ridnik2021mldecoder}: the final feature map receives a 2D positional encoding~\cite{carion2020detr} and is projected to 768 channels, 30 fixed (non-trainable) label queries pass through two decoder layers, each with cross-attention to the feature map followed by self-attention among the queries, and a group-wise linear layer gives one logit $z_{ic}$ per finding (Fig.~\ref{fig:method}). Stage~1 trains this model end-to-end with ASL at $384$~px~\cite{pham2026efficient}; Stage~2 fine-tunes all of its trainable weights from that checkpoint. Only Stage~2 differs from our earlier entry. For metric learning we average the 30 decoded query embeddings of image $i$ and $\ell_2$-normalise the result, giving $e_i\in\mathbb{R}^{768}$.
 
 \subsection{Cross-batch memory bank}
 \label{sec:bank}
-A first-in-first-out bank $\mathcal{M}$ holds the embeddings and multi-hot label vectors $\mathbf{y}$ of the 2{,}048 most recent training images (256 mini-batches of eight). After every step the batch's embeddings, detached from the graph, and labels replace the oldest entries, so each anchor sees positives and negatives from many recent batches at no extra forward cost~\cite{wang2020xbm}.
+With batches of eight, few positive and negative pairs are available inside a batch, and the hardest pair found in a batch approximates the hardest pair in the data poorly. A first-in-first-out bank $\mathcal{M}$ holds the embeddings and multi-hot label vectors $\mathbf{y}$ of the 2{,}048 most recent training images (256 mini-batches of eight). After every step the batch's embeddings, detached from the graph, and labels replace the oldest entries, so each anchor sees a pool 256 times the size of a batch at no extra forward cost~\cite{wang2020xbm}. The entries come from slightly older encoder states.
 
 \subsection{Entropy-gated anchors}
-For image $i$ in batch $\mathcal{B}$ we compute the Shannon entropy of the softmax over its 30 logits,
+Rather than mining a triplet for every sample in the batch, we select anchors using the model's own predictive uncertainty, the criterion of active learning~\cite{settles2009active}. For each sample $x_i$ in a mini-batch $\mathcal{B}$ we compute the Shannon entropy of the softmax distribution over its $C=30$ classification logits, $p_\theta(y_c\mid x_i)=\exp z_{ic}/\sum_{k}\exp z_{ik}$,
 \begin{equation}
-H_i=-\sum_{c=1}^{30} p_{ic}\log p_{ic},\qquad p_{ic}=\frac{\exp z_{ic}}{\sum_{k}\exp z_{ik}},
+H(x_i)=-\sum_{c=1}^{C}p_\theta(y_c\mid x_i)\,\log p_\theta(y_c\mid x_i),
 \label{eq:entropy}
 \end{equation}
-and use as anchors the images at or above the batch mean,
+and select as anchors the samples whose entropy is at or above the batch mean,
 \begin{equation}
-\mathcal{A}=\Bigl\{i\in\mathcal{B} : H_i\ \ge\ \tfrac{1}{|\mathcal{B}|}\textstyle\sum_{j\in\mathcal{B}}H_j\Bigr\}.
+\mathcal{A}=\Bigl\{x_i\in\mathcal{B}:H(x_i)\ \ge\ \tfrac{1}{|\mathcal{B}|}\textstyle\sum_{x_j\in\mathcal{B}}H(x_j)\Bigr\}.
 \label{eq:gate}
 \end{equation}
-\TBD[: measured anchors per step (gate rerun logs)] of the eight images in a batch pass the gate. Eq.~(\ref{eq:entropy}) treats the findings as one categorical distribution although they are separate binary labels; it is the rule we ablate, and a per-label (Bernoulli) entropy is a natural alternative.
+On average \AblRerunAnchors{} of the eight images in a batch pass the gate (\AblRerunAnchorsFirst{} in the first epoch, \AblRerunAnchorsLast{} in the last epoch trained; two reruns of arm~C), and \AblRerunYield\% of these anchors find a valid positive and negative in the bank. The rationale is that an image classified with low entropy is already resolved and less informative to move in embedding space, so the triplet term should go to uncertain images; the ablation tests this, we do not assume it. Eq.~(\ref{eq:entropy}) treats the findings as one categorical distribution although they are separate binary labels; it is the rule we ablate, and a per-label (Bernoulli) entropy is a natural alternative.
 
-\begin{figure*}[t]
-\centering
-\includegraphics[width=0.85\textwidth]{figures/xbm.pdf}
-\caption{Triplet cross-memory-bank pipeline: for each anchor embedding $e_i$, $i\in\mathcal{A}$, of the current mini-batch, distances to the memory bank $\mathcal{M}$ are computed, and the closest positive (minimum distance among entries sharing a finding other than the five most frequent) and the farthest negative (maximum distance among entries sharing no finding) are retrieved to form the triplet in $\mathcal{L}_{\mathrm{tri}}$ (Eqs.~(\ref{eq:posneg})--(\ref{eq:triplet})). The figure calls these the hardest positive and negative; in the usual mining terminology they are the easiest pairs (Sec.~\ref{sec:mining}). The bank is the first-in-first-out queue of Sec.~\ref{sec:bank}, and on $\ell_2$-normalised embeddings the Euclidean distance we use ranks entries as cosine distance does.}
-\label{fig:xbm}
-\end{figure*}
+
 
 \subsection{Mining and objective}
 \label{sec:mining}
-For an anchor $i\in\mathcal{A}$, positives are bank entries that share at least one finding with $i$ other than the five most frequent ones (Normal, pleural effusion, cardiomegaly, support devices, aortic elongation), and negatives share no finding (Fig.~\ref{fig:xbm}):
+For an anchor $x_i\in\mathcal{A}$ with embedding $e_i$ and multi-hot label vector $\mathbf{y}_i$, positives are bank entries that share at least one finding with $x_i$ other than the five most frequent ones (Normal, pleural effusion, cardiomegaly, support devices, aortic elongation), and negatives share no finding (Fig.~\ref{fig:xbm}):
 \begin{equation}
 \begin{aligned}
 \mathcal{P}(i)&=\{m\in\mathcal{M}:\mathbf{y}_m^{\top}D\,\mathbf{y}_i\ge 1\},\\
@@ -102,68 +105,117 @@ For an anchor $i\in\mathcal{A}$, positives are bank entries that share at least 
 \end{aligned}
 \label{eq:posneg}
 \end{equation}
-where the diagonal matrix $D$ is zero at the five most frequent findings, so that two studies that are both Normal are not a positive pair. We take the closest positive and the farthest negative, $e_i^{+}=\arg\min_{m\in\mathcal{P}(i)}\lVert e_i-e_m\rVert_2$ and $e_i^{-}=\arg\max_{m\in\mathcal{N}(i)}\lVert e_i-e_m\rVert_2$. These are easy pairs rather than the hardest ones~\cite{hermans2017defense}; we did not compare harder mining. Over the anchors $\mathcal{A}'\subseteq\mathcal{A}$ for which both sets are non-empty,
+where the diagonal matrix $D$ is zero at the five most frequent findings, so that two studies that are both Normal are not a positive pair. We take the closest positive and the farthest negative, $e_i^{+}=\arg\min_{m\in\mathcal{P}(i)}\lVert e_i-e_m\rVert_2$ and $e_i^{-}=\arg\max_{m\in\mathcal{N}(i)}\lVert e_i-e_m\rVert_2$. These are easy pairs rather than the hardest ones~\cite{hermans2017defense}; they are less exposed to noise in labels derived from reports, but we did not compare harder mining. Over the anchors $\mathcal{A}'\subseteq\mathcal{A}$ for which both sets are non-empty,
 \begin{equation}
-\mathcal{L}_{\mathrm{tri}}=\frac{1}{|\mathcal{A}'|}\sum_{i\in\mathcal{A}'}\max\bigl(0,\lVert e_i-e_i^{+}\rVert_2-\lVert e_i-e_i^{-}\rVert_2+\alpha\bigr),
+\mathcal{L}_{\mathrm{tri}}=\frac{1}{|\mathcal{A}'|}\sum_{x_i\in\mathcal{A}'}\max\bigl(0,\lVert e_i-e_i^{+}\rVert_2-\lVert e_i-e_i^{-}\rVert_2+\alpha\bigr),
 \label{eq:triplet}
 \end{equation}
-and the objective is $\mathcal{L}=\mathcal{L}_{\mathrm{ASL}}+\lambda\,\mathcal{L}_{\mathrm{tri}}$ with $\alpha=0.5$ and $\lambda=0.1$. $\mathcal{L}_{\mathrm{ASL}}$ uses $\gamma_-=2$, $\gamma_+=0$, a probability margin of 0.05 and positive-term class weights proportional to $\log(1/f_c)$, with $f_c$ the training prevalence, normalised to mean one and clipped to $[0.5,2]$. The bank, gate and triplet term exist only during training.
+and the objective is $\mathcal{L}=\mathcal{L}_{\mathrm{ASL}}+\lambda\,\mathcal{L}_{\mathrm{tri}}$ with $\alpha=0.5$ and $\lambda=0.1$. $\mathcal{L}_{\mathrm{ASL}}$ uses $\gamma_-=2$, $\gamma_+=0$, a probability margin of 0.05 and positive-term class weights proportional to $\log(1/f_c)$, with $f_c$ the training prevalence, normalised to mean one and clipped to $[0.5,2]$, so that rare findings contribute a larger positive gradient without destabilising the frequent ones. The bank, gate and triplet term exist only during training.
 
-\section{Experimental Setup}
-\label{sec:setup}
-\textbf{Data.} We use the 30-finding CXR-LT 2026 Task~1 training data~\cite{dong2026cxrlt}, split into 103{,}303 training and 17{,}270 validation images. The split is at image level: 77\% of the validation images have a patient in the training set, and 30\% are lateral views. All results are on this validation fold; the models of this paper were not scored on the challenge test set.
+\subsection{Patient-history Markov prior}
+\label{sec:markov}
+Findings persist across a patient's studies. For each finding $c$, a two-state Markov chain estimated on the training fold gives its probability $\pi_c(y_{t-1})$ at a study from its presence at the patient's previous study. With $\bar\pi_c$ the training prevalence, the prior vector is $r_c=\operatorname{logit}\pi_c(y_{t-1})-\operatorname{logit}\bar\pi_c$, with a flag for an earlier study appended and $r=0$ when there is none. It offsets the label queries $Q_c$ before they attend to the image (Fig.~\ref{fig:markov}):
+\begin{equation}
+Q_c\leftarrow Q_c+r_c\,u_c+W r,\qquad c=1,\dots,30,
+\label{eq:qprior}
+\end{equation}
+where $u_c$ and $W$ are zero-initialised, so training starts from the model without the prior. The objective, the entropy gate and the memory bank are unchanged: the offset acts before cross-attention, so it shifts the logits whose entropy selects the anchors and the decoded query embeddings that fill the bank. A post-prediction patient HMM that adds patient metadata uses the same chain (Fig.~\ref{fig:hmm}). Results are in Table~\ref{tab:ablation}.
 
-\textbf{Training, identical for all arms.} Stage~2 starts from the Stage-1 checkpoint and fine-tunes at $512\times512$~px with AdamW (learning rate $10^{-4}$, weight decay 0.01), a 5\% linear warm-up and a cosine decay over eight epochs stepped per update, batches of eight with six-step gradient accumulation, mixed precision and an exponential moving average (EMA, decay 0.999) of the weights, which is what we evaluate. Training stops after three epochs without a gain in validation mAP, and the best epoch is kept. Augmentation (random resized crop, flip, affine, distortion, brightness/contrast, noise/blur) is drawn deterministically from the image identity and the epoch, so every arm and seed sees the same augmented images; the seed sets the data order. Every arm is trained with the same six seeds, and at a given seed all arms use the same random-number stream.
+\begin{figure}[t]
+\centering
+\resizebox{0.8\linewidth}{!}{%
+\begin{tikzpicture}[font=\footnotesize, node distance=3mm,
+  box/.style={draw=blue!60!black, fill=blue!6, rounded corners=2pt, align=center, text width=3.5cm, inner sep=2.5pt},
+  newbox/.style={draw=orange!80!black, fill=orange!15, rounded corners=2pt, align=center, text width=1.95cm, inner sep=2.5pt, line width=0.9pt},
+  lossbox/.style={box, draw=violet!70!black, fill=violet!8},
+  databox/.style={draw=gray!70!black, fill=white, rounded corners=2pt, align=center, inner sep=2.5pt},
+  aux/.style={draw=gray!70!black, dashed, fill=gray!8, rounded corners=2pt, align=center, text width=1.75cm, inner sep=2pt, font=\scriptsize},
+  arr/.style={-{Stealth[length=1.8mm]}},
+  lab/.style={font=\scriptsize, right, inner sep=2pt}]
+\node[databox, text width=3.5cm] (x) {chest X-ray $x_t$};
+\node[box, below=of x] (bb) {\textbf{ConvNeXt backbone}\\5 stages, stride 64};
+\node[box, below=5mm of bb] (dec) {\textbf{ML-Decoder}, 30 label queries\\cross-attention $\rightarrow$ query self-attention\\$\rightarrow$ GroupFC};
+\node[lossbox, below=6mm of dec] (asl) {\textbf{Asymmetric loss}};
+\node[aux, right=3mm of dec] (tri) {triplet loss (memory bank); embeddings only};
+\node[newbox, left=3mm of dec] (pri) {\textbf{patient Markov prior} $r$\\$\rightarrow$ query offset};
+\node[databox, text width=1.95cm, font=\scriptsize, above=4mm of pri] (rep) {previous report $y_{t-1}$};
+\draw[arr] (x) -- (bb);
+\draw[arr] (bb) -- node[lab]{$S$ image tokens} (dec);
+\draw[arr] (dec) -- node[lab]{logits $u \in \mathbb{R}^{30}$} (asl);
+\draw[arr, dashed] (dec) -- (tri);
+\draw[arr] (rep) -- (pri);
+\draw[arr, line width=0.9pt] (pri) -- (dec);
+\end{tikzpicture}}
+\caption{Where the Markov prior enters (orange): the patient-history prior $r$ offsets the ML-Decoder label queries.}
+\label{fig:markov}
+\end{figure}
 
-\textbf{Arms.} \emph{A}: ASL only ($\lambda=0$; the bank and mining run but contribute no gradient). \emph{B}: triplet loss and bank without a gate, every image an anchor. \emph{B$'$}: triplet loss and bank with $|\mathcal{A}|$ randomly chosen anchors, $|\mathcal{A}|$ being the number the gate would select on that batch; the choice is drawn from a separate generator. \emph{C}: the method, Eq.~(\ref{eq:gate}).
+\begin{figure}[t]
+\centering
+\resizebox{0.8\linewidth}{!}{%
+\begin{tikzpicture}[font=\footnotesize,
+  st/.style={circle, draw=orange!80!black, fill=orange!15, line width=1.2pt, minimum size=8mm, inner sep=0pt},
+  img/.style={draw=blue!60!black, fill=blue!6, rounded corners=2pt, align=center, inner sep=2pt, minimum height=5.5mm, font=\scriptsize},
+  meta/.style={draw=gray!70!black, fill=white, rounded corners=4pt, align=center, inner sep=2pt, font=\scriptsize},
+  aux/.style={draw=gray!50, dashed, fill=gray!8, rounded corners=4pt, align=center, inner sep=2pt, font=\scriptsize, text=gray!30!black},
+  fuse/.style={draw=orange!80!black, fill=orange!15, rounded corners=2pt, align=center, inner sep=3pt, line width=0.9pt, font=\scriptsize},
+  arr/.style={-{Stealth[length=1.8mm]}},
+  lab/.style={font=\scriptsize, inner sep=1.5pt}]
+\node[st] (y0) {$y_{t-1}$};
+\node[st, right=26mm of y0] (y1) {$y_t$};
+\node[meta, above=5mm of y0] (m0) {$m_{t-1}$};
+\node[meta, above=5mm of y1] (m1) {$m_t$: sex, age,\\acuity, gap $\Delta_t$};
+\node[aux, left=4mm of y0] (rep) {previous\\report\\(observed)};
+\node[img, below=7mm of y0] (x0) {image $x_{t-1}$};
+\node[img, below=7mm of y1] (x1) {image $x_t$};
+\node[img, below=4mm of x1] (clf) {frozen ConvNeXt + ML-Decoder\\$p(y \mid x_t)$};
+\node[fuse, right=7mm of y1, text width=1.6cm] (fz) {fusion};
+\draw[arr, line width=1.2pt] (y0) -- node[lab, below]{$\pi(y_t \mid y_{t-1}, m_t, \Delta_t)$} (y1);
+\draw[arr] (m0) -- (y0);
+\draw[arr] (m1) -- (y1);
+\draw[arr] (y0) -- node[lab, left]{emission} (x0);
+\draw[arr] (y1) -- node[lab, right]{emission} (x1);
+\draw[arr, dashed, draw=gray!70] (rep) -- (y0);
+\draw[arr] (x1) -- (clf);
+\draw[arr] (clf.east) -| node[lab, pos=0.75, right]{$\ell(x_t)$} (fz.south);
+\draw[arr] (y1) -- node[lab, above]{$q$} (fz);
+\end{tikzpicture}}
+\caption{Post-prediction patient HMM: hidden finding states $y_t$, images and the frozen classifier as emissions, metadata and time gap $\Delta_t$ in the transition prior.}
+\label{fig:hmm}
+\end{figure}
 
-\textbf{Metrics.} Macro mean average precision (mAP), the challenge metric, is primary. We also report macro AUROC (mAUC), macro F1 at threshold 0.5 (mF1) and expected calibration error (mECE, 15 bins over all image--finding pairs). Following CXR-LT 2024~\cite{lin2025cxrlt}, findings are grouped by training prevalence into head ($>$10\%, 3 findings), medium (1--10\%, 20) and tail ($<$1\%, 7), and we report the mean AP of each group. Tail findings have 7 to 140 validation positives each.
-
-\textbf{Statistics.} Each run contributes its best-epoch EMA model, selected on the validation fold in the same way for every arm. We report the mean and standard deviation over seeds and, for pairs of arms, the mean paired difference over seeds with a 95\% $t$-interval and an exact two-sided sign-flip test. The primary contrast, fixed before the runs, is C\,$-$\,B in mAP. As an image-level check, we bootstrap (2{,}000 resamples) the difference between the seed-averaged probabilities of two arms.
 
 \section{Results}
 \label{sec:results}
 
 \begin{table*}[t]
-\caption{Stage-2 ablation at 512~px, internal validation (17{,}270 images): mean $\pm$ s.d. over six seeds. Head, medium and tail are the mean AP over 3, 20 and 7 findings. mECE: lower is better.}
+\caption{Unified test on the internal validation split (17{,}270 images): 768~px, five seeds, mean $\pm$ s.d. All systems share the Stage-1 checkpoint, the schedule (four of eight cosine epochs, drop-path 0.1), SWA weights and flip test-time augmentation. Markov prior: history available, or withheld as on the challenge test set. Head, medium, tail: mean AP over 3, 20, 7 findings. mECE: lower is better. Empty cells await the runs.}
 \label{tab:ablation}
 \centering
 \small
+\setlength{\tabcolsep}{4pt}
 \begin{tabular}{lcccccccc}
 \toprule
-Arm & seeds & mAP & mAUC & mF1 & mECE & head AP & medium AP & tail AP \\
+System & $n$ & mAP & mAUC & mF1 & mECE & head AP & medium AP & tail AP \\
 \midrule
-\ifablres\input{generated/entropy_ablation_table.tex}
-\else\multicolumn{9}{c}{\TBD[: generated/entropy\_ablation\_table.tex from analysis/entropy\_ablation.py]} \\
-\fi
+\IfFileExists{generated/unified_table.tex}{\input{generated/unified_table.tex} \\}{%
+MoE (sparse mixture of experts) & & & & & & & & \\
+Triplet Memory + Entropy & & & & & & & & \\
+Triplet Memory + Entropy + Markov prior, history available & & & & & & & & \\
+Triplet Memory + Entropy + Markov prior, history withheld & & & & & & & & \\}
 \bottomrule
 \end{tabular}
 \end{table*}
 
-\TBD[: Results text, written once the analysis exists and the framing is agreed: (1) triplet + bank vs ASL (B\,$-$\,A); (2) the entropy gate, primary C\,$-$\,B with 95\% CI, sign-flip $p$ and wins, and C\,$-$\,B$'$; (3) head/medium/tail; (4) calibration; (5) anchors and triplets per step; (6) reproducibility of C (reruns of two seeds); (7) frontal and unseen-patient subsets, one sentence; (8) a table of paired differences if space allows.]
-
-\textbf{Higher resolution.} With the same objective, single models at 768 and 1024~px (a four-epoch schedule with stochastic depth and weight averaging) reach 0.460 and 0.462 validation mAP, and a three-model ensemble of 640--1024~px models with flip test-time augmentation reaches 0.472 (members chosen on the validation fold, hence optimistic). All of these used the entropy gate and were not ablated.
-
-\textbf{Comparison with a mixture of experts.} The earlier ISBI 2026 entry used a sparse mixture of experts (MoE) in the top stages and the decoder feed-forward layers. We rebuilt it under the recipe of the higher-resolution runs above (same Stage-1 checkpoint, seeds, schedule, weight averaging and flip test-time augmentation; four experts, top-2 routing, ASL plus a load-balancing term, no triplet loss), and added an ASL-only control at 768~px. Table~\ref{tab:moe} lists the results. In mAP, the entropy-gated triplet loss and the MoE are indistinguishable: the paired difference of two-seed averages at 768~px is $\MoeTmMoeMAP$ (95\% bootstrap CI $[\MoeTmMoeMAPlo,\MoeTmMoeMAPhi]$), and $\MoeTmMoeFourMAP$ ($[\MoeTmMoeFourMAPlo,\MoeTmMoeFourMAPhi]$) for the four-model average. Neither beats ASL alone by more than its interval ($\MoeTmAslMAP$ and $\MoeMoeAslMAP$). At 768~px and above the triplet model is slightly worse calibrated than the MoE (mECE $\MoeTmMoeMECE$ higher in the two-seed average, CI $[\MoeTmMoeMECElo,\MoeTmMoeMECEhi]$), but it adds no parameters at inference, whereas the MoE adds expert and router parameters.
-
-
-\begin{table}[t]
-\caption{Matched-recipe comparison with a mixture of experts (MoE), internal validation; \emph{Entropy gate} is the triplet loss with entropy-gated anchors. Flip test-time augmentation, weight-averaged models. Averages are of probabilities (seeds 42 and 1024 at 768~px; 768 (both seeds), 896 and 1024~px); the last block is the mean of the four single models. mECE: lower is better.}
-\label{tab:moe}
-\centering
-\small
-\setlength{\tabcolsep}{2pt}
-\ifmoeres\input{generated/moe_baseline_table.tex}
-\else\TBD[: generated/moe\_baseline\_table.tex from analysis/moe\_table.py]\fi
-\end{table}
+Our earlier entry, a sparse mixture of experts~\cite{pham2026efficient}, reported 0.405 mAP on this internal split at 384~px and 0.4599 on the official test set (third place); that recipe differs from ours, so these numbers are not comparable with Table~\ref{tab:ablation}. \TBD[: results text after the unified test: the three systems, paired differences over seeds with 95\% intervals and exact sign-flip tests, head, medium and tail AP, calibration]
 
 \section{Discussion and Limitations}
 \label{sec:discussion}
-\TBD[: interpretation per the pre-registered outcome.] All results come from one internal validation fold that shares patients with the training set and includes lateral views, whereas the challenge test set is frontal and patient-disjoint; the absolute values are therefore likely optimistic, although every arm is affected in the same way. Tail estimates rest on few positives per finding. The entropy in Eq.~(\ref{eq:entropy}) is a softmax over separate binary labels, and we did not compare harder mining rules or other datasets.
+\TBD[: interpretation of the unified test] An earlier six-seed ablation at 512~px, run before this test, found no measurable effect of the entropy gate over using every image as an anchor. All results come from one internal validation fold that shares patients with the training set (77\% of its images) and includes lateral views (30\%), whereas the challenge test set is frontal and patient-disjoint; the absolute values are therefore likely optimistic. The Markov prior needs an earlier report of the same patient, which the test set does not provide, so only its withheld rows are test-like. The entropy in Eq.~(\ref{eq:entropy}) is a softmax over separate binary labels.
 
 \section{Conclusion}
 \label{sec:conclusion}
-\TBD[: conclusion per the pre-registered outcome.]
+\TBD[: conclusion after the unified test]
 \label{end-of-technical}% check_submission.py: everything above must end on page <= 4
 
 \section{Compliance with Ethical Standards}
@@ -172,9 +224,9 @@ Arm & seeds & mAP & mAUC & mF1 & mECE & head AP & medium AP & tail AP \\
 
 \section{Acknowledgments}
 \label{sec:acknowledgments}
-We thank the organisers of the CXR-LT 2026 challenge for the data. \AUTHOR{[Funding statement.] The authors have no relevant financial or non-financial interests to disclose. The AI assistant Claude (Anthropic) was used to write the training-control and analysis code of the ablation and to draft and edit the text; the authors checked all content.}
+We thank the organisers of the CXR-LT 2026 challenge for the data. \AUTHOR{[Funding statement.] The authors have no relevant financial or non-financial interests to disclose.}
 
 \bibliographystyle{IEEEbib}
-\bibliography{refs}
+{\footnotesize\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}\bibliography{refs}}
 
 \end{document}
