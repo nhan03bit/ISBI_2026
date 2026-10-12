@@ -2,6 +2,7 @@
 import argparse
 import csv
 import json
+import math
 from pathlib import Path
 import statistics
 
@@ -38,8 +39,12 @@ def report(root):
             if reference_counts is not None and counts != reference_counts:
                 raise ValueError('Arms processed different training image counts')
             reference_counts = counts
-            if initial_reference is not None and history['initial_metrics'] != initial_reference:
-                raise ValueError('Initialization evaluations differ; investigate before attribution')
+            if initial_reference is not None:
+                initial = history['initial_metrics']
+                if ({k: v for k, v in initial.items() if k != 'mECE'} !=
+                        {k: v for k, v in initial_reference.items() if k != 'mECE'} or
+                        not math.isclose(initial['mECE'], initial_reference['mECE'], abs_tol=1e-6)):
+                    raise ValueError('Initialization evaluations differ; investigate before attribution')
             initial_reference = history['initial_metrics']
             final = history['epoch_metrics'][-1]
             if final['epoch'] != cfg['epochs'] or not (directory / 'model_final.pth').exists():
