@@ -15,7 +15,7 @@ class PipelineTests(unittest.TestCase):
     def test_dependencies_and_recorded_paths(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
-            env = {key: str(root) for key in ('CKPT', 'TRAIN', 'VAL', 'META')}
+            env = {key: str(root) for key in ('CKPT', 'TRAIN', 'VAL', 'META', 'AUDIT')}
             responses = [subprocess.CompletedProcess([], 0, str(i) + '\n', '') for i in (101, 102, 103)]
             with patch.dict(pipeline.os.environ, env), patch.object(pipeline, 'run', side_effect=responses) as execute:
                 pipeline.submit(root / 'run', False)
@@ -28,6 +28,7 @@ class PipelineTests(unittest.TestCase):
             self.assertNotIn('--gpus', calls[2])
             self.assertEqual(json.loads((root / 'run/jobs.json').read_text()),
                              dict(preflight='101', gpu='102', report='103'))
+            self.assertIn('--exclusions', pipeline.common(json.loads((root / 'run/pipeline.json').read_text())))
             with self.assertRaises(FileExistsError):
                 pipeline.submit(root / 'run', False)
 

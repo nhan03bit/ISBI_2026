@@ -7,7 +7,7 @@ import random
 import time
 from pathlib import Path
 
-from stage3_data import IndexedImages, build_index, exposure, schedule, sha256
+from stage3_data import IndexedImages, build_index, exclude_audited, exposure, schedule, sha256
 
 
 def arguments():
@@ -29,6 +29,7 @@ def arguments():
     p.add_argument('--resume', action='store_true')
     p.add_argument('--preflight-only', action='store_true')
     p.add_argument('--allow-missing', action='store_true', help='Record missing shard images explicitly')
+    p.add_argument('--exclusions', help='Stage-2 decode audit JSON; exclude its unreadable image keys')
     p.add_argument('--stop-after', type=int, help='Stop cleanly without changing the schedule horizon')
     return p.parse_args()
 
@@ -76,9 +77,14 @@ def main():
         raise ValueError('Train/validation shard label orders differ')
     train = build_index(args.train_shards, args.train_fold, args.metadata, names)
     val = build_index(args.val_shards, args.val_fold, args.metadata, names)
+    if args.exclusions:
+        audit = json.loads(Path(args.exclusions).read_text())
+        for split, index in (('train', train), ('val', val)):
+            exclude_audited(index, audit, split)
     if set(r['filename'] for r in train['records']) & set(r['filename'] for r in val['records']):
         raise ValueError('Train/validation image overlap')
     manifest = dict(config=config, checkpoint_hash=sha256(args.checkpoint), names=names,
+                    audit_hash=sha256(args.exclusions) if args.exclusions else None,
                     environment=dict(torch=str(torch.__version__), numpy=np.__version__),
                     data={k: {a: b for a, b in idx.items() if a != 'records'} for k, idx in [('train', train), ('val', val)]},
                     source_hashes={p.name: sha256(p) for p in [Path(__file__), Path(__file__).with_name('stage3_data.py'),

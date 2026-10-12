@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from stage3_data import build_index, read_bytes, schedule, exposure
+from stage3_data import build_index, exclude_audited, read_bytes, schedule, exposure
 
 
 class SamplingTests(unittest.TestCase):
@@ -46,13 +46,17 @@ class SamplingTests(unittest.TestCase):
             (root / 'meta.csv').write_text('ImageID,PatientID\na.png,001\nb.png,002\n')
             with tarfile.open(root / 'shard_train_0000.tar', 'w') as tar:
                 for ext, data in [('img', b'image'), ('cls', b'label')]:
-                    item = tarfile.TarInfo('train_00000000.' + ext)
+                    item = tarfile.TarInfo('00000000.' + ext)
                     item.size = len(data)
                     tar.addfile(item, io.BytesIO(data))
             idx = build_index(root, root / 'fold.csv', root / 'meta.csv', ['a'])
             self.assertEqual(idx['missing'], ['b.png'])
             self.assertEqual(idx['counts'], [1])
             self.assertEqual(read_bytes(idx['records'][0]['img']), b'image')
+            audit = {'inventory': {'train': idx['inventory']}, 'bad_keys': {'train': ['00000000']}}
+            exclude_audited(idx, audit, 'train')
+            self.assertEqual(idx['records'], [])
+            self.assertEqual(idx['counts'], [1])
 
 
 class TrainingTests(unittest.TestCase):

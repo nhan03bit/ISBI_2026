@@ -40,6 +40,11 @@ Paths can be overridden with `CKPT`, `TRAIN`, `VAL`, `META`, and `VENV_DIR`; par
 both arms; this is a limit, not a runtime prediction. No automatic later-stage experiments
 or repeat-seed runs are submitted. For individual jobs/resume, use the commands below.
 
+When using the shards already audited for the entropy ablation, set `AUDIT` to that
+run's `audit.json`. Stage 3 verifies the shard inventory and excludes exactly the
+audited unreadable image keys from both arms; training prevalence keeps the full
+fold denominator. An unknown key or changed shard stops the run.
+
 Implemented: natural and minority-sampled decoder-only ASL, deterministic draw schedules,
 indexed uncompressed shards, exposure accounting, EMA, resume, prediction exports and paired
 patient bootstrap. No reserved queues, triplet/ranking objectives or boosting yet.

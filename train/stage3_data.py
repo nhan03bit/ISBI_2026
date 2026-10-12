@@ -54,6 +54,8 @@ def build_index(shards, fold, metadata, names):
             raise ValueError(f'Incomplete shard record: {key}')
         if key in by_name:
             i = by_name[key]
+        elif key.isdigit():
+            i = int(key)
         else:
             prefix, number = key.rsplit('_', 1)
             if prefix not in ('train', 'val') or not number.isdigit():
@@ -73,6 +75,16 @@ def build_index(shards, fold, metadata, names):
     return dict(records=records, names=list(names), counts=counts, total=len(rows),
                 missing=[r['filename'] for i, r in enumerate(rows) if i not in seen],
                 inventory=inventory, fold_hash=sha256(fold), metadata_hash=sha256(metadata))
+
+
+def exclude_audited(index, audit, split):
+    if audit['inventory'][split] != index['inventory']:
+        raise ValueError(f'{split} shards changed since decode audit')
+    bad = audit['bad_keys'][split]
+    if len(bad) != len(set(bad)) or not set(bad) <= {r['key'] for r in index['records']}:
+        raise ValueError(f'{split} decode audit keys do not match indexed images')
+    index['records'] = [r for r in index['records'] if r['key'] not in set(bad)]
+    index['excluded_keys'] = bad
 
 
 def read_bytes(location):

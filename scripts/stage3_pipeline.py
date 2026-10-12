@@ -27,7 +27,8 @@ def common(config):
             '--val-shards', config['val'], '--metadata', config['metadata'],
             '--train-fold', 'data/train_fold_1.csv', '--val-fold', 'data/val_fold_1.csv',
             '--batch-size', '4', '--accum-steps', '12', '--img-size', '768', '--workers', '4',
-            '--seed', '42'] + (['--allow-missing'] if config['allow_missing'] else [])
+            '--seed', '42'] + (['--allow-missing'] if config['allow_missing'] else []) + (
+                ['--exclusions', config['audit']] if config.get('audit') else [])
 
 
 def phase(name, directory):
@@ -103,11 +104,16 @@ def submit(directory, allow_missing):
                   train=os.environ.get('TRAIN', '/data/psytp7/wds_shards_train_raw'),
                   val=os.environ.get('VAL', '/data/psytp7/wds_shards_val_raw'),
                   metadata=os.environ.get('META', str(ROOT / 'data/PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv')),
+                  audit=os.environ.get('AUDIT'),
                   allow_missing=allow_missing)
     for key in ('checkpoint', 'train', 'val', 'metadata'):
         config[key] = str(Path(config[key]).resolve())
         if not Path(config[key]).exists():
             raise FileNotFoundError(f'{key}: {config[key]}')
+    if config['audit']:
+        config['audit'] = str(Path(config['audit']).resolve())
+        if not Path(config['audit']).exists():
+            raise FileNotFoundError(f'audit: {config["audit"]}')
     (directory / 'pipeline.json').write_text(json.dumps(config, indent=2))
     jobs = {}
     for name in ('preflight', 'gpu', 'report'):
