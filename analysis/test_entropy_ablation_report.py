@@ -16,13 +16,21 @@ class ReportTests(unittest.TestCase):
                            limit_train_batches=0, limit_val_batches=0, img_size=768,
                            out_dir=str(directory), triplet_lambda=weight, anchor_rule=gate)
                 (directory / 'manifest.json').write_text(json.dumps(dict(config=cfg, checkpoint_sha256='same')))
-                (directory / 'history.json').write_text(json.dumps(dict(initial_metrics={'mAP': .3},
+                (directory / 'history.json').write_text(json.dumps(dict(initial_metrics={'mAP': .3, 'mECE': .14 + (1e-8 if arm == 'entropy' else 0)},
                     triplet_diagnostics=[dict(anchors=8)] * 4,
                     epoch_metrics=[dict(epoch=4, mAP=.4, head_AP=.6, medium_AP=.4, tail_AP=.2)])))
                 (directory / 'model_final.pth').touch()
             rows, table = report(root)
             self.assertEqual(len(rows), 3)
             self.assertIn('entropy minus triplet', table)
+            history_path = root / 'seed_42/entropy/history.json'
+            history = json.loads(history_path.read_text())
+            history['initial_metrics']['mAP'] += .01
+            history_path.write_text(json.dumps(history))
+            with self.assertRaisesRegex(ValueError, 'Initialization evaluations differ'):
+                report(root)
+            history['initial_metrics']['mAP'] -= .01
+            history_path.write_text(json.dumps(history))
             path = root / 'seed_42/entropy/manifest.json'
             bad = json.loads(path.read_text())
             bad['config']['img_size'] = 512
