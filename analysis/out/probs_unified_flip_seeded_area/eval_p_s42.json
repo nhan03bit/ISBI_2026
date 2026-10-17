@@ -1,0 +1,25 @@
+{
+  "val_mAP": 0.4619205594062805,
+  "val_mAUC": 0.9124249219894409,
+  "val_mF1": 0.4721262454986572,
+  "val_mECE": 0.15318244695663452,
+  "n_rows": 17270,
+  "checkpoints": [
+    "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/unified768_seeded/p/seed_42/Model_run/model_swa.pth"
+  ],
+  "scales_per_checkpoint": [
+    [
+      768
+    ]
+  ],
+  "n_models": 1,
+  "tta_flip": true,
+  "scales": [
+    768
+  ],
+  "interp": "area",
+  "logit_avg": false,
+  "prior_file": null,
+  "prior_mode": "with",
+  "evaluated_at": "20261016_040009"
+}

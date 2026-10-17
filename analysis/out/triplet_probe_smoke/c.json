@@ -1,0 +1,116 @@
+{
+  "tag": "c",
+  "ckpt": "checkpoint_Triplet_3/unified768_seeded/c/seed_42/Model_run/model_best.pth",
+  "batches": 20,
+  "warmup": 20,
+  "lam": 0.1,
+  "cls_loss_mean": 0.02913491828367114,
+  "mining": {
+    "easy": {
+      "steps_with_triplet_frac": 0.85,
+      "triplets_per_step": 1.3,
+      "loss_mean_when_present": 0.023360894116408685,
+      "loss_mean_per_step": 0.01985675999894738,
+      "active_hinge_frac": 0.3627450992079342,
+      "d_ap_mean": 0.32392305250351244,
+      "d_an_mean": 0.8566041565858401,
+      "d_an_minus_d_ap": 0.5326811040823276
+    },
+    "hard": {
+      "steps_with_triplet_frac": 0.85,
+      "triplets_per_step": 1.3,
+      "loss_mean_when_present": 0.7907197896172019,
+      "loss_mean_per_step": 0.6721118211746215,
+      "active_hinge_frac": 1.0,
+      "d_ap_mean": 0.5850264258109606,
+      "d_an_mean": 0.2962458385871007,
+      "d_an_minus_d_ap": -0.28878058722385996
+    },
+    "semihard": {
+      "steps_with_triplet_frac": 0.85,
+      "triplets_per_step": 1.3,
+      "loss_mean_when_present": 0.5162175771068124,
+      "loss_mean_per_step": 0.43878494054079054,
+      "active_hinge_frac": 1.0,
+      "d_ap_mean": 0.5850264258109606,
+      "d_an_mean": 0.5546906802516717,
+      "d_an_minus_d_ap": -0.030335745559288974
+    }
+  },
+  "grad": {
+    "easy": {
+      "all": {
+        "cls_norm": 0.3356372060371192,
+        "tri_norm": 0.7730760698646384,
+        "ratio_lam": 0.18982212955175687,
+        "cos": 0.02564804492381909
+      },
+      "head": {
+        "cls_norm": 0.2436345787798354,
+        "tri_norm": 0.2909731472973481,
+        "ratio_lam": 0.10926419031321966,
+        "cos": 0.006880317437371206
+      },
+      "backbone": {
+        "cls_norm": 0.22590992986531772,
+        "tri_norm": 0.7136796821758633,
+        "ratio_lam": 0.23308378815831166,
+        "cos": 0.03388603498809156
+      },
+      "n": 9
+    },
+    "semihard": {
+      "all": {
+        "cls_norm": 0.3356372060371192,
+        "tri_norm": 1.9037503259538973,
+        "ratio_lam": 0.6017067803967822,
+        "cos": 0.010427944136379366
+      },
+      "head": {
+        "cls_norm": 0.2436345787798354,
+        "tri_norm": 0.7649603239974766,
+        "ratio_lam": 0.327608612283538,
+        "cos": 0.017737709471860322
+      },
+      "backbone": {
+        "cls_norm": 0.22590992986531772,
+        "tri_norm": 1.724028651541966,
+        "ratio_lam": 0.9397869238916966,
+        "cos": 0.01928836605116137
+      },
+      "n": 9
+    }
+  },
+  "bank": {
+    "filled": 160,
+    "mean_offdiag_cos": 0.8488770723342896,
+    "h4_fail_batches": 0
+  },
+  "gate": {
+    "anchors_per_step_softmax": 2.0,
+    "anchors_per_step_binary": 2.25,
+    "jaccard_softmax_vs_binary": 0.6666666666666666
+  },
+  "args": {
+    "ckpt": [
+      "stage1=stage1",
+      "c=checkpoint_Triplet_3/unified768_seeded/c/seed_42/Model_run/model_best.pth",
+      "asl=checkpoint_ASL/v0_768_seeded/seed_42/Model_run/model_best.pth"
+    ],
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe_smoke",
+    "warmup": 20,
+    "batches": 20,
+    "grad_batches": 10,
+    "seed": 42,
+    "img_size": 768,
+    "batch_size": 4,
+    "num_workers": 6,
+    "memory_size": 2048,
+    "embedding_dim": 768,
+    "margin": 0.5,
+    "lam": 0.1,
+    "drop_path": 0.1,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

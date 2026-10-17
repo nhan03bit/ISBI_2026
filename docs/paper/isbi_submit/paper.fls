@@ -338,6 +338,9 @@ INPUT /home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/cmextra/cmex9.t
 INPUT /home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/public/cm/cmbx9.tfm
 INPUT /home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msam10.tfm
 INPUT /home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/public/amsfonts/symbols/msbm10.tfm
+INPUT ./generated/seed42_768_table.tex
+INPUT ./generated/seed42_768_table.tex
+INPUT generated/seed42_768_table.tex
 INPUT ./paper.bbl
 INPUT ./paper.bbl
 INPUT paper.bbl

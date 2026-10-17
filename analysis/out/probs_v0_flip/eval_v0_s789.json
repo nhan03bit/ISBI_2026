@@ -1,0 +1,24 @@
+{
+  "val_mAP": 0.4641467034816742,
+  "val_mAUC": 0.9120354652404785,
+  "val_mF1": 0.4690614938735962,
+  "val_mECE": 0.13243821263313293,
+  "n_rows": 17270,
+  "checkpoints": [
+    "/home/psytp7/ISBI_2026/train/checkpoint_ASL/v0_768/seed_789/Model_run/model_swa.pth"
+  ],
+  "scales_per_checkpoint": [
+    [
+      768
+    ]
+  ],
+  "n_models": 1,
+  "tta_flip": true,
+  "scales": [
+    768
+  ],
+  "logit_avg": false,
+  "prior_file": null,
+  "prior_mode": "with",
+  "evaluated_at": "20261014_053312"
+}

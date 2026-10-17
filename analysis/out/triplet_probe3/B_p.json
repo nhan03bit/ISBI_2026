@@ -1,0 +1,45 @@
+{
+  "tag": "B_p",
+  "init": "checkpoint_Triplet_3/unified768_seeded/p/seed_42/Model_run/model_swa.pth",
+  "lam": 1.0,
+  "lr": 0.0,
+  "opt_steps": 16,
+  "warmup": 512,
+  "spans": [
+    {
+      "opt_step": 10,
+      "micro": 120,
+      "frac_micro_with_triplet": 0.7666666666666667,
+      "active_hinge_frac": 0.0,
+      "active_triplets_per_window": 0.0,
+      "l_tri_per_micro": 0.0,
+      "l_cls_per_micro": 0.03241863661678508,
+      "bank_cos": 0.7720128297805786,
+      "bank_filled": 2048
+    }
+  ],
+  "evals": [],
+  "instrumented": [],
+  "args": {
+    "parts": "A,D,B",
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe3",
+    "lams": "0,0.1,1.0",
+    "lr": 0.0001,
+    "opt_steps": 150,
+    "static_windows": 16,
+    "static_ckpts": "asl,p",
+    "warmup": 512,
+    "log_every": 10,
+    "eval_every": 50,
+    "val_batches": 64,
+    "accum": 12,
+    "seed": 42,
+    "memory_size": 2048,
+    "margin": 0.5,
+    "weight_decay": 0.01,
+    "drop_path": 0.1,
+    "num_workers": 6,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

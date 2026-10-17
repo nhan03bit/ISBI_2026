@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.29)  12 OCT 2026 04:55
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (TeX Live 2026) (preloaded format=pdflatex 2026.8.29)  14 OCT 2026 18:39
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -387,7 +387,7 @@ Package pdftex.def Info: figures/xbm.pdf  used on input line 66.
 
 
 
- <./figures/framework.png> <./figures/xbm.pdf>] [2] (./paper.bbl
+ <./figures/framework.png> <./figures/xbm.pdf>] (./generated/seed42_768_table.tex) [2] (./paper.bbl
 Underfull \hbox (badness 1436) in paragraph at lines 29--32
 \OT1/ptm/m/n/8 senborn, Xi-ao-hua Zhai, Thomas Un-terthiner, Mostafa De-hghani,
  []
@@ -406,15 +406,15 @@ L3 programming layer <2026-08-10>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 14296 strings out of 469089
- 294092 string characters out of 5459054
- 696398 words of memory out of 5000000
- 43107 multiletter control sequences out of 15000+600000
+ 14300 strings out of 469089
+ 294219 string characters out of 5459054
+ 697399 words of memory out of 5000000
+ 43108 multiletter control sequences out of 15000+600000
  655266 words of font info for 100 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  92i,15n,94p,938b,897s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmex10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi9.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy6.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy8.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm10.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/public/amsfonts/symbols/msbm7.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmbi8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></home/psytp7/.TinyTeX/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on paper.pdf (4 pages, 1565041 bytes).
+Output written on paper.pdf (4 pages, 1564936 bytes).
 PDF statistics:
  143 PDF objects out of 1000 (max. 8388607)
  85 compressed objects within 1 object stream

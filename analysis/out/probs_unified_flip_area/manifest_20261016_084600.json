@@ -1,0 +1,12 @@
+[
+  {
+    "file": "c__seed_789__model_swa@768_flip_area.npy",
+    "checkpoint": "/home/psytp7/ISBI_2026/train/checkpoint_Triplet_3/unified768/c/seed_789/Model_run/model_swa.pth",
+    "scales": [
+      768
+    ],
+    "tta_flip": true,
+    "interp": "area",
+    "prior_mode": null
+  }
+]

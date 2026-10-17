@@ -1,0 +1,92 @@
+{
+  "tag": "c",
+  "ckpt": "checkpoint_Triplet_3/unified768_seeded/c/seed_42/Model_run/model_best.pth",
+  "lam": 0.1,
+  "accum": 12,
+  "windows": 2,
+  "M1_accumulation": {
+    "micro_ratio_lam_tri_over_cls": 0.24628383630797976,
+    "micro_frac_with_triplet": 0.875,
+    "window_coherence_cls": 0.3109359748822119,
+    "window_coherence_tri": 0.5319120467837387,
+    "random_coherence_ref": 0.2886751345948129,
+    "window_ratio_lam_tri_over_cls": 0.42603738605976105,
+    "window_cos_cls_tri": 0.09498153813183308
+  },
+  "M2_across_windows": {
+    "consecutive_cos_cls": 0.2724953889846802,
+    "consecutive_cos_tri": 0.27461323142051697,
+    "all_window_coherence_cls": 0.7980648129818316,
+    "all_window_coherence_tri": 0.8003955743415286,
+    "random_coherence_ref": 0.7071067811865475,
+    "total_ratio_lam_tri_over_cls": 0.42825329303741455,
+    "total_cos_cls_tri": 0.1089322417974472
+  },
+  "M3_readout": {
+    "tri_logit_share": 0.0324474342522167,
+    "cls_logit_share": 0.9999999545869374,
+    "ratio_h": 0.04037272823708398,
+    "ratio_logit": 0.0036152912126410576,
+    "random_dir_logit_share_ref": 0.036084391824351615
+  },
+  "M5_embedding": {
+    "norm_mean_query_const": 4.862300872802734,
+    "norm_mean_h": 28.453088760375977,
+    "cos_mean_h_vs_const": 0.21407024562358856,
+    "norm_batchmean_of_mean_h": 26.1835880279541,
+    "image_std_of_mean_h": 11.528767967338338,
+    "mean_pairwise_cos_mean_h": 0.8456227779388428,
+    "mean_pairwise_cos_after_removing_dataset_mean": -0.006420197430998087,
+    "image_var_mean_h_over_mean_per_query_var": 0.456561243881105,
+    "independent_queries_ref": 0.03333333333333333
+  },
+  "M4_function_space": {
+    "tri": {
+      "rms_dlogit_per_unit_step": 3.314448356628418,
+      "rms_dembed_per_unit_step": 0.035835642367601395,
+      "dlogit_over_dembed": 92.49027330468545
+    },
+    "cls": {
+      "rms_dlogit_per_unit_step": 4.914333343505859,
+      "rms_dembed_per_unit_step": 0.01260337233543396,
+      "dlogit_over_dembed": 389.9220948737169
+    },
+    "rand": {
+      "rms_dlogit_per_unit_step": 0.006343763787299395,
+      "rms_dembed_per_unit_step": 8.160197467077523e-05,
+      "dlogit_over_dembed": 77.74032200683175
+    },
+    "step_l2": 0.5,
+    "val_images": 8
+  },
+  "M6_precision": [
+    {
+      "cos": 0.999963104724884,
+      "norm_ratio": 1.0008776187896729
+    },
+    {
+      "cos": 0.9999803900718689,
+      "norm_ratio": 1.000862956047058
+    }
+  ],
+  "args": {
+    "ckpt": [
+      "stage1=stage1",
+      "c=checkpoint_Triplet_3/unified768_seeded/c/seed_42/Model_run/model_best.pth"
+    ],
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe2_smoke",
+    "warmup": 20,
+    "windows": 2,
+    "accum": 12,
+    "val_batches": 2,
+    "step": 0.5,
+    "seed": 42,
+    "memory_size": 2048,
+    "margin": 0.5,
+    "lam": 0.1,
+    "drop_path": 0.1,
+    "num_workers": 6,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}
