@@ -1,0 +1,165 @@
+bootstrap 100/1000
+bootstrap 200/1000
+bootstrap 300/1000
+bootstrap 400/1000
+bootstrap 500/1000
+bootstrap 600/1000
+bootstrap 700/1000
+bootstrap 800/1000
+bootstrap 900/1000
+bootstrap 1000/1000
+history bootstrap 100/1000
+history bootstrap 200/1000
+history bootstrap 300/1000
+history bootstrap 400/1000
+history bootstrap 500/1000
+history bootstrap 600/1000
+history bootstrap 700/1000
+history bootstrap 800/1000
+history bootstrap 900/1000
+history bootstrap 1000/1000
+
+== group mean AP, all views (5-seed mean; n_img=17270) ==
+group         #cls         ASL     Entropy Markov+hist   Markov-wh
+head             3      0.7632      0.7644      0.7714      0.7629
+medium          20      0.4620      0.4621      0.4806      0.4596
+tail             7      0.3317      0.3287      0.3553      0.3361
+extreme_tail     6      0.3648      0.3604      0.3842      0.3707
+rare10          10      0.3541      0.3519      0.3757      0.3556
+
+-- contrasts, all views: mean | seed t-CI (wins/5) | image-bootstrap CI --
+C-A          head          +0.0012 | [+0.0004, +0.0021] (5/5) | [+0.0005, +0.0021]
+C-A          medium        +0.0001 | [-0.0005, +0.0007] (2/5) | [-0.0008, +0.0009]
+C-A          tail          -0.0030 | [-0.0200, +0.0140] (2/5) | [-0.0148, +0.0069]
+C-A          extreme_tail  -0.0044 | [-0.0237, +0.0149] (2/5) | [-0.0180, +0.0070]
+C-A          rare10        -0.0022 | [-0.0141, +0.0098] (2/5) | [-0.0103, +0.0051]
+Dwith-A      head          +0.0082 | [+0.0067, +0.0096] (5/5) | [+0.0065, +0.0099]
+Dwith-A      medium        +0.0186 | [+0.0172, +0.0201] (5/5) | [+0.0158, +0.0216]
+Dwith-A      tail          +0.0236 | [+0.0099, +0.0373] (5/5) | [-0.0009, +0.0550]
+Dwith-A      extreme_tail  +0.0194 | [+0.0032, +0.0357] (5/5) | [-0.0097, +0.0571]
+Dwith-A      rare10        +0.0216 | [+0.0118, +0.0314] (5/5) | [+0.0047, +0.0445]
+Dzero-A      head          -0.0003 | [-0.0017, +0.0011] (2/5) | [-0.0012, +0.0005]
+Dzero-A      medium        -0.0024 | [-0.0037, -0.0012] (0/5) | [-0.0034, -0.0014]
+Dzero-A      tail          +0.0044 | [-0.0191, +0.0278] (1/5) | [-0.0110, +0.0260]
+Dzero-A      extreme_tail  +0.0059 | [-0.0211, +0.0330] (2/5) | [-0.0119, +0.0312]
+Dzero-A      rare10        +0.0015 | [-0.0150, +0.0181] (1/5) | [-0.0094, +0.0168]
+Dwith-Dzero  head          +0.0085 | [+0.0082, +0.0087] (5/5) | [+0.0070, +0.0100]
+Dwith-Dzero  medium        +0.0211 | [+0.0208, +0.0213] (5/5) | [+0.0185, +0.0240]
+Dwith-Dzero  tail          +0.0193 | [+0.0072, +0.0313] (5/5) | [-0.0054, +0.0430]
+Dwith-Dzero  extreme_tail  +0.0135 | [-0.0003, +0.0273] (4/5) | [-0.0148, +0.0403]
+Dwith-Dzero  rare10        +0.0201 | [+0.0116, +0.0285] (5/5) | [+0.0023, +0.0375]
+
+== group mean AP, frontal views (5-seed mean; n_img=11973) ==
+group         #cls         ASL     Entropy Markov+hist   Markov-wh
+head             3      0.7767      0.7778      0.7834      0.7767
+medium          20      0.4790      0.4790      0.4930      0.4770
+tail             7      0.3713      0.3697      0.4069      0.3841
+extreme_tail     6      0.4072      0.4044      0.4397      0.4227
+rare10          10      0.3923      0.3909      0.4219      0.3996
+
+-- contrasts, frontal views: mean | seed t-CI (wins/5) | image-bootstrap CI --
+C-A          head          +0.0011 | [-0.0003, +0.0025] (5/5) | [+0.0002, +0.0021]
+C-A          medium        +0.0000 | [-0.0010, +0.0011] (3/5) | [-0.0010, +0.0011]
+C-A          tail          -0.0016 | [-0.0353, +0.0322] (2/5) | [-0.0210, +0.0156]
+C-A          extreme_tail  -0.0028 | [-0.0424, +0.0368] (2/5) | [-0.0258, +0.0173]
+C-A          rare10        -0.0014 | [-0.0245, +0.0216] (2/5) | [-0.0152, +0.0105]
+Dwith-A      head          +0.0067 | [+0.0050, +0.0084] (5/5) | [+0.0048, +0.0086]
+Dwith-A      medium        +0.0141 | [+0.0117, +0.0164] (5/5) | [+0.0109, +0.0177]
+Dwith-A      tail          +0.0356 | [+0.0114, +0.0599] (5/5) | [-0.0124, +0.0830]
+Dwith-A      extreme_tail  +0.0325 | [+0.0027, +0.0624] (5/5) | [-0.0221, +0.0865]
+Dwith-A      rare10        +0.0296 | [+0.0122, +0.0469] (5/5) | [-0.0036, +0.0619]
+Dzero-A      head          +0.0000 | [-0.0017, +0.0017] (1/5) | [-0.0010, +0.0010]
+Dzero-A      medium        -0.0020 | [-0.0042, +0.0002] (1/5) | [-0.0031, -0.0008]
+Dzero-A      tail          +0.0128 | [-0.0214, +0.0469] (4/5) | [-0.0155, +0.0511]
+Dzero-A      extreme_tail  +0.0155 | [-0.0248, +0.0558] (4/5) | [-0.0172, +0.0603]
+Dzero-A      rare10        +0.0073 | [-0.0166, +0.0312] (4/5) | [-0.0126, +0.0345]
+Dwith-Dzero  head          +0.0067 | [+0.0065, +0.0069] (5/5) | [+0.0050, +0.0084]
+Dwith-Dzero  medium        +0.0161 | [+0.0158, +0.0163] (5/5) | [+0.0130, +0.0196]
+Dwith-Dzero  tail          +0.0229 | [+0.0051, +0.0406] (5/5) | [-0.0169, +0.0566]
+Dwith-Dzero  extreme_tail  +0.0170 | [-0.0037, +0.0377] (5/5) | [-0.0292, +0.0551]
+Dwith-Dzero  rare10        +0.0223 | [+0.0095, +0.0350] (5/5) | [-0.0068, +0.0468]
+
+== per class, rarest first: AP all views (5-seed mean); deltas vs ASL with wins/5; frontal Dwith-A ==
+class                             tr+  val+   fr+    ASL    Ent    M+h   M-wh       C-A      Dw-A      Dz-A   frDw-A
+Hydropneumothorax                  38     7     4  .2966  .2714  .3597  .3773 -0.0252(2) +0.0630(4) +0.0807(4) +0.2022
+pneumoperitoneo                    52     9     5  .3060  .3065  .2572  .2985 +0.0005(2) -0.0489(0) -0.0076(2) -0.0880
+Subcutaneous Emphysema            179    29    23  .5862  .5885  .6039  .5735 +0.0023(3) +0.0177(4) -0.0127(2) +0.0212
+Mass                              296    49    34  .0758  .0718  .1112  .0710 -0.0039(1) +0.0354(5) -0.0048(2) +0.0329
+azygos lobe                       346    58    44  .5569  .5580  .5685  .5530 +0.0011(2) +0.0116(4) -0.0039(3) +0.0053
+Pneumothorax                      420    71    50  .3672  .3662  .4050  .3510 -0.0010(2) +0.0378(4) -0.0163(2) +0.0216
+calcified densities               835   140    91  .1330  .1383  .1816  .1281 +0.0053(4) +0.0486(5) -0.0049(1) +0.0543
+Emphysema                        1232   206   129  .2846  .2834  .3024  .2835 -0.0012(2) +0.0177(5) -0.0012(2) +0.0097
+aortic atheromatosis             1430   239   169  .1683  .1653  .1861  .1621 -0.0030(1) +0.0178(5) -0.0062(1) +0.0255
+Hernia                           1641   274   185  .7664  .7699  .7814  .7585 +0.0035(3) +0.0150(5) -0.0079(0) +0.0109
+bronchiectasis                   1979   330   185  .2180  .2162  .2632  .2121 -0.0018(2) +0.0452(5) -0.0059(0) +0.0345
+sternotomy                       2233   372   250  .8902  .8887  .8893  .8864 -0.0015(2) -0.0009(2) -0.0038(0) +0.0004
+hemidiaphragm elevation          2600   433   279  .4281  .4308  .4415  .4267 +0.0027(3) +0.0134(5) -0.0013(2) +0.0127
+Kyphosis                         3065   511   257  .3377  .3367  .3465  .3348 -0.0010(2) +0.0088(5) -0.0029(1) +0.0011
+hypoexpansion                    3068   511   315  .3215  .3227  .3445  .3212 +0.0011(2) +0.0230(5) -0.0003(3) +0.0158
+fracture                         3387   563   371  .4414  .4407  .5049  .4369 -0.0007(2) +0.0635(5) -0.0045(0) +0.0376
+pleural thickening               3768   628   404  .4106  .4127  .4491  .4061 +0.0021(4) +0.0385(5) -0.0045(0) +0.0229
+vascular hilar enlargement       4307   718   491  .2253  .2273  .2324  .2237 +0.0020(3) +0.0071(5) -0.0016(1) +0.0029
+vertebral degenerative changes   4380   730   420  .2008  .2003  .2110  .1987 -0.0005(2) +0.0102(5) -0.0021(1) +0.0144
+central venous catheter          4769   795   758  .8862  .8842  .8909  .8862 -0.0020(1) +0.0047(5) -0.0000(2) +0.0030
+hyperinflated lung               5158   860   470  .2603  .2604  .2827  .2590 +0.0001(2) +0.0224(5) -0.0013(2) +0.0200
+atelectasis                      6761  1126   788  .4195  .4204  .4389  .4197 +0.0009(2) +0.0194(5) +0.0002(2) +0.0160
+alveolar pattern                 6806  1134   872  .5999  .6001  .6123  .5974 +0.0002(2) +0.0124(5) -0.0025(1) +0.0121
+interstitial pattern             6895  1149   803  .4536  .4538  .4732  .4518 +0.0002(2) +0.0196(5) -0.0018(1) +0.0199
+Nodule                           7850  1308   842  .4667  .4663  .4915  .4646 -0.0004(2) +0.0248(5) -0.0021(0) +0.0129
+aortic elongation                8419  1402   983  .5300  .5312  .5391  .5311 +0.0012(4) +0.0091(5) +0.0011(3) +0.0079
+Support Devices                  8607  1433  1268  .9309  .9308  .9316  .9305 -0.0001(3) +0.0006(3) -0.0004(2) +0.0010
+cardiomegaly                    11004  1833  1235  .6506  .6530  .6607  .6507 +0.0024(4) +0.0101(5) +0.0001(3) +0.0071
+pleural effusion                12505  2082  1412  .7638  .7650  .7764  .7635 +0.0012(3) +0.0126(5) -0.0003(2) +0.0119
+Normal                          41507  6917  4888  .8752  .8753  .8770  .8745 +0.0001(2) +0.0018(5) -0.0007(1) +0.0012
+
+== patient history (seen 13304 / unseen 3966 val images) ==
+Hydropneumothorax              val+    7  same finding in a train image of the patient    4 ( 57%)  unseen-patient val+   0
+pneumoperitoneo                val+    9  same finding in a train image of the patient    6 ( 67%)  unseen-patient val+   0
+Subcutaneous Emphysema         val+   29  same finding in a train image of the patient   22 ( 76%)  unseen-patient val+   2
+Mass                           val+   49  same finding in a train image of the patient   27 ( 55%)  unseen-patient val+  15
+azygos lobe                    val+   58  same finding in a train image of the patient   38 ( 66%)  unseen-patient val+  18
+Pneumothorax                   val+   71  same finding in a train image of the patient   55 ( 77%)  unseen-patient val+   4
+calcified densities            val+  140  same finding in a train image of the patient  106 ( 76%)  unseen-patient val+  20
+Emphysema                      val+  206  same finding in a train image of the patient  160 ( 78%)  unseen-patient val+  26
+aortic atheromatosis           val+  239  same finding in a train image of the patient  149 ( 62%)  unseen-patient val+  52
+Hernia                         val+  274  same finding in a train image of the patient  207 ( 76%)  unseen-patient val+  55
+
+-- unseen patients: ASL AP | x - y mean | seed t-CI (wins/5) | image-bootstrap CI --
+C-A          head    ASL 0.7391 | +0.0006 | [-0.0034, +0.0047] (2/5) | [-0.0017, +0.0029]
+C-A          medium  ASL 0.4449 | +0.0001 | [-0.0052, +0.0055] (3/5) | [-0.0025, +0.0033]
+C-A          tail    ASL 0.4351 | -0.0387 | [-0.0789, +0.0016] (0/5) | [-0.1047, +0.0230]
+C-A          rare10  ASL 0.4303 | -0.0265 | [-0.0535, +0.0005] (0/5) | [-0.0679, +0.0134]
+Dwith-A      head    ASL 0.7391 | +0.0018 | [-0.0019, +0.0056] (3/5) | [-0.0006, +0.0043]
+Dwith-A      medium  ASL 0.4449 | +0.0019 | [-0.0017, +0.0056] (3/5) | [-0.0014, +0.0062]
+Dwith-A      tail    ASL 0.4351 | -0.0554 | [-0.0881, -0.0227] (0/5) | [-0.1319, +0.0086]
+Dwith-A      rare10  ASL 0.4303 | -0.0366 | [-0.0574, -0.0159] (0/5) | [-0.0844, +0.0055]
+Dzero-A      head    ASL 0.7391 | +0.0017 | [-0.0020, +0.0054] (3/5) | [-0.0008, +0.0042]
+Dzero-A      medium  ASL 0.4449 | +0.0006 | [-0.0029, +0.0042] (2/5) | [-0.0024, +0.0044]
+Dzero-A      tail    ASL 0.4351 | -0.0543 | [-0.0860, -0.0226] (0/5) | [-0.1296, +0.0095]
+Dzero-A      rare10  ASL 0.4303 | -0.0361 | [-0.0568, -0.0153] (0/5) | [-0.0834, +0.0059]
+Dwith-Dzero  head    ASL 0.7391 | +0.0001 | [+0.0001, +0.0002] (5/5) | [-0.0003, +0.0006]
+Dwith-Dzero  medium  ASL 0.4449 | +0.0013 | [+0.0009, +0.0017] (5/5) | [-0.0001, +0.0029]
+Dwith-Dzero  tail    ASL 0.4351 | -0.0011 | [-0.0025, +0.0004] (1/5) | [-0.0073, +0.0019]
+Dwith-Dzero  rare10  ASL 0.4303 | -0.0006 | [-0.0010, -0.0002] (0/5) | [-0.0045, +0.0021]
+
+-- positives hist+ (negatives = all val): ASL AP | x - y mean | seed t-CI (wins/5) | image-bootstrap CI --
+C-A          tail    ASL 0.3054 | -0.0064 | [-0.0297, +0.0169] (2/5) | [-0.0274, +0.0075]
+C-A          rare10  ASL 0.3234 | -0.0042 | [-0.0200, +0.0117] (2/5) | [-0.0192, +0.0061]
+Dwith-A      tail    ASL 0.3054 | +0.0303 | [+0.0099, +0.0508] (5/5) | [-0.0021, +0.0610]
+Dwith-A      rare10  ASL 0.3234 | +0.0295 | [+0.0147, +0.0443] (5/5) | [+0.0065, +0.0511]
+Dzero-A      tail    ASL 0.3054 | -0.0057 | [-0.0368, +0.0254] (1/5) | [-0.0181, +0.0058]
+Dzero-A      rare10  ASL 0.3234 | -0.0049 | [-0.0270, +0.0171] (1/5) | [-0.0135, +0.0033]
+Dwith-Dzero  tail    ASL 0.3054 | +0.0360 | [+0.0194, +0.0526] (5/5) | [+0.0051, +0.0630]
+Dwith-Dzero  rare10  ASL 0.3234 | +0.0345 | [+0.0229, +0.0461] (5/5) | [+0.0130, +0.0544]
+
+-- positives hist- (negatives = all val): ASL AP | x - y mean | seed t-CI (wins/5) | image-bootstrap CI --
+C-A          tail    ASL 0.2344 | +0.0050 | [-0.0020, +0.0119] (4/5) | [-0.0113, +0.0163]
+C-A          rare10  ASL 0.2491 | +0.0027 | [-0.0030, +0.0084] (4/5) | [-0.0090, +0.0113]
+Dwith-A      tail    ASL 0.2344 | -0.0159 | [-0.0253, -0.0064] (0/5) | [-0.0469, +0.0442]
+Dwith-A      rare10  ASL 0.2491 | -0.0170 | [-0.0216, -0.0124] (0/5) | [-0.0386, +0.0266]
+Dzero-A      tail    ASL 0.2344 | +0.0185 | [+0.0046, +0.0324] (5/5) | [-0.0163, +0.0695]
+Dzero-A      rare10  ASL 0.2491 | +0.0108 | [+0.0021, +0.0194] (5/5) | [-0.0142, +0.0465]
+Dwith-Dzero  tail    ASL 0.2344 | -0.0344 | [-0.0504, -0.0184] (0/5) | [-0.0581, +0.0012]
+Dwith-Dzero  rare10  ASL 0.2491 | -0.0277 | [-0.0384, -0.0171] (0/5) | [-0.0453, -0.0016]
+
+wrote /home/psytp7/ISBI_2026/analysis/out/tail_breakdown.json

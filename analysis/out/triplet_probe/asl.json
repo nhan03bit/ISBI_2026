@@ -1,0 +1,116 @@
+{
+  "tag": "asl",
+  "ckpt": "checkpoint_ASL/v0_768_seeded/seed_42/Model_run/model_best.pth",
+  "batches": 300,
+  "warmup": 512,
+  "lam": 0.1,
+  "cls_loss_mean": 0.030320558184757828,
+  "mining": {
+    "easy": {
+      "steps_with_triplet_frac": 0.7866666666666666,
+      "triplets_per_step": 1.1733333333333333,
+      "loss_mean_when_present": 0.03721383479976301,
+      "loss_mean_per_step": 0.029274883375813562,
+      "active_hinge_frac": 0.6885593225390224,
+      "d_ap_mean": 0.23615914418108083,
+      "d_an_mean": 0.7076899971474301,
+      "d_an_minus_d_ap": 0.4715308529663492
+    },
+    "hard": {
+      "steps_with_triplet_frac": 0.7866666666666666,
+      "triplets_per_step": 1.1733333333333333,
+      "loss_mean_when_present": 0.8481265326677743,
+      "loss_mean_per_step": 0.6671928723653158,
+      "active_hinge_frac": 1.0,
+      "d_ap_mean": 0.5695445286110044,
+      "d_an_mean": 0.22073871329088102,
+      "d_an_minus_d_ap": -0.34880581532012334
+    },
+    "semihard": {
+      "steps_with_triplet_frac": 0.7866666666666666,
+      "triplets_per_step": 1.1733333333333333,
+      "loss_mean_when_present": 0.5083931736269239,
+      "loss_mean_per_step": 0.3999359632531802,
+      "active_hinge_frac": 1.0,
+      "d_ap_mean": 0.5695445286110044,
+      "d_an_mean": 0.5625403942963616,
+      "d_an_minus_d_ap": -0.0070041343146427515
+    }
+  },
+  "grad": {
+    "easy": {
+      "all": {
+        "cls_norm": 0.3142028615150146,
+        "tri_norm": 1.6039258481776506,
+        "ratio_lam": 0.5493359222450992,
+        "cos": 0.03227641665697038
+      },
+      "head": {
+        "cls_norm": 0.2503855878131377,
+        "tri_norm": 0.6264210336797004,
+        "ratio_lam": 0.27967597755240153,
+        "cos": 0.008644165693337934
+      },
+      "backbone": {
+        "cls_norm": 0.18531947918104502,
+        "tri_norm": 1.4698455795390666,
+        "ratio_lam": 0.8500026359609616,
+        "cos": 0.06192801771413282
+      },
+      "n": 119
+    },
+    "semihard": {
+      "all": {
+        "cls_norm": 0.3142028615150146,
+        "tri_norm": 1.9160258441287306,
+        "ratio_lam": 0.6834871501025568,
+        "cos": 0.11737825427390416
+      },
+      "head": {
+        "cls_norm": 0.2503855878131377,
+        "tri_norm": 0.7173489254909581,
+        "ratio_lam": 0.3289348518199072,
+        "cos": 0.025976892889298442
+      },
+      "backbone": {
+        "cls_norm": 0.18531947918104502,
+        "tri_norm": 1.7671505986126967,
+        "ratio_lam": 1.0829033079760524,
+        "cos": 0.18987568997073326
+      },
+      "n": 119
+    }
+  },
+  "bank": {
+    "filled": 2048,
+    "mean_offdiag_cos": 0.9087170362472534,
+    "h4_fail_batches": 0
+  },
+  "gate": {
+    "anchors_per_step_softmax": 2.1466666666666665,
+    "anchors_per_step_binary": 2.0933333333333333,
+    "jaccard_softmax_vs_binary": 0.6647222222222223
+  },
+  "args": {
+    "ckpt": [
+      "stage1=stage1",
+      "c=checkpoint_Triplet_3/unified768_seeded/c/seed_42/Model_run/model_best.pth",
+      "asl=checkpoint_ASL/v0_768_seeded/seed_42/Model_run/model_best.pth"
+    ],
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe",
+    "warmup": 512,
+    "batches": 300,
+    "grad_batches": 150,
+    "seed": 42,
+    "img_size": 768,
+    "batch_size": 4,
+    "num_workers": 6,
+    "memory_size": 2048,
+    "embedding_dim": 768,
+    "margin": 0.5,
+    "lam": 0.1,
+    "drop_path": 0.1,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

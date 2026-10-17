@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex paper"] 1791777321.9236 "paper.aux" "paper.bbl" "paper" 1791777325.35264 0
+["bibtex paper"] 1791999568.7206 "paper.aux" "paper.bbl" "paper" 1791999572.10733 0
   "./IEEEbib.bst" 1791478543.96433 17903 9ff833f4bf67f47893e44ee17b52d211 ""
   "./refs.bib" 1791776917.69218 4865 0c80e66120972c69fd1f9fd520397ab0 ""
-  "paper.aux" 1791777325.23917 4876 b12c4e35d4155c9051f802ffb44fcb77 "pdflatex"
+  "paper.aux" 1791999572.02455 4769 18797466942ef8957e88d38751e1aeef "pdflatex"
   (generated)
   "paper.bbl"
   "paper.blg"
   (rewritten before read)
-["pdflatex"] 1791777321.93816 "paper.tex" "paper.pdf" "paper" 1791777325.35285 0
+["pdflatex"] 1791999568.77002 "paper.tex" "paper.pdf" "paper" 1791999572.10753 0
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/adobe/times/ptmb7t.tfm" 1136768653 2172 fd0c924230362ff848a33632ed45dc23 ""
   "/home/psytp7/.TinyTeX/texmf-dist/fonts/tfm/adobe/times/ptmb8r.tfm" 1136768653 4524 6bce29db5bc272ba5f332261583fee9c ""
@@ -171,9 +171,10 @@
   "generated/entropy_ablation_macros.tex" 1791770908.03579 18874 78dd2f5fe4f67e62831f6dc8a4454b86 ""
   "generated/markov_macros.tex" 1791774116.97199 743 6a51e5e17ac60a82d566f2410553c893 ""
   "generated/moe_baseline_macros.tex" 1791776218.18464 1934 eac32b50471c607634522fa7682ba7ea ""
-  "paper.aux" 1791777325.23917 4876 b12c4e35d4155c9051f802ffb44fcb77 "pdflatex"
-  "paper.bbl" 1791777321.93224 3037 3ad56db4dbe687a532e3d729bff266f7 "bibtex paper"
-  "paper.tex" 1791777314.7814 18355 2485ec8f921d94e8a4cfbceaede916d0 ""
+  "generated/seed42_768_table.tex" 1791999557.46687 585 e880d6db4aca061f83a3d17351cd002f ""
+  "paper.aux" 1791999572.02455 4769 18797466942ef8957e88d38751e1aeef "pdflatex"
+  "paper.bbl" 1791999568.76462 3037 3ad56db4dbe687a532e3d729bff266f7 "bibtex paper"
+  "paper.tex" 1791999557.48587 18284 c45eb85b12d717bc8f84e2c1b180911f ""
   "spconf.sty" 1791478543.96233 8798 121ab5e33850ab4cf48fc2795d92b250 ""
   (generated)
   "paper.aux"

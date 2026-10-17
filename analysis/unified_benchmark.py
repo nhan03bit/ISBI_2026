@@ -1,29 +1,25 @@
-"""Unified benchmark at 768 px: triplet bank, entropy gate, Markov prior in ONE setting (2026-10-12).
+"""Three-system benchmark at 768 px on the job-49375 recipe (2026-10-13).
 
-Plan / pre-registration: docs/plan/2026-10-12-unified-benchmark-plan.md (written before any unified run was
-submitted). Every arm runs on train/train_2_v5.py with the push recipe at 768 px, seeds 42/123/456/789/1024
-(scripts/submit_stage2_v5_unified.sh), and is evaluated the same way: SWA weights, flip TTA, one row order
-(keys.txt / labels.npy of analysis/out/probs_unified_flip). All seven metrics come from those dumps:
-mAP, mAUC, mF1@0.5, mECE (15 bins), head / medium / tail AP (evaluate/class_groups.py).
+Plan: docs/plan/2026-10-13-asl-v0-vs-entropy-v5-plan.md. Systems and the script that trains each:
 
-  A  ASL only                      B  triplet + bank, every image an anchor     C  + entropy gate
-  D  C + Markov prior              E  ASL + Markov prior                        F  stronger triplet (exploratory)
-  M  sparse mixture of experts (state-of-the-art reference; seeds 42/1024 are the earlier runs, read from probs_moe_flip)
-  D and E are scored twice: history available ("with", a hospital archive) and withheld ("zero", the
-  condition of the challenge test set, whose patients have no history).
-  The paper's Table 1 shows the three systems asked for: M (MoE), C (Triplet Memory + Entropy) and D
-  (Triplet Memory + Entropy + Markov prior, with / without history); A, B, E, F are controls
-  (unified_controls_table.tex).
+  A  ASL only                       train/train_2_v0.py  (scripts/submit_stage2_v0.sh, dumps in probs_v0_flip)
+  C  Triplet Memory + Entropy       train/train_2_v5.py  (scripts/submit_stage2_v5_unified.sh)
+  D  C + Markov prior, scored twice: history available ("with", a hospital archive) and withheld ("zero", the
+     condition of the challenge test set, whose patients have no history)
+                                    train/train_2_v5.py  (seeds 42/1024 = prior/img768_qprior_*)
 
-Pre-registered contrasts (x - y, paired by seed; mean difference, 95% t-interval, exact sign-flip p, wins,
-paired-t MDE at 80% power; Holm over the mAP p-values): B-A, C-B, C-A, D(with)-C, D(zero)-C,
-D(with)-E(with), E(with)-A, E(zero)-A, F-C, and against the state of the art C-M, D(with)-M, D(zero)-M.
-Everything is reported whatever it shows.
+Seeds 42/123/456/789/1024. All rows are evaluated the same way: SWA weights, flip TTA, one row order (keys.txt /
+labels.npy of analysis/out/probs_unified_flip, identical copy in probs_v0_flip). Seven metrics from those dumps:
+mAP, mAUC, mF1@0.5, mECE (15 bins), head / medium / tail AP (evaluate/class_groups.py). ASL and the v5 rows are
+never pooled: different training scripts, different dump directories.
+
+Contrasts (x - y, paired by seed; mean difference, 95% t-interval, exact sign-flip p, wins, paired-t MDE at 80%
+power; Holm over the mAP p-values): C-A, D(with)-A, D(zero)-A, D(with)-C, D(zero)-C. Everything is reported
+whatever it shows. The same-seed reruns prior/img768_qprior_seed{42,1024}_rerun give the run-to-run noise floor.
 
     python -I analysis/unified_benchmark.py                  # all runs must exist
     python -I analysis/unified_benchmark.py --allow-missing  # preliminary read, writes analysis/out only
-Outputs: analysis/out/unified_benchmark.json, unified_macros.tex, unified_table.tex (M, C, D rows),
-unified_controls_table.tex (A, B, E, F rows) (copied to
+Outputs: analysis/out/unified_benchmark.json, unified_macros.tex, unified_table.tex (A, C, D rows) (copied to
 docs/paper/isbi_submit/generated/ only when nothing is missing).
 """
 
@@ -42,44 +38,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import entropy_ablation as ea  # noqa: E402  (tm_metrics, group_means, paired, summarize, fmt, class groups)
 
 ROOT = ea.ROOT
-UNI = ROOT / "analysis/out/probs_unified_flip"
-MOE = ROOT / "analysis/out/probs_moe_flip"
+UNI = ROOT / "analysis/out/probs_unified_flip"   # train_2_v5.py systems (C, D)
+V0 = ROOT / "analysis/out/probs_v0_flip"         # train_2_v0.py system (A)
 SEEDS = (42, 123, 456, 789, 1024)
 PX = 768
 
-# row key -> (label in the table, macro word)
 ROWS = {   # row key -> (label in the table, macro word)
-    "M": ("MoE (sparse mixture of experts)", "M"),
+    "A": ("ASL only (asymmetric loss)", "A"),
     "C": ("Triplet Memory + Entropy", "C"),
     "Dwith": ("Triplet Memory + Entropy + Markov prior, history available", "DWith"),
     "Dzero": ("Triplet Memory + Entropy + Markov prior, history withheld", "DZero"),
-    "A": ("ASL only", "A"),
-    "B": ("Triplet Memory, every image an anchor", "B"),
-    "Ewith": ("ASL + Markov prior, history available", "EWith"),
-    "Ezero": ("ASL + Markov prior, history withheld", "EZero"),
-    "F": ("Triplet Memory + Entropy, hard mining, $\\lambda=1$ (exploratory)", "F"),
 }
-MAIN_ROWS = ("M", "C", "Dwith", "Dzero")
-CONTROL_ROWS = ("A", "B", "Ewith", "Ezero", "F")
+MAIN_ROWS = ("A", "C", "Dwith", "Dzero")
 # x - y contrasts: (name used in macros, x, y)
-CONTRASTS = [("BminusA", "B", "A"), ("CminusB", "C", "B"), ("CminusA", "C", "A"),
-             ("DwithMinusC", "Dwith", "C"), ("DzeroMinusC", "Dzero", "C"),
-             ("DwithMinusEwith", "Dwith", "Ewith"), ("EwithMinusA", "Ewith", "A"),
-             ("EzeroMinusA", "Ezero", "A"), ("FminusC", "F", "C"),
-             ("CminusM", "C", "M"), ("DwithMinusM", "Dwith", "M"), ("DzeroMinusM", "Dzero", "M")]
+CONTRASTS = [("CminusA", "C", "A"), ("DwithMinusA", "Dwith", "A"), ("DzeroMinusA", "Dzero", "A"),
+             ("DwithMinusC", "Dwith", "C"), ("DzeroMinusC", "Dzero", "C")]
 
 
 def member_file(key: str, seed: int) -> Path:
-    """Dump file of one (row, seed). Existing seed 42/1024 runs of A, D and M keep the names their original
-    dumps / re-dumps got from the checkpoint path (evaluate_tta_v5.py names a dump after its last two
-    directory levels)."""
+    """Dump file of one (row, seed). evaluate_tta_v5.py names a dump after the two directory levels above
+    Model_run, so ASL (checkpoint_ASL/v0_768/seed_S) and the v5 systems each have their own names; the
+    seed 42/1024 prior runs live under prior/img768_qprior_seed<S>."""
     suffix = f"@{PX}_flip"
     arm, mode = key[0], key[1:]
     tag = {"with": "_prior-with", "zero": "_prior-zero", "": ""}[mode]
-    if arm == "M" and seed in (42, 1024):
-        return MOE / f"checkpoint_MoE__moe_img{PX}_seed{seed}__model_swa{suffix}{tag}.npy"
-    if arm == "A" and seed in (42, 1024):
-        return UNI / f"checkpoint_MoE__asl_img{PX}_seed{seed}__model_swa{suffix}{tag}.npy"
+    if arm == "A":
+        return V0 / f"v0_{PX}__seed_{seed}__model_swa{suffix}{tag}.npy"
     if arm == "D" and seed in (42, 1024):
         return UNI / f"prior__img{PX}_qprior_seed{seed}__model_swa{suffix}{tag}.npy"
     return UNI / f"{arm.lower()}__seed_{seed}__model_swa{suffix}{tag}.npy"
@@ -89,10 +73,10 @@ def load(allow_missing: bool):
     L = np.load(UNI / "labels.npy").astype(np.int64)
     meta = ea.class_groups.build()
     groups = {g: np.where(meta["groups"][g])[0] for g in ("head", "medium", "tail", "extreme_tail")}
-    if (MOE / "labels.npy").exists():
-        assert (np.load(MOE / "labels.npy").astype(np.int64) == L).all(), "row order differs between dump dirs"
-    if (MOE / "keys.txt").exists() and (UNI / "keys.txt").exists():
-        assert (MOE / "keys.txt").read_text() == (UNI / "keys.txt").read_text(), "keys.txt differs"
+    if (V0 / "labels.npy").exists():
+        assert (np.load(V0 / "labels.npy").astype(np.int64) == L).all(), "row order differs between dump dirs"
+    if (V0 / "keys.txt").exists() and (UNI / "keys.txt").exists():
+        assert (V0 / "keys.txt").read_text() == (UNI / "keys.txt").read_text(), "keys.txt differs"
     runs, missing = {}, []
     for key in ROWS:
         for seed in SEEDS:
@@ -160,7 +144,7 @@ def write_latex(res: dict, paths: list[Path]) -> None:
                  for m in ea.METRICS]
         return f"{label} & {d['mAP']['n']} & " + " & ".join(cells)
 
-    def table(keys, name):
+    def table(keys):
         rows = [row(k, ROWS[k][0]) for k in keys]
         rows = [r + " \\\\" for r in rows if r]
         # no "\\\\" after the last row (a "\\\\" at the end of an \input file breaks the tabular)
@@ -173,8 +157,7 @@ def write_latex(res: dict, paths: list[Path]) -> None:
     for p in paths:
         p.mkdir(parents=True, exist_ok=True)
         (p / "unified_macros.tex").write_text("\n".join(mac) + "\n")
-        (p / "unified_table.tex").write_text(table(MAIN_ROWS, "main"))
-        (p / "unified_controls_table.tex").write_text(table(CONTROL_ROWS, "controls"))
+        (p / "unified_table.tex").write_text(table(MAIN_ROWS))
 
 
 def main() -> None:

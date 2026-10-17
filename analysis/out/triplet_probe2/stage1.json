@@ -1,0 +1,100 @@
+{
+  "tag": "stage1",
+  "ckpt": "stage1",
+  "lam": 0.1,
+  "accum": 12,
+  "windows": 32,
+  "M1_accumulation": {
+    "micro_ratio_lam_tri_over_cls": 0.0021074501621606684,
+    "micro_frac_with_triplet": 0.7994791666666666,
+    "window_coherence_cls": 0.3831807198293701,
+    "window_coherence_tri": 0.03125,
+    "random_coherence_ref": 0.2886751345948129,
+    "window_ratio_lam_tri_over_cls": 0.0054367538541555405,
+    "window_cos_cls_tri": 0.004902798682451248
+  },
+  "M2_across_windows": {
+    "consecutive_cos_cls": 0.44257171115567606,
+    "consecutive_cos_tri": 0.0,
+    "all_window_coherence_cls": 0.6762842546828277,
+    "all_window_coherence_tri": 1.0,
+    "random_coherence_ref": 0.17677669529663687,
+    "total_ratio_lam_tri_over_cls": 0.007328642997890711,
+    "total_cos_cls_tri": 0.2890072166919708
+  },
+  "M3_readout": {
+    "tri_logit_share": 0.0002124438650833279,
+    "cls_logit_share": 0.9999999636935877,
+    "ratio_h": 0.00015540480468094543,
+    "ratio_logit": 1.0656371124161572e-05,
+    "random_dir_logit_share_ref": 0.036084391824351615
+  },
+  "M5_embedding": {
+    "norm_mean_query_const": 4.862295627593994,
+    "norm_mean_h": 20.28580665588379,
+    "cos_mean_h_vs_const": 0.3592917025089264,
+    "norm_batchmean_of_mean_h": 18.964967727661133,
+    "image_std_of_mean_h": 7.350112561252782,
+    "mean_pairwise_cos_mean_h": 0.8741258382797241,
+    "mean_pairwise_cos_after_removing_dataset_mean": 0.0006456292467191815,
+    "image_var_mean_h_over_mean_per_query_var": 0.48008603922342863,
+    "independent_queries_ref": 0.03333333333333333
+  },
+  "M4_function_space": {
+    "tri": {
+      "rms_dlogit_per_unit_step": 2.971104145050049,
+      "rms_dembed_per_unit_step": 0.050268080085515976,
+      "dlogit_over_dembed": 59.10518444300262
+    },
+    "cls": {
+      "rms_dlogit_per_unit_step": 4.742317199707031,
+      "rms_dembed_per_unit_step": 0.04427814111113548,
+      "dlogit_over_dembed": 107.10289729200915
+    },
+    "rand": {
+      "rms_dlogit_per_unit_step": 0.004553813952952623,
+      "rms_dembed_per_unit_step": 0.00011046653526136652,
+      "dlogit_over_dembed": 41.22347045807301
+    },
+    "step_l2": 0.5,
+    "val_images": 64
+  },
+  "M6_precision": [
+    {
+      "cos": 0.9999602437019348,
+      "norm_ratio": 1.0007177591323853
+    },
+    {
+      "cos": 0.9999772310256958,
+      "norm_ratio": 0.999262273311615
+    },
+    {
+      "cos": 0.9999596476554871,
+      "norm_ratio": 0.9965172410011292
+    },
+    {
+      "cos": 0.9999621510505676,
+      "norm_ratio": 0.997890830039978
+    }
+  ],
+  "args": {
+    "ckpt": [
+      "stage1=stage1",
+      "c=checkpoint_Triplet_3/unified768_seeded/c/seed_42/Model_run/model_best.pth"
+    ],
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe2",
+    "warmup": 512,
+    "windows": 32,
+    "accum": 12,
+    "val_batches": 16,
+    "step": 0.5,
+    "seed": 42,
+    "memory_size": 2048,
+    "margin": 0.5,
+    "lam": 0.1,
+    "drop_path": 0.1,
+    "num_workers": 6,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

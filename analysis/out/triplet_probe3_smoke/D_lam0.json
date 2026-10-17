@@ -1,0 +1,145 @@
+{
+  "tag": "D_lam0",
+  "init": "stage1",
+  "lam": 0.0,
+  "lr": 0.0001,
+  "opt_steps": 4,
+  "warmup": 0,
+  "spans": [
+    {
+      "opt_step": 2,
+      "micro": 24,
+      "frac_micro_with_triplet": 0.625,
+      "active_hinge_frac": 1.0,
+      "active_triplets_per_window": 14.0,
+      "l_tri_per_micro": 0.1268951321641604,
+      "l_cls_per_micro": 0.05790086416527629,
+      "bank_cos": 0.8552256226539612,
+      "bank_filled": 96
+    },
+    {
+      "opt_step": 4,
+      "micro": 24,
+      "frac_micro_with_triplet": 0.9166666666666666,
+      "active_hinge_frac": 0.4358974358974359,
+      "active_triplets_per_window": 8.5,
+      "l_tri_per_micro": 0.043983379223694406,
+      "l_cls_per_micro": 0.053088249405846,
+      "bank_cos": 0.8164836168289185,
+      "bank_filled": 192
+    }
+  ],
+  "evals": [
+    {
+      "opt_step": 0,
+      "images": 16,
+      "val_asl_loss": 0.044819265604019165,
+      "mean_logit_neg": -1.9658414125442505,
+      "mean_logit_pos": 0.03467375785112381,
+      "logit_gap_pos_neg": 2.0005152225494385,
+      "mean_prob_neg": 0.18896955251693726,
+      "mean_prob_pos": 0.499847948551178,
+      "bias_mean": -0.00045148347271606326,
+      "readout_shared_mean": -1.8819551467895508,
+      "readout_image_std": 0.7596859335899353,
+      "recon_max_err": 0.0024776458740234375,
+      "meanh_norm": 20.710674285888672,
+      "meanh_pairwise_cos": 0.8840416073799133,
+      "meanh_shared_norm_over_image_std": 2.597578763961792,
+      "drift_norm": 0.0
+    },
+    {
+      "opt_step": 2,
+      "images": 16,
+      "val_asl_loss": 0.055830445140600204,
+      "mean_logit_neg": -1.7305525541305542,
+      "mean_logit_pos": 0.9774036407470703,
+      "logit_gap_pos_neg": 2.707956314086914,
+      "mean_prob_neg": 0.22379882633686066,
+      "mean_prob_pos": 0.6234424114227295,
+      "bias_mean": -0.0004591476754285395,
+      "readout_shared_mean": -1.6172410249710083,
+      "readout_image_std": 0.8305822014808655,
+      "recon_max_err": 0.0024814605712890625,
+      "meanh_norm": 18.803016662597656,
+      "meanh_pairwise_cos": 0.8372966051101685,
+      "meanh_shared_norm_over_image_std": 2.0625147819519043,
+      "drift_norm": 1.6516798734664917
+    },
+    {
+      "opt_step": 4,
+      "images": 16,
+      "val_asl_loss": 0.057631202042102814,
+      "mean_logit_neg": -1.913552165031433,
+      "mean_logit_pos": 0.6641373038291931,
+      "logit_gap_pos_neg": 2.5776894092559814,
+      "mean_prob_neg": 0.19976890087127686,
+      "mean_prob_pos": 0.5367261171340942,
+      "bias_mean": -0.0005055359797552228,
+      "readout_shared_mean": -1.8056049346923828,
+      "readout_image_std": 0.8991042375564575,
+      "recon_max_err": 0.0024204254150390625,
+      "meanh_norm": 18.153263092041016,
+      "meanh_pairwise_cos": 0.8081318736076355,
+      "meanh_shared_norm_over_image_std": 1.8403446674346924,
+      "drift_norm": 2.4701642990112305
+    }
+  ],
+  "instrumented": [
+    {
+      "opt_step": 1,
+      "active": 1,
+      "lam1_ratio_tri_over_cls": 8.338606834411621,
+      "cos_tri_cls": -0.374677449464798,
+      "cos_neg_gtri_drift": 0.014626356773078442,
+      "cos_neg_gcls_drift": -0.012427966110408306
+    },
+    {
+      "opt_step": 2,
+      "active": 1,
+      "lam1_ratio_tri_over_cls": 3.6639926433563232,
+      "cos_tri_cls": -0.08417633175849915,
+      "cos_neg_gtri_drift": -0.021562641486525536,
+      "cos_neg_gcls_drift": -0.016080619767308235
+    },
+    {
+      "opt_step": 3,
+      "active": 1,
+      "lam1_ratio_tri_over_cls": 6.377739906311035,
+      "cos_tri_cls": -0.15012894570827484,
+      "cos_neg_gtri_drift": -0.00461757555603981,
+      "cos_neg_gcls_drift": -0.004447230603545904
+    }
+  ],
+  "instrumented_mean": {
+    "active": 1.0,
+    "lam1_ratio_tri_over_cls": 6.126779794692993,
+    "cos_tri_cls": -0.202994242310524,
+    "cos_neg_gtri_drift": -0.0038512867564956346,
+    "cos_neg_gcls_drift": -0.010985272160420815,
+    "n": 3
+  },
+  "random_cos_ref": 8.719516969801204e-05,
+  "args": {
+    "parts": "A,D,B",
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe3_smoke",
+    "lams": "0,1.0",
+    "lr": 0.0001,
+    "opt_steps": 4,
+    "static_windows": 2,
+    "static_ckpts": "asl,p",
+    "warmup": 20,
+    "log_every": 2,
+    "eval_every": 2,
+    "val_batches": 4,
+    "accum": 12,
+    "seed": 42,
+    "memory_size": 2048,
+    "margin": 0.5,
+    "weight_decay": 0.01,
+    "drop_path": 0.1,
+    "num_workers": 6,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

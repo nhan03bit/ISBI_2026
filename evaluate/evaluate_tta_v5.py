@@ -148,11 +148,12 @@ def run(specs, val_dir, batch_size, num_workers, tta_flip, logit_avg, dump_dir, 
             rp = Path(path).resolve()
             name = "__".join(rp.parts[-4:-2] + (rp.stem,)).replace("/", "_")
             tag = f"_prior-{prior_mode}" if is_prior_model(model) else ""
-            name = f"{name}@{'-'.join(map(str, scales))}{'_flip' if tta_flip else ''}{tag}.npy"
+            itag = "" if base._INTERP == "lanczos" else f"_{base._INTERP}"   # lanczos dumps keep their old names
+            name = f"{name}@{'-'.join(map(str, scales))}{'_flip' if tta_flip else ''}{itag}{tag}.npy"
             arr = torch.cat(chunks).numpy().astype(np.float32)
             np.save(dump_dir / name, arr if perm is None else arr[perm])
             manifest.append({"file": name, "checkpoint": str(rp), "scales": scales, "tta_flip": tta_flip,
-                             "prior_mode": prior_mode if is_prior_model(model) else None})
+                             "interp": base._INTERP, "prior_mode": prior_mode if is_prior_model(model) else None})
         with open(dump_dir / f"manifest_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json", "w") as f:
             json.dump(manifest, f, indent=2)
         base.logger.info(f"dumped per-model probs for {len(specs)} model(s) + keys.txt to {dump_dir}")
@@ -184,6 +185,7 @@ def main():
         raise ValueError("--prior-mode must be 'with' or 'zero'")
     sys.argv = [sys.argv[0]] + argv
     args = base.parse_args()
+    base._INTERP = args.interp   # read by base.decode_and_resize in the loader workers (forked after this)
     torch.manual_seed(42)
     np.random.seed(42)
 
@@ -204,6 +206,7 @@ def main():
         "n_models": len(specs),
         "tta_flip": args.tta_flip,
         "scales": list(base._LOAD_SIZES),
+        "interp": base._INTERP,
         "logit_avg": args.logit_avg,
         "prior_file": prior_file,
         "prior_mode": prior_mode,

@@ -1,0 +1,71 @@
+{
+  "tag": "B_asl",
+  "init": "checkpoint_ASL/v0_768_seeded/seed_42/Model_run/model_swa.pth",
+  "lam": 1.0,
+  "lr": 0.0,
+  "opt_steps": 2,
+  "warmup": 20,
+  "spans": [
+    {
+      "opt_step": 2,
+      "micro": 24,
+      "frac_micro_with_triplet": 0.9583333333333334,
+      "active_hinge_frac": 1.0,
+      "active_triplets_per_window": 19.0,
+      "l_tri_per_micro": 0.1323229360083739,
+      "l_cls_per_micro": 0.0334228922923406,
+      "bank_cos": 0.8930078744888306,
+      "bank_filled": 176
+    }
+  ],
+  "evals": [],
+  "instrumented": [
+    {
+      "opt_step": 0,
+      "active": 1,
+      "lam1_ratio_tri_over_cls": 7.167779445648193,
+      "cos_tri_cls": -0.15379653871059418,
+      "cos_neg_gtri_drift": -0.0003427457995712757,
+      "cos_neg_gcls_drift": 7.368685328401625e-05
+    },
+    {
+      "opt_step": 1,
+      "active": 2,
+      "lam1_ratio_tri_over_cls": 5.009469509124756,
+      "cos_tri_cls": 0.13743388652801514,
+      "cos_neg_gtri_drift": -0.0005699602770619094,
+      "cos_neg_gcls_drift": -0.0006706134299747646
+    }
+  ],
+  "instrumented_mean": {
+    "active": 1.5,
+    "lam1_ratio_tri_over_cls": 6.088624477386475,
+    "cos_tri_cls": -0.00818132609128952,
+    "cos_neg_gtri_drift": -0.0004563530383165926,
+    "cos_neg_gcls_drift": -0.00029846328834537417,
+    "n": 2
+  },
+  "random_cos_ref": 8.719516969801204e-05,
+  "args": {
+    "parts": "A,D,B",
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe3_smoke",
+    "lams": "0,1.0",
+    "lr": 0.0001,
+    "opt_steps": 4,
+    "static_windows": 2,
+    "static_ckpts": "asl,p",
+    "warmup": 20,
+    "log_every": 2,
+    "eval_every": 2,
+    "val_batches": 4,
+    "accum": 12,
+    "seed": 42,
+    "memory_size": 2048,
+    "margin": 0.5,
+    "weight_decay": 0.01,
+    "drop_path": 0.1,
+    "num_workers": 6,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

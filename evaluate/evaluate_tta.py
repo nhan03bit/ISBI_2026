@@ -39,6 +39,21 @@ logger = logging.getLogger(__name__)
 # size (set in main from the union of all per-checkpoint scales).
 _LOAD_SIZES = (512,)
 
+# Resampling filter of those resizes (--interp, set in main). "lanczos" is the original eval and the
+# train_2_v*.py val transform; training shrinks images with INTER_LINEAR, and the antialiased INTER_AREA
+# scores best (docs/plan/2026-10-16-asl-046-ceiling-investigation.md).
+INTERP = {"lanczos": cv2.INTER_LANCZOS4, "linear": cv2.INTER_LINEAR, "area": cv2.INTER_AREA}
+_INTERP = "lanczos"
+
+
+def resize_square(img, size, interp):
+    """cv2.resize to (size, size) with the named filter. INTER_AREA only antialiases when shrinking (it acts like
+    nearest-neighbour when enlarging), so "area" falls back to INTER_LINEAR for an image smaller than size."""
+    flag = INTERP[interp]
+    if interp == "area" and min(img.shape[:2]) < size:
+        flag = cv2.INTER_LINEAR
+    return cv2.resize(img, (size, size), interpolation=flag)
+
 
 def decode_and_resize(sample):
     try:
@@ -50,7 +65,7 @@ def decode_and_resize(sample):
         img_np = cv2.cvtColor(img_np, cv2.COLOR_BGR2RGB)
         xs = {}
         for s in _LOAD_SIZES:
-            r = cv2.resize(img_np, (s, s), interpolation=cv2.INTER_LANCZOS4)
+            r = resize_square(img_np, s, _INTERP)
             xs[str(s)] = torch.from_numpy(np.ascontiguousarray(r)).permute(2, 0, 1).float() / 255.0
         return xs, y
     except Exception as e:  # noqa: BLE001
@@ -184,6 +199,9 @@ def parse_args():
                          "checkpoints given without @SIZE, e.g. 512,640,768. Every size is "
                          "an independent LANCZOS resize of the original (= training val "
                          "transform). Default 512 (= original behaviour).")
+    ap.add_argument("--interp", choices=list(INTERP), default="lanczos",
+                    help="resampling filter of the val resize: lanczos (default, = the original eval and the "
+                         "training val transform), linear (= the training crop resize) or area (antialiased).")
     ap.add_argument("--logit-avg", action="store_true",
                     help="average in logit space (mean of logits, then one sigmoid) "
                          "instead of probability space. Often better for ensembles.")
@@ -200,10 +218,11 @@ def main():
     torch.manual_seed(42)
     np.random.seed(42)
 
-    global _LOAD_SIZES
+    global _LOAD_SIZES, _INTERP
     default_scales = [int(s) for s in args.scales.split(",") if s.strip()]
     specs = [parse_ckpt_spec(c, default_scales) for c in args.checkpoints]
     _LOAD_SIZES = tuple(sorted({s for _, sc in specs for s in sc}))
+    _INTERP = args.interp
 
     res = run(specs, args.val_shards_dir, args.batch_size, args.num_workers,
               args.tta_flip, args.logit_avg, args.dump_probs)
@@ -213,6 +232,7 @@ def main():
         "n_models": len(specs),
         "tta_flip": args.tta_flip,
         "scales": list(_LOAD_SIZES),
+        "interp": _INTERP,
         "logit_avg": args.logit_avg,
         "evaluated_at": datetime.now().strftime("%Y%m%d_%H%M%S"),
     })

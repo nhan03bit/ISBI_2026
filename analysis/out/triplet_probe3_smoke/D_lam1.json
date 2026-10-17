@@ -1,0 +1,141 @@
+{
+  "tag": "D_lam1",
+  "init": "stage1",
+  "lam": 1.0,
+  "lr": 0.0001,
+  "opt_steps": 4,
+  "warmup": 0,
+  "spans": [
+    {
+      "opt_step": 2,
+      "micro": 24,
+      "frac_micro_with_triplet": 0.6666666666666666,
+      "active_hinge_frac": 0.9259259259259259,
+      "active_triplets_per_window": 12.5,
+      "l_tri_per_micro": 0.09927188108364741,
+      "l_cls_per_micro": 0.0709491294498245,
+      "bank_cos": 0.8433974981307983,
+      "bank_filled": 96
+    },
+    {
+      "opt_step": 4,
+      "micro": 24,
+      "frac_micro_with_triplet": 0.75,
+      "active_hinge_frac": 0.07407407407407407,
+      "active_triplets_per_window": 1.0,
+      "l_tri_per_micro": 0.012136449416478476,
+      "l_cls_per_micro": 0.09681532221535842,
+      "bank_cos": 0.8131977319717407,
+      "bank_filled": 192
+    }
+  ],
+  "evals": [
+    {
+      "opt_step": 0,
+      "images": 16,
+      "val_asl_loss": 0.044819265604019165,
+      "mean_logit_neg": -1.9658414125442505,
+      "mean_logit_pos": 0.03467375785112381,
+      "logit_gap_pos_neg": 2.0005152225494385,
+      "mean_prob_neg": 0.18896955251693726,
+      "mean_prob_pos": 0.499847948551178,
+      "bias_mean": -0.00045148347271606326,
+      "readout_shared_mean": -1.8819551467895508,
+      "readout_image_std": 0.7596859335899353,
+      "recon_max_err": 0.0024776458740234375,
+      "meanh_norm": 20.710674285888672,
+      "meanh_pairwise_cos": 0.8840416073799133,
+      "meanh_shared_norm_over_image_std": 2.597578763961792,
+      "drift_norm": 0.0
+    },
+    {
+      "opt_step": 2,
+      "images": 16,
+      "val_asl_loss": 0.10032542794942856,
+      "mean_logit_neg": -1.4825750589370728,
+      "mean_logit_pos": 0.17623594403266907,
+      "logit_gap_pos_neg": 1.6588109731674194,
+      "mean_prob_neg": 0.27891138195991516,
+      "mean_prob_pos": 0.5021605491638184,
+      "bias_mean": -0.000463148724520579,
+      "readout_shared_mean": -1.413020133972168,
+      "readout_image_std": 0.678720235824585,
+      "recon_max_err": 0.0029668807983398438,
+      "meanh_norm": 24.300888061523438,
+      "meanh_pairwise_cos": 0.919893205165863,
+      "meanh_shared_norm_over_image_std": 3.322920560836792,
+      "drift_norm": 1.767724633216858,
+      "proj_on_lam0_drift": 0.2132224142551422,
+      "cos_with_lam0_drift": 0.19922511279582977
+    },
+    {
+      "opt_step": 4,
+      "images": 16,
+      "val_asl_loss": 0.055619798600673676,
+      "mean_logit_neg": -1.7127858400344849,
+      "mean_logit_pos": 0.10015304386615753,
+      "logit_gap_pos_neg": 1.812938928604126,
+      "mean_prob_neg": 0.23066864907741547,
+      "mean_prob_pos": 0.48152849078178406,
+      "bias_mean": -0.0005399448564276099,
+      "readout_shared_mean": -1.6366612911224365,
+      "readout_image_std": 0.672446608543396,
+      "recon_max_err": 0.0027818679809570312,
+      "meanh_norm": 24.38754653930664,
+      "meanh_pairwise_cos": 0.9121448993682861,
+      "meanh_shared_norm_over_image_std": 3.1806774139404297,
+      "drift_norm": 2.6850314140319824,
+      "proj_on_lam0_drift": 0.22186200320720673,
+      "cos_with_lam0_drift": 0.20410771667957306
+    }
+  ],
+  "instrumented": [
+    {
+      "opt_step": 1,
+      "active": 1,
+      "lam1_ratio_tri_over_cls": 4.514450550079346,
+      "cos_tri_cls": -0.40419843792915344,
+      "cos_neg_gtri_drift": 0.03558380901813507,
+      "cos_neg_gcls_drift": -0.0337480828166008
+    },
+    {
+      "opt_step": 2,
+      "active": 1,
+      "lam1_ratio_tri_over_cls": 19.987293243408203,
+      "cos_tri_cls": 0.1203925684094429,
+      "cos_neg_gtri_drift": -0.007044769357889891,
+      "cos_neg_gcls_drift": -0.04013686627149582
+    }
+  ],
+  "instrumented_mean": {
+    "active": 1.0,
+    "lam1_ratio_tri_over_cls": 12.250871896743774,
+    "cos_tri_cls": -0.14190293475985527,
+    "cos_neg_gtri_drift": 0.01426951983012259,
+    "cos_neg_gcls_drift": -0.03694247454404831,
+    "n": 2
+  },
+  "random_cos_ref": 8.719516969801204e-05,
+  "args": {
+    "parts": "A,D,B",
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe3_smoke",
+    "lams": "0,1.0",
+    "lr": 0.0001,
+    "opt_steps": 4,
+    "static_windows": 2,
+    "static_ckpts": "asl,p",
+    "warmup": 20,
+    "log_every": 2,
+    "eval_every": 2,
+    "val_batches": 4,
+    "accum": 12,
+    "seed": 42,
+    "memory_size": 2048,
+    "margin": 0.5,
+    "weight_decay": 0.01,
+    "drop_path": 0.1,
+    "num_workers": 6,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

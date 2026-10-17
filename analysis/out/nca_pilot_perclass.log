@@ -1,0 +1,69 @@
+macro: {
+"A": {
+"mAP": 0.46601352095603943,
+"mAUC": 0.911406397819519,
+"mF1": 0.48372572660446167,
+"mECE": 0.13174502551555634
+},
+"C": {
+"mAP": 0.46755823493003845,
+"mAUC": 0.9116284847259521,
+"mF1": 0.4797467887401581,
+"mECE": 0.13455113768577576
+},
+"N": {
+"mAP": 0.4542681872844696,
+"mAUC": 0.9063231348991394,
+"mF1": 0.45649081468582153,
+"mECE": 0.179817795753479
+}
+}
+A: mean p 0.1818 (3.63x prevalence 0.0500) | mean p on positives 0.6804, on negatives 0.1555
+C: mean p 0.1846 (3.69x prevalence 0.0500) | mean p on positives 0.6808, on negatives 0.1584
+N: mean p 0.2298 (4.59x prevalence 0.0500) | mean p on positives 0.6915, on negatives 0.2055
+
+| class | group | train+ | val+ | ASL | Entropy | NCA | NCA - ASL | NCA - Entropy |
+|---|---|---|---|---|---|---|---|---|
+| Hydropneumothorax | tail | 38 | 7 | 0.2485 | 0.2916 | 0.2086 | -0.0399 | -0.0829 |
+| pneumoperitoneo | tail | 52 | 9 | 0.3658 | 0.3870 | 0.3046 | -0.0613 | -0.0824 |
+| Subcutaneous Emphysema | tail | 179 | 29 | 0.6286 | 0.6109 | 0.5738 | -0.0548 | -0.0372 |
+| Mass | tail | 296 | 49 | 0.0692 | 0.0761 | 0.0829 | +0.0137 | +0.0068 |
+| azygos lobe | tail | 346 | 58 | 0.5752 | 0.5736 | 0.5448 | -0.0304 | -0.0288 |
+| Pneumothorax | tail | 420 | 71 | 0.3923 | 0.3857 | 0.3459 | -0.0464 | -0.0398 |
+| calcified densities | tail | 835 | 140 | 0.1255 | 0.1283 | 0.1180 | -0.0075 | -0.0103 |
+| Emphysema | medium | 1232 | 206 | 0.2864 | 0.2884 | 0.2714 | -0.0150 | -0.0169 |
+| aortic atheromatosis | medium | 1430 | 239 | 0.1643 | 0.1606 | 0.1647 | +0.0004 | +0.0041 |
+| Hernia | medium | 1641 | 274 | 0.7823 | 0.7804 | 0.7686 | -0.0137 | -0.0117 |
+| bronchiectasis | medium | 1979 | 330 | 0.2238 | 0.2260 | 0.2196 | -0.0043 | -0.0064 |
+| sternotomy | medium | 2233 | 372 | 0.8880 | 0.8891 | 0.8823 | -0.0056 | -0.0067 |
+| hemidiaphragm elevation | medium | 2600 | 433 | 0.4310 | 0.4326 | 0.4210 | -0.0100 | -0.0116 |
+| Kyphosis | medium | 3065 | 511 | 0.3408 | 0.3404 | 0.3283 | -0.0125 | -0.0121 |
+| hypoexpansion | medium | 3068 | 511 | 0.3201 | 0.3228 | 0.3201 | +0.0000 | -0.0026 |
+| fracture | medium | 3387 | 563 | 0.4445 | 0.4445 | 0.4399 | -0.0046 | -0.0046 |
+| pleural thickening | medium | 3768 | 628 | 0.4153 | 0.4203 | 0.4082 | -0.0071 | -0.0121 |
+| vascular hilar enlargement | medium | 4307 | 718 | 0.2247 | 0.2232 | 0.2050 | -0.0197 | -0.0181 |
+| vertebral degenerative changes | medium | 4380 | 730 | 0.2014 | 0.2005 | 0.2015 | +0.0001 | +0.0010 |
+| central venous catheter | medium | 4769 | 795 | 0.8930 | 0.8897 | 0.8848 | -0.0082 | -0.0049 |
+| hyperinflated lung | medium | 5158 | 860 | 0.2614 | 0.2580 | 0.2419 | -0.0194 | -0.0161 |
+| atelectasis | medium | 6761 | 1126 | 0.4190 | 0.4201 | 0.4208 | +0.0018 | +0.0007 |
+| alveolar pattern | medium | 6806 | 1134 | 0.5968 | 0.5973 | 0.5974 | +0.0006 | +0.0001 |
+| interstitial pattern | medium | 6895 | 1149 | 0.4551 | 0.4555 | 0.4604 | +0.0053 | +0.0050 |
+| Nodule | medium | 7850 | 1308 | 0.4803 | 0.4792 | 0.4697 | -0.0106 | -0.0094 |
+| aortic elongation | medium | 8419 | 1402 | 0.5268 | 0.5266 | 0.5249 | -0.0020 | -0.0018 |
+| Support Devices | medium | 8607 | 1433 | 0.9298 | 0.9296 | 0.9304 | +0.0005 | +0.0008 |
+| cardiomegaly | head | 11004 | 1833 | 0.6482 | 0.6479 | 0.6483 | +0.0001 | +0.0004 |
+| pleural effusion | head | 12505 | 2082 | 0.7653 | 0.7651 | 0.7641 | -0.0011 | -0.0010 |
+| Normal | head | 41507 | 6917 | 0.8768 | 0.8760 | 0.8759 | -0.0009 | -0.0000 |
+
+summary: {
+ "classes_worse_than_A": 21,
+ "classes_better_than_A": 9,
+ "tail_worse": 6,
+ "tail_n": 7,
+ "tail_mean_N-A": -0.03236149251461029,
+ "tail_mean_N-A_without_two_rarest": -0.025082096457481384,
+ "medium_mean_N-A": -0.006195797771215439,
+ "medium_worse": 13,
+ "head_mean_N-A": -0.0006378690401713053
+}
+wrote /home/psytp7/ISBI_2026/analysis/out/nca_pilot_perclass.json

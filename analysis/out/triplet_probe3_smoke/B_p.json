@@ -1,0 +1,63 @@
+{
+  "tag": "B_p",
+  "init": "checkpoint_Triplet_3/unified768_seeded/p/seed_42/Model_run/model_swa.pth",
+  "lam": 1.0,
+  "lr": 0.0,
+  "opt_steps": 2,
+  "warmup": 20,
+  "spans": [
+    {
+      "opt_step": 2,
+      "micro": 24,
+      "frac_micro_with_triplet": 0.9583333333333334,
+      "active_hinge_frac": 0.08108108108108109,
+      "active_triplets_per_window": 1.5,
+      "l_tri_per_micro": 0.002653741200144092,
+      "l_cls_per_micro": 0.03573706715057293,
+      "bank_cos": 0.7512068748474121,
+      "bank_filled": 176
+    }
+  ],
+  "evals": [],
+  "instrumented": [
+    {
+      "opt_step": 0,
+      "active": 1,
+      "lam1_ratio_tri_over_cls": 3.6268153190612793,
+      "cos_tri_cls": -0.27178236842155457,
+      "cos_neg_gtri_drift": 0.0015610686969012022,
+      "cos_neg_gcls_drift": -0.0003213306190446019
+    }
+  ],
+  "instrumented_mean": {
+    "active": 1.0,
+    "lam1_ratio_tri_over_cls": 3.6268153190612793,
+    "cos_tri_cls": -0.27178236842155457,
+    "cos_neg_gtri_drift": 0.0015610686969012022,
+    "cos_neg_gcls_drift": -0.0003213306190446019,
+    "n": 1
+  },
+  "random_cos_ref": 8.719516969801204e-05,
+  "args": {
+    "parts": "A,D,B",
+    "out_dir": "/home/psytp7/ISBI_2026/analysis/out/triplet_probe3_smoke",
+    "lams": "0,1.0",
+    "lr": 0.0001,
+    "opt_steps": 4,
+    "static_windows": 2,
+    "static_ckpts": "asl,p",
+    "warmup": 20,
+    "log_every": 2,
+    "eval_every": 2,
+    "val_batches": 4,
+    "accum": 12,
+    "seed": 42,
+    "memory_size": 2048,
+    "margin": 0.5,
+    "weight_decay": 0.01,
+    "drop_path": 0.1,
+    "num_workers": 6,
+    "gamma_neg": 2.0,
+    "gamma_pos": 0.0
+  }
+}

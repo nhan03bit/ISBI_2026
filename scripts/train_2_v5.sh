@@ -24,6 +24,9 @@ nvidia-smi
 
 source /home/psytp7/ISBI_2026/.venv/bin/activate
 cd /home/psytp7/ISBI_2026/train
+# colossus sometimes hands out a dead GPU and torch silently falls back to CPU: fail fast instead
+python -c "import sys, torch; sys.exit(0 if torch.cuda.is_available() else 3)" \
+    || { echo "no usable CUDA GPU on $(hostname); aborting" >&2; exit 3; }
 
 python train_2_v5.py "$@"
 

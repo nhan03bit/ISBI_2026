@@ -1,0 +1,244 @@
+{
+ "generated": "2026-10-17 02:17",
+ "protocol": " (fixed before any result was seen):\n  * probe: no TTA, area resize, same-patient train images excluded from every neighbour list;\n  * kNN readout p_knn[i,c] = sum_j softmax(s_ij / tau) * y_j[c] over the top-K neighbours, from the per-class\n    h_c lists (\"class\") or the pooled-embedding list (\"pool\"); prototype score as a logit-space blend;\n  * blend p = (1 - a_ic) p_cls + a_ic p_knn, with gate families\n      none          a_ic = a\n      binary        a_ic = a * Hb(p_cls[i,c]) / ln 2        (per image-class Bernoulli entropy)\n      softmax-hard  a_ic = a * 1[H_softmax(z_i) >= mean]    (the training gate's statistic and rule)\n      random        a_ic = a for the same number of images as softmax-hard, chosen at random (control)\n      knn-only      p = p_knn\n      proto         logit(p) = z_cls + b * proto / sd(proto on the tuning half)\n  * grid K {10, 25, 50, 100} x tau {0.01, 0.03, 0.1} x a {0.1, 0.2, 0.3, 0.5} x embed {class, pool};\n    b {0.25, 0.5, 1, 2};\n  * 2-fold cross-fitting by patient: within each family the config is chosen on one half of the val patients by\n    mAP and scored on the other; the two scored halves are pooled and compared with the classifier on the same\n    images (paired bootstrap over images).\n\n    python -I analysis/memory_readout_eval.py --tags asl_seeded entropy_seeded\n",
+ "tags": {
+  "entropy_seeded": {
+   "n": 17270,
+   "n_frontal": 11973,
+   "fold_sizes": [
+    8665,
+    8605
+   ],
+   "softmax_hard_share": 0.5496236247828604,
+   "cls": {
+    "mAP": 0.46411517740788355,
+    "frontal": 0.4894435385595893,
+    "head": 0.7609609608591463,
+    "medium": 0.46152230520889814,
+    "tail": 0.3443037622115866
+   },
+   "families": {
+    "none": {
+     "chosen": [
+      {
+       "embed": "class",
+       "k": 25,
+       "tau": 0.01,
+       "a": 0.3,
+       "tune_mAP": 0.4745958043714248
+      },
+      {
+       "embed": "pool",
+       "k": 100,
+       "tau": 0.03,
+       "a": 0.1,
+       "tune_mAP": 0.44929809468077214
+      }
+     ],
+     "mAP": 0.4606628829596289,
+     "frontal": 0.4872315755783443,
+     "head": 0.759957365544631,
+     "medium": 0.4579233810111343,
+     "tail": 0.3402209674188982,
+     "d_mAP": -0.0034522944482546225,
+     "d_frontal": -0.002211962981244986,
+     "ci_mAP": [
+      -0.007557924356551916,
+      -0.00037895116483911283
+     ],
+     "ci_frontal": [
+      -0.0062486127392072455,
+      0.0027776186678925823
+     ],
+     "ci_tail": [
+      -0.02200900073884729,
+      0.00920282280617088
+     ],
+     "d_tail": -0.004082794792688416
+    },
+    "binary": {
+     "chosen": [
+      {
+       "embed": "class",
+       "k": 25,
+       "tau": 0.01,
+       "a": 0.3,
+       "tune_mAP": 0.475958058762085
+      },
+      {
+       "embed": "class",
+       "k": 25,
+       "tau": 0.01,
+       "a": 0.3,
+       "tune_mAP": 0.4500867102168834
+      }
+     ],
+     "mAP": 0.4661878414070115,
+     "frontal": 0.49330607101098395,
+     "head": 0.7613931252442688,
+     "medium": 0.4629695445499751,
+     "tail": 0.3488664250682913,
+     "d_mAP": 0.002072663999127977,
+     "d_frontal": 0.0038625324513946735,
+     "ci_mAP": [
+      0.00046682210796588356,
+      0.0045630920921328364
+     ],
+     "ci_frontal": [
+      6.474695761381776e-05,
+      0.010238679720435977
+     ],
+     "ci_tail": [
+      -0.0015997020708438878,
+      0.01536162021228938
+     ],
+     "d_tail": 0.004562662856704702
+    },
+    "softmax-hard": {
+     "chosen": [
+      {
+       "embed": "class",
+       "k": 25,
+       "tau": 0.01,
+       "a": 0.1,
+       "tune_mAP": 0.4753395680139794
+      },
+      {
+       "embed": "class",
+       "k": 50,
+       "tau": 0.01,
+       "a": 0.1,
+       "tune_mAP": 0.4541828548013291
+      }
+     ],
+     "mAP": 0.46523674509800095,
+     "frontal": 0.4926551994398675,
+     "head": 0.7609429187905468,
+     "medium": 0.46154927508615684,
+     "tail": 0.34904115640646494,
+     "d_mAP": 0.0011215676901173977,
+     "d_frontal": 0.0032116608802782443,
+     "ci_mAP": [
+      -0.0001810347993408165,
+      0.0035332693152201034
+     ],
+     "ci_frontal": [
+      -8.415966465240257e-06,
+      0.009539943819009432
+     ],
+     "ci_tail": [
+      -0.0004596485991670535,
+      0.014500836607632912
+     ],
+     "d_tail": 0.004737394194878342
+    },
+    "random": {
+     "chosen": [
+      {
+       "embed": "class",
+       "k": 100,
+       "tau": 0.1,
+       "a": 0.1,
+       "tune_mAP": 0.47525093315537725
+      },
+      {
+       "embed": "class",
+       "k": 25,
+       "tau": 0.01,
+       "a": 0.1,
+       "tune_mAP": 0.44883241195069556
+      }
+     ],
+     "mAP": 0.4638665686185865,
+     "frontal": 0.4900258670381612,
+     "head": 0.7605589388808092,
+     "medium": 0.4607619182256729,
+     "tail": 0.34558312534310126,
+     "d_mAP": -0.00024860878929705565,
+     "d_frontal": 0.0005823284785719252,
+     "ci_mAP": [
+      -0.0019781174870527316,
+      0.002023126133027343
+     ],
+     "ci_frontal": [
+      -0.0022182553350482623,
+      0.004794544955566357
+     ],
+     "ci_tail": [
+      -0.005886733811151179,
+      0.01061828935576199
+     ],
+     "d_tail": 0.0012793631315146659
+    },
+    "knn-only": {
+     "chosen": [
+      {
+       "embed": "class",
+       "k": 100,
+       "tau": 0.03,
+       "tune_mAP": 0.4571101119955279
+      },
+      {
+       "embed": "class",
+       "k": 100,
+       "tau": 0.01,
+       "tune_mAP": 0.43193534024058255
+      }
+     ],
+     "mAP": 0.4468031260002807,
+     "frontal": 0.475368414007562,
+     "head": 0.7523942668563889,
+     "medium": 0.4492784742447268,
+     "tail": 0.3087630706492456,
+     "d_mAP": -0.017312051407602835,
+     "d_frontal": -0.014075124552027252,
+     "ci_mAP": [
+      -0.023089298045234703,
+      -0.012543566346207874
+     ],
+     "ci_frontal": [
+      -0.0224572713174883,
+      -0.004988286760483661
+     ],
+     "ci_tail": [
+      -0.060470807052826155,
+      -0.016615319717012446
+     ],
+     "d_tail": -0.03554069156234102
+    },
+    "proto": {
+     "chosen": [
+      {
+       "b": 0.25,
+       "tune_mAP": 0.47326031473965563
+      },
+      {
+       "b": 0.25,
+       "tune_mAP": 0.4476929418245363
+      }
+     ],
+     "mAP": 0.46375173281506965,
+     "frontal": 0.48970880287839363,
+     "head": 0.7608815957144847,
+     "medium": 0.46067127330162216,
+     "tail": 0.345211675896599,
+     "d_mAP": -0.0003634445928138996,
+     "d_frontal": 0.0002652643188043591,
+     "ci_mAP": [
+      -0.0013612367202376434,
+      0.001479198812440209
+     ],
+     "ci_frontal": [
+      -0.001661713270114988,
+      0.004232969596365596
+     ],
+     "ci_tail": [
+      -0.0028208288508746833,
+      0.007979524295242709
+     ],
+     "d_tail": 0.0009079136850124181
+    }
+   }
+  }
+ }
+}
