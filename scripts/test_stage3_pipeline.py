@@ -26,6 +26,7 @@ class PipelineTests(unittest.TestCase):
             self.assertIn('--gpus', calls[1])
             self.assertNotIn('--gpus', calls[0])
             self.assertNotIn('--gpus', calls[2])
+            self.assertEqual(calls[0][calls[0].index('--time') + 1], '8:00:00')
             self.assertEqual(json.loads((root / 'run/jobs.json').read_text()),
                              dict(preflight='101', gpu='102', report='103'))
             self.assertIn('--exclusions', pipeline.common(json.loads((root / 'run/pipeline.json').read_text())))

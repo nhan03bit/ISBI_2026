@@ -121,7 +121,7 @@ def submit(directory, allow_missing):
                    '--output', str(directory / 'logs' / f'{name}_%j.out'), '--kill-on-invalid-dep=yes',
                    '--cpus-per-task', '8' if name == 'gpu' else '4',
                    '--mem', '64G' if name == 'gpu' else '16G',
-                   '--time', '72:00:00' if name == 'gpu' else '4:00:00',
+                   '--time', '72:00:00' if name == 'gpu' else '8:00:00' if name == 'preflight' else '4:00:00',
                    '--partition', os.environ.get('GPU_PARTITION', 'amp48') if name == 'gpu' else os.environ.get('CPU_PARTITION', 'general')]
         if name == 'gpu':
             command += ['--gpus', '1', '--exclude', os.environ.get('EXCLUDE', 'colossus')]
