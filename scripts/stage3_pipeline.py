@@ -31,13 +31,14 @@ def common(config):
                 ['--exclusions', config['audit']] if config.get('audit') else [])
 
 
-def phase(name, directory):
+def phase(name, directory, retry=False):
     config = json.loads((directory / 'pipeline.json').read_text())
     os.chdir(ROOT)
     train = [sys.executable, '-u', 'train/train_3.py'] + common(config)
     if name == 'preflight':
         run([sys.executable, '-m', 'unittest', 'discover', '-s', 'train', '-p', 'test_stage3.py'])
-        run(train + ['--arm', 'minority', '--preflight-only', '--out', directory / 'preflight'])
+        run(train + ['--arm', 'minority', '--preflight-only', '--out', directory / 'preflight'] +
+            (['--resume'] if retry else []))
     elif name == 'gpu':
         run(['nvidia-smi'])
         run([sys.executable, '-c', 'import torch; assert torch.cuda.is_available(), "CUDA unavailable"; '
@@ -63,7 +64,7 @@ def phase(name, directory):
 
 def snapshot(directory):
     print(f'Stage 3: {directory}\n')
-    jobs_file = directory / 'jobs.json'
+    jobs_file = directory / ('jobs_retry.json' if (directory / 'jobs_retry.json').exists() else 'jobs.json')
     jobs = json.loads(jobs_file.read_text()) if jobs_file.exists() else {}
     if jobs:
         result = subprocess.run(['squeue', '-j', ','.join(jobs.values()), '-o', '%.12i %.12T %.35R'],
@@ -97,10 +98,17 @@ def snapshot(directory):
     print(f'\nDetailed logs: {directory}/logs/\nCtrl+C closes this monitor; submitted jobs continue.')
 
 
-def submit(directory, allow_missing):
-    directory.mkdir(parents=True, exist_ok=False)
-    (directory / 'logs').mkdir()
-    config = dict(checkpoint=os.environ.get('CKPT', str(ROOT / 'train/checkpoint_Triplet_3/push/img768_dp01_seed42/Model_run/model_swa.pth')),
+def submit(directory, allow_missing, retry=False):
+    if retry:
+        if not (directory / 'pipeline.json').exists() or (directory / 'jobs_retry.json').exists() or (directory / 'preflight.done').exists():
+            raise ValueError('Retry requires an existing unfinished run without a prior retry')
+    else:
+        directory.mkdir(parents=True, exist_ok=False)
+        (directory / 'logs').mkdir()
+    if retry:
+        config = json.loads((directory / 'pipeline.json').read_text())
+    else:
+        config = dict(checkpoint=os.environ.get('CKPT', str(ROOT / 'train/checkpoint_Triplet_3/push/img768_dp01_seed42/Model_run/model_swa.pth')),
                   train=os.environ.get('TRAIN', '/data/psytp7/wds_shards_train_raw'),
                   val=os.environ.get('VAL', '/data/psytp7/wds_shards_val_raw'),
                   metadata=os.environ.get('META', str(ROOT / 'data/PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv')),
@@ -114,11 +122,12 @@ def submit(directory, allow_missing):
         config['audit'] = str(Path(config['audit']).resolve())
         if not Path(config['audit']).exists():
             raise FileNotFoundError(f'audit: {config["audit"]}')
-    (directory / 'pipeline.json').write_text(json.dumps(config, indent=2))
+    if not retry:
+        (directory / 'pipeline.json').write_text(json.dumps(config, indent=2))
     jobs = {}
     for name in ('preflight', 'gpu', 'report'):
         command = ['sbatch', '--parsable', '--job-name', f's3_{name}', '--chdir', str(ROOT),
-                   '--output', str(directory / 'logs' / f'{name}_%j.out'), '--kill-on-invalid-dep=yes',
+                   '--output', str(directory / 'logs' / f'{name}{"_retry" if retry else ""}_%j.out'), '--kill-on-invalid-dep=yes',
                    '--cpus-per-task', '8' if name == 'gpu' else '4',
                    '--mem', '64G' if name == 'gpu' else '16G',
                    '--time', '72:00:00' if name == 'gpu' else '8:00:00' if name == 'preflight' else '4:00:00',
@@ -127,11 +136,13 @@ def submit(directory, allow_missing):
             command += ['--gpus', '1', '--exclude', os.environ.get('EXCLUDE', 'colossus')]
         if jobs:
             command += ['--dependency', 'afterok:' + list(jobs.values())[-1]]
-        command += ['--wrap', shlex.join([sys.executable, '-u', str(Path(__file__).resolve()),
-                                         '--phase', name, '--run', str(directory)])]
+        wrapped = [sys.executable, '-u', str(Path(__file__).resolve()), '--phase', name, '--run', str(directory)]
+        if retry and name == 'preflight':
+            wrapped.append('--retry')
+        command += ['--wrap', shlex.join(wrapped)]
         result = run(command, capture_output=True, text=True)
         jobs[name] = result.stdout.strip().split(';')[0]
-        (directory / 'jobs.json').write_text(json.dumps(jobs, indent=2))
+        (directory / ('jobs_retry.json' if retry else 'jobs.json')).write_text(json.dumps(jobs, indent=2))
     print('Submitted: ' + str(jobs), flush=True)
 
 
@@ -141,16 +152,19 @@ def main():
     p.add_argument('--phase', choices=['preflight', 'gpu', 'report'])
     p.add_argument('--watch', action='store_true', help='Monitor an existing --run without submitting')
     p.add_argument('--no-watch', action='store_true')
+    p.add_argument('--retry', action='store_true', help='Resume timed-out preflight in an existing --run')
     p.add_argument('--allow-missing', action='store_true', help='Only after reviewing missing-image exclusions')
     args = p.parse_args()
     if (args.phase or args.watch) and args.run is None:
         p.error('--phase/--watch requires --run')
+    if args.retry and args.run is None:
+        p.error('--retry requires --run')
     directory = (args.run or ROOT / 'runs' / ('stage3_' + datetime.now().strftime('%Y%m%d_%H%M%S'))).resolve()
     if args.phase:
-        phase(args.phase, directory)
+        phase(args.phase, directory, args.retry)
         return
     if not args.watch:
-        submit(directory, args.allow_missing)
+        submit(directory, args.allow_missing, retry=args.retry)
     if args.no_watch:
         return
     try:

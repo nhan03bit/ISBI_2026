@@ -15,6 +15,17 @@ This submits three dependent Slurm jobs and opens a terminal monitor:
 3. CPU: paired bootstrap comparison and `RESULTS.txt` summary.
 
 No training is run on the login node. A failed job prevents dependent jobs from running.
+If preflight times out after recording progress, fetch the latest `long-tailed` code and
+resume the same run:
+
+```bash
+bash scripts/run_stage3.sh --retry --run runs/stage3_YYYYMMDD_HHMMSS --no-watch
+```
+
+The retry checks the saved manifest against the checkpoint, shard inventory, exclusions
+and data code, then continues from the last audited image. It submits new GPU/report jobs
+only after preflight passes; their IDs are saved in `jobs_retry.json`.
+
 Missing images stop preflight by default: inspect the saved manifest before explicitly
 rerunning with `--allow-missing`. Every new invocation creates a dated run directory;
 it does not silently resume or overwrite previous experiments.

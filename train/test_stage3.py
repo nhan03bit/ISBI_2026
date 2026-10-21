@@ -144,6 +144,22 @@ class TrainingTests(unittest.TestCase):
                     self.assertTrue(torch.equal(full[k], initial[k]), k)
             self.assertFalse(torch.equal(full['head.1.weight'], initial['head.1.weight']))
             self.assertEqual(len(json.loads((root / 'full/metrics.json').read_text())), 3)
+            preflight = root / 'preflight'
+            with patch.object(sys, 'argv', base + ['--out', str(preflight), '--preflight-only']):
+                train_3.main()
+            saved_manifest = json.loads((preflight / 'manifest.json').read_text())
+            saved_manifest['source_hashes']['train_3.py'] = 'previous preflight implementation'
+            (preflight / 'manifest.json').write_text(json.dumps(saved_manifest))
+            (preflight / 'progress.json').write_text(json.dumps(dict(phase='preflight validation', done=2, total=4)))
+            seen = []
+            original_getitem = train_3.IndexedImages.__getitem__
+            def tracked_getitem(dataset, i):
+                seen.append((dataset.train, i))
+                return original_getitem(dataset, i)
+            with patch.object(train_3.IndexedImages, '__getitem__', tracked_getitem), patch.object(
+                    sys, 'argv', base + ['--out', str(preflight), '--preflight-only', '--resume']):
+                train_3.main()
+            self.assertEqual(seen, [(False, 2), (False, 3)])
 
 
 if __name__ == '__main__':

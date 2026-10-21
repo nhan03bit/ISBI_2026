@@ -65,7 +65,9 @@ def main():
         temporary.write_text(json.dumps(payload))
         os.replace(temporary, out / 'progress.json')
 
-    progress('indexing')
+    previous_progress = json.loads((out / 'progress.json').read_text()) if args.resume and args.preflight_only else None
+    if not args.resume or not args.preflight_only:
+        progress('indexing')
     config = vars(args).copy()
     for key in ('resume', 'preflight_only', 'stop_after'):
         config.pop(key)
@@ -91,7 +93,11 @@ def main():
                                                              Path(v3.__file__), Path(__file__).with_name('convnext.py')]})
     manifest_path = out / 'manifest.json'
     if manifest_path.exists():
-        if not args.resume or json.loads(manifest_path.read_text()) != manifest:
+        saved_manifest = json.loads(manifest_path.read_text())
+        if args.resume and args.preflight_only:
+            # Resume logic changes this file's hash; data, transforms and checkpoint must still match.
+            manifest['source_hashes']['train_3.py'] = saved_manifest['source_hashes']['train_3.py']
+        if not args.resume or saved_manifest != manifest:
             raise ValueError('Output exists or resume manifest differs; use a new output directory')
     else:
         if args.resume:
@@ -107,10 +113,23 @@ def main():
     if args.preflight_only:
         # Full decode/label audit is intentionally opt-in and does not construct the model.
         for dataset in (train_ds, val_ds):
-            for i in range(len(dataset)):
+            phase = 'preflight train' if dataset.train else 'preflight validation'
+            start = 0
+            if previous_progress:
+                if previous_progress['phase'] == 'preflight complete':
+                    start = len(dataset)
+                elif previous_progress['phase'] == 'preflight validation' and dataset.train:
+                    start = len(dataset)
+                elif previous_progress['phase'] == phase:
+                    if previous_progress['total'] != len(dataset) or not 0 <= previous_progress['done'] <= len(dataset):
+                        raise ValueError('Preflight progress does not match this dataset')
+                    start = previous_progress['done']
+                elif previous_progress['phase'] != 'preflight train':
+                    raise ValueError('Cannot resume from this preflight phase')
+            for i in range(start, len(dataset)):
                 dataset[i]
                 if i % 100 == 0 or i + 1 == len(dataset):
-                    progress('preflight train' if dataset.train else 'preflight validation', i + 1, len(dataset))
+                    progress(phase, i + 1, len(dataset))
         progress('preflight complete', 1, 1)
         print('Full shard/label/decode preflight passed', flush=True)
         return

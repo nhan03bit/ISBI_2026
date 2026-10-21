@@ -30,6 +30,15 @@ class PipelineTests(unittest.TestCase):
             self.assertEqual(json.loads((root / 'run/jobs.json').read_text()),
                              dict(preflight='101', gpu='102', report='103'))
             self.assertIn('--exclusions', pipeline.common(json.loads((root / 'run/pipeline.json').read_text())))
+            (root / 'run/preflight').mkdir()
+            (root / 'run/preflight/progress.json').write_text('{"phase":"preflight validation","done":2,"total":4}')
+            responses = [subprocess.CompletedProcess([], 0, str(i) + '\n', '') for i in (104, 105, 106)]
+            with patch.object(pipeline, 'run', side_effect=responses) as execute:
+                pipeline.submit(root / 'run', False, retry=True)
+            retry_calls = [call.args[0] for call in execute.call_args_list]
+            self.assertIn('--retry', retry_calls[0][-1])
+            self.assertIn('afterok:104', retry_calls[1])
+            self.assertEqual(json.loads((root / 'run/jobs_retry.json').read_text())['gpu'], '105')
             with self.assertRaises(FileExistsError):
                 pipeline.submit(root / 'run', False)
 
